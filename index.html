@@ -821,9 +821,10 @@ function getCtx(){
   function draw(){
     if(!isPlaying) return;
     const now = audioCtx.currentTime;
-    while(queue.length && queue[0].time <= now){
+    const lat = audioCtx.outputLatency || audioCtx.baseLatency || 0;  // flash when the click is actually heard
+    while(queue.length && queue[0].time + lat <= now){
       const item = queue.shift();
-      if(now - item.time > 0.2) continue;   // tab was hidden — don't flash old beats
+      if(now - (item.time + lat) > 0.2) continue;   // tab was hidden — don't flash old beats
       const beat = item.beat;
       const dots = beatsEl.children;
       for(let i=0;i<dots.length;i++) dots[i].classList.toggle('on', i===beat);
