@@ -33,6 +33,11 @@ body{padding:16px}
 .embed-head .name b{color:var(--amber)}
 .embed-head .tag{margin-left:auto;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.26em;
   text-transform:uppercase;color:var(--faint)}
+.embed-nav{margin-left:auto;display:flex;gap:13px;flex-wrap:wrap;justify-content:flex-end}
+.embed-nav a{font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--faint);text-decoration:none;transition:color .16s}
+.embed-nav a:hover{color:var(--amber)}
+.embed-nav a.active{color:var(--amber)}
 
 .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));max-width:1120px;margin:0 auto}
 
@@ -139,7 +144,11 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
 <div class="embed-head">
   <span class="mark" aria-hidden="true"></span>
   <span class="name">Jam<b>Ready</b>Bass</span>
-  <a href="fretboard.html" class="tag" style="text-decoration:none">Fretboard &rarr;</a>
+  <nav class="embed-nav" aria-label="Primary">
+    <a href="index.html">Station</a>
+    <a href="fretboard.html">Fretboard</a>
+    <a href="groove.html">Groove</a>
+  </nav>
 </div>
 
 <div class="grid">
