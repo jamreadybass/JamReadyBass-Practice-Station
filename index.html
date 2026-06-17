@@ -759,10 +759,24 @@ function getCtx(){
   let isPlaying = false;
   let currentBeat = 0;
   let nextNoteTime = 0;
-  const lookahead = 25;          // ms
-  const scheduleAhead = 0.1;     // s
-  let timerID = null;
+  const lookahead = 25;          // ms — how often the worker ticks
+  const scheduleAhead = 0.15;    // s — how far ahead notes are queued
   const queue = [];
+
+  // Drive the scheduling clock from a Web Worker. A normal setTimeout loop gets
+  // throttled to ~once/second when the tab is in the background, which is what
+  // makes the metronome drop/skip beats. A worker keeps firing on time.
+  let ticker = null;
+  function makeTicker(){
+    const code = "let t=null,iv=25;onmessage=function(e){" +
+      "if(e.data==='start'){t=setInterval(function(){postMessage('tick');},iv);}" +
+      "else if(e.data==='stop'){clearInterval(t);t=null;}" +
+      "else if(e.data&&e.data.interval){iv=e.data.interval;if(t){clearInterval(t);" +
+      "t=setInterval(function(){postMessage('tick');},iv);}}};";
+    const w = new Worker(URL.createObjectURL(new Blob([code],{type:'application/javascript'})));
+    w.onmessage = function(e){ if(e.data==='tick') scheduler(); };
+    return w;
+  }
 
   function buildDots(){
     beatsEl.innerHTML='';
@@ -798,17 +812,19 @@ function getCtx(){
     currentBeat = (currentBeat + 1) % beatsPerMeasure;
   }
   function scheduler(){
+    if(!isPlaying) return;
     while(nextNoteTime < audioCtx.currentTime + scheduleAhead){
       scheduleNote(currentBeat, nextNoteTime);
       advance();
     }
-    timerID = setTimeout(scheduler, lookahead);
   }
   function draw(){
     if(!isPlaying) return;
     const now = audioCtx.currentTime;
     while(queue.length && queue[0].time <= now){
-      const {beat} = queue.shift();
+      const item = queue.shift();
+      if(now - item.time > 0.2) continue;   // tab was hidden — don't flash old beats
+      const beat = item.beat;
       const dots = beatsEl.children;
       for(let i=0;i<dots.length;i++) dots[i].classList.toggle('on', i===beat);
       pulse.classList.remove('beat','accent'); void pulse.offsetWidth;
@@ -818,15 +834,16 @@ function getCtx(){
   }
   function start(){
     getCtx();
+    if(!ticker) ticker = makeTicker();
     isPlaying = true; currentBeat = 0;
-    nextNoteTime = audioCtx.currentTime + 0.06;
-    scheduler();
+    nextNoteTime = audioCtx.currentTime + 0.1;
+    ticker.postMessage('start');
     requestAnimationFrame(draw);
     toggle.textContent = 'Stop';
   }
   function stop(){
     isPlaying = false;
-    clearTimeout(timerID);
+    if(ticker) ticker.postMessage('stop');
     queue.length = 0;
     toggle.textContent = 'Start';
     Array.from(beatsEl.children).forEach(d=>d.classList.remove('on'));
