@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JamReadyBass — Fretboard Scale Finder</title>
+<title>JamReadyBass FretNav</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -102,6 +102,25 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 .foot{text-align:center;margin:18px 0 4px}
 .foot a{color:var(--faint);text-decoration:none;font-family:var(--ff-mono);font-size:.66rem;letter-spacing:.1em}
 .foot a:hover{color:var(--amber)}
+.btn{font-family:var(--ff-body);font-weight:600;font-size:.92rem;cursor:pointer;border-radius:11px;
+  padding:13px 20px;border:1px solid var(--panel-edge);background:linear-gradient(180deg,#2b2316,#1d1710);
+  color:var(--cream);text-decoration:none;display:inline-block;letter-spacing:.02em;transition:transform .08s,border-color .18s,filter .18s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.btn:hover{border-color:var(--brass)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#ffc25e,var(--amber-deep));color:#231603;border-color:#a85d10;
+  box-shadow:0 0 26px var(--amber-glow),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.coaching{margin:16px 0;border-radius:18px;padding:40px 30px;position:relative;overflow:hidden;text-align:center;
+  background:radial-gradient(120% 140% at 50% 0%,#3a2a12 0%,#1d1610 60%);border:1px solid #5a3f17;
+  box-shadow:0 0 60px rgba(255,138,20,.14),inset 0 1px 0 rgba(255,255,255,.06)}
+.coaching .eyebrow{font-family:var(--ff-mono);font-weight:700;font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--amber)}
+.coaching h2{font-family:var(--ff-display);text-transform:uppercase;font-weight:400;
+  font-size:clamp(1.7rem,5vw,2.6rem);line-height:.98;margin:12px 0 14px}
+.coaching p{color:var(--cream);opacity:.85;max-width:54ch;margin:0 auto 24px;font-size:1rem}
+.coaching .btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 
 @media (max-width:560px){
   .module{padding:30px 16px}
@@ -128,7 +147,7 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
       <a href="index.html#tuner">Tuner</a>
       <a href="index.html#metronome">Metronome</a>
       <a href="index.html#timer">Timer</a>
-      <a href="fretboard.html" class="active" aria-current="page">Fretboard</a>
+      <a href="fretboard.html" class="active" aria-current="page">FretNav</a>
       <a href="groove.html">Groove</a>
       <a href="index.html#blueprint">Blueprint</a>
       <a class="nav-cta" href="index.html#consult" style="color:var(--amber)">Book a call</a>
@@ -140,13 +159,13 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 
 <section class="module intro">
   <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
-  <h1>Fretboard <b>Scale Finder</b></h1>
-  <p>See any scale mapped across your bass neck. Pick your instrument, key, and scale — the root notes glow amber so the shape stands out, and every note is tappable so you can hear it.</p>
+  <h1>JamReadyBass <b>FretNav</b></h1>
+  <p>See any scale or arpeggio mapped across your bass neck. Pick your instrument, key, and type — the root notes glow amber so the shape stands out, and every note is tappable so you can hear it.</p>
   <div class="steps">
     <div class="step"><span class="num">1</span><span class="txt"><b>Pick your bass</b> <span>— 4, 5, or 6-string. The tuning updates automatically.</span></span></div>
-    <div class="step"><span class="num">2</span><span class="txt"><b>Choose key &amp; scale</b> <span>— modes, melodic/harmonic minor, pentatonics, blues, and more.</span></span></div>
-    <div class="step"><span class="num">3</span><span class="txt"><b>Read the pattern</b> <span>— switch between note names and scale degrees to learn the shape.</span></span></div>
-    <div class="step"><span class="num">4</span><span class="txt"><b>Tap to hear it</b> <span>— play any note, or walk the scale up a string to train your ear.</span></span></div>
+    <div class="step"><span class="num">2</span><span class="txt"><b>Scale or arpeggio</b> <span>— modes, melodic/harmonic minor, blues, plus triads and 7th–13th chords.</span></span></div>
+    <div class="step"><span class="num">3</span><span class="txt"><b>Read the pattern</b> <span>— switch between note names and degrees to learn the shape.</span></span></div>
+    <div class="step"><span class="num">4</span><span class="txt"><b>Tap to hear it</b> <span>— play any note, or walk it up a string to train your ear.</span></span></div>
   </div>
 </section>
 
@@ -167,8 +186,15 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
         <select id="rootSel" aria-label="Key / root note"></select>
       </div>
       <div class="field">
-        <span class="lab">Scale</span>
-        <select id="scaleSel" aria-label="Scale type"></select>
+        <span class="lab">Type</span>
+        <div class="chips" id="typeChips">
+          <button class="chip active" data-type="scale">Scales</button>
+          <button class="chip" data-type="arp">Arpeggios</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab" id="selLab">Scale</span>
+        <select id="scaleSel" aria-label="Scale or arpeggio type"></select>
       </div>
       <div class="field">
         <span class="lab">Frets</span>
@@ -204,6 +230,16 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
   </div>
 </section>
 
+<section class="coaching" id="coaching">
+  <span class="eyebrow">JamReadyBass Coaching</span>
+  <h2>Need Help Reaching<br>Your Bass Goals?</h2>
+  <p>JamReadyBass Coaching helps musicians build consistency, groove, confidence, and practical musicianship through personalized coaching and structured practice plans.</p>
+  <div class="btns">
+    <a class="btn primary" href="index.html#blueprint">Download Free Practice Blueprint</a>
+    <a class="btn ghost" href="index.html#consult">Book a Free Consultation</a>
+  </div>
+</section>
+
 <div class="foot"><a href="index.html">&larr; Back to the Practice Station</a></div>
 
 </div><!-- /page -->
@@ -232,7 +268,7 @@ const ROOTS = [
 const LETTERS = ['C','D','E','F','G','A','B'];
 const NAT_PC  = [0,2,4,5,7,9,11];                 // natural pitch class by letter index
 const LETTER_IDX = {C:0,D:1,E:2,F:3,G:4,A:5,B:6};
-const MAJ = {1:0,2:2,3:4,4:5,5:7,6:9,7:11};       // major-scale semitone for each degree number
+const MAJ = {1:0,2:2,3:4,4:5,5:7,6:9,7:11,9:2,11:5,13:9}; // major semitone per degree (incl. extensions)
 
 // each scale = ordered list of [semitone-from-root, degree-number]
 const SCALES = {
@@ -272,9 +308,45 @@ const GROUPS = [
   ['Symmetric / Other', ['Whole Tone','Blues','Half-Whole Diminished']],
 ];
 
+// arpeggios (chord tones) — same [semitone, degree] format; degrees 9/11/13 supported
+const ARPS = {
+  'Major Triad':      [[0,1],[4,3],[7,5]],
+  'Minor Triad':      [[0,1],[3,3],[7,5]],
+  'Diminished Triad': [[0,1],[3,3],[6,5]],
+  'Augmented Triad':  [[0,1],[4,3],[8,5]],
+
+  'Major 7':          [[0,1],[4,3],[7,5],[11,7]],
+  'Dominant 7':       [[0,1],[4,3],[7,5],[10,7]],
+  'Minor 7':          [[0,1],[3,3],[7,5],[10,7]],
+  'Minor 7\u266D5':   [[0,1],[3,3],[6,5],[10,7]],
+  'Diminished 7':     [[0,1],[3,3],[6,5],[9,7]],
+  'Minor/Major 7':    [[0,1],[3,3],[7,5],[11,7]],
+
+  'Major 9':          [[0,1],[4,3],[7,5],[11,7],[2,9]],
+  'Dominant 9':       [[0,1],[4,3],[7,5],[10,7],[2,9]],
+  'Minor 9':          [[0,1],[3,3],[7,5],[10,7],[2,9]],
+
+  'Major 11':         [[0,1],[4,3],[7,5],[11,7],[2,9],[5,11]],
+  'Dominant 11':      [[0,1],[4,3],[7,5],[10,7],[2,9],[5,11]],
+  'Minor 11':         [[0,1],[3,3],[7,5],[10,7],[2,9],[5,11]],
+
+  'Major 13':         [[0,1],[4,3],[7,5],[11,7],[2,9],[5,11],[9,13]],
+  'Dominant 13':      [[0,1],[4,3],[7,5],[10,7],[2,9],[5,11],[9,13]],
+  'Minor 13':         [[0,1],[3,3],[7,5],[10,7],[2,9],[5,11],[9,13]],
+};
+const ARP_GROUPS = [
+  ['Triads', ['Major Triad','Minor Triad','Diminished Triad','Augmented Triad']],
+  ['7th Chords', ['Major 7','Dominant 7','Minor 7','Minor 7\u266D5','Diminished 7','Minor/Major 7']],
+  ['9th Chords', ['Major 9','Dominant 9','Minor 9']],
+  ['11th Chords', ['Major 11','Dominant 11','Minor 11']],
+  ['13th Chords', ['Major 13','Dominant 13','Minor 13']],
+];
+
 const TUNINGS = { 4:[28,33,38,43], 5:[23,28,33,38,43], 6:[23,28,33,38,43,48] };
 
-const state = { strings:5, root:0, scale:'Ionian (Major)', frets:15, labelMode:'note' };
+const state = { strings:5, root:0, mode:'scale', scale:'Ionian (Major)', arp:'Major Triad', frets:15, labelMode:'note' };
+function currentDefs(){ return state.mode==='scale' ? SCALES[state.scale] : ARPS[state.arp]; }
+function currentName(){ return state.mode==='scale' ? state.scale : state.arp; }
 
 // ---- accidental helpers ----
 function sym(a){ const t=['\u266D\u266D','\u266D','','\u266F','\u266F\u266F']; return t[a+2] !== undefined ? t[a+2] : (a<0?'\u266D\u266D\u266D':'\u266F\u266F\u266F'); }
@@ -297,7 +369,14 @@ const scaleSel=document.getElementById('scaleSel');
 function fillRoot(){
   rootSel.innerHTML=ROOTS.map((r,i)=>'<option value="'+i+'"'+(i===state.root?' selected':'')+'>'+r.name+'</option>').join('');
 }
-scaleSel.innerHTML=GROUPS.map(g=>'<optgroup label="'+g[0]+'">'+g[1].map(n=>'<option value="'+n+'"'+(n===state.scale?' selected':'')+'>'+n+'</option>').join('')+'</optgroup>').join('');
+function fillSel(){
+  const groups = state.mode==='scale' ? GROUPS : ARP_GROUPS;
+  const sel = currentName();
+  scaleSel.innerHTML = groups.map(g=>'<optgroup label="'+g[0]+'">'+
+    g[1].map(n=>'<option value="'+n+'"'+(n===sel?' selected':'')+'>'+n+'</option>').join('')+'</optgroup>').join('');
+  const lab=document.getElementById('selLab'); if(lab) lab.textContent = state.mode==='scale' ? 'Scale' : 'Arpeggio';
+}
+fillSel();
 fillRoot();
 
 // ---- audio ----
@@ -329,7 +408,7 @@ function buildSVG(){
 
   // interval -> degree for the chosen scale
   const ivDeg={};
-  SCALES[state.scale].forEach(p=>{ ivDeg[p[0]]=p[1]; });
+  currentDefs().forEach(p=>{ ivDeg[p[0]]=p[1]; });
 
   let s='<svg viewBox="0 0 '+width+' '+height+'" width="'+width+'" height="'+height+'" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">';
   s+='<defs><radialGradient id="rg" cx="38%" cy="32%"><stop offset="0%" stop-color="#ffd27a"/><stop offset="100%" stop-color="#ff8a14"/></radialGradient>'+
@@ -377,10 +456,10 @@ function buildSVG(){
 
 function renderSpelling(){
   const rt=rootInfo();
-  const defs=SCALES[state.scale];
+  const defs=currentDefs();
   const notes=defs.map(p=>noteName((rt.pc+p[0])%12, p[1], rt));
   const degs=defs.map(p=>degLabel(p[0],p[1]));
-  document.getElementById('scaleTitle').innerHTML='<b>'+rt.name+'</b> '+state.scale;
+  document.getElementById('scaleTitle').innerHTML='<b>'+rt.name+'</b> '+currentName();
   document.getElementById('scaleNotes').textContent=notes.join('  ')+'      ('+degs.join('  ')+')';
 }
 
@@ -393,7 +472,8 @@ function chipGroup(id,fn){ document.getElementById(id).addEventListener('click',
 chipGroup('stringChips',b=>state.strings=parseInt(b.dataset.strings,10));
 chipGroup('labelChips',b=>state.labelMode=b.dataset.label);
 rootSel.addEventListener('change',e=>{ state.root=parseInt(e.target.value,10); render(); });
-scaleSel.addEventListener('change',e=>{ state.scale=e.target.value; render(); });
+scaleSel.addEventListener('change',e=>{ if(state.mode==='scale') state.scale=e.target.value; else state.arp=e.target.value; render(); });
+chipGroup('typeChips',b=>{ state.mode=b.dataset.type; fillSel(); });
 document.getElementById('fretSel').addEventListener('change',e=>{ state.frets=parseInt(e.target.value,10); render(); });
 
 render();
