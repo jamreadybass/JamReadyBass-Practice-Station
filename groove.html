@@ -211,7 +211,18 @@ footer .small{color:var(--faint);font-size:.72rem;font-family:var(--ff-mono);mar
   .challenge{animation:none}
   .reminder .quote{transition:none}
 }
+/* ===== embed mode (?embed) — show only the tool ===== */
+.embed-mode header.nav,
+.embed-mode footer,
+.embed-mode #coaching,
+.embed-mode .creator,
+.embed-mode .hero .eyebrow,
+.embed-mode .hero h1,
+.embed-mode .hero .tagline,
+.embed-mode .hero .sub{display:none!important}
+.embed-mode .hero{padding:16px 0 4px}
 </style>
+<script>try{if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed-mode');}catch(e){}</script>
 </head>
 <body>
 
@@ -603,6 +614,16 @@ document.getElementById('generateBtn').addEventListener('click', generate);
 renderStreak();
 renderLog();
 renderReflections();
+
+/* ===== iframe auto-resize when embedded (?embed) ===== */
+(function(){
+  if(!document.documentElement.classList.contains('embed-mode')) return;
+  function postHeight(){ try{ parent.postMessage({jamreadybass:true,height:document.documentElement.scrollHeight},'*'); }catch(e){} }
+  window.addEventListener('load',postHeight);
+  window.addEventListener('resize',postHeight);
+  if(window.ResizeObserver){ new ResizeObserver(postHeight).observe(document.body); }
+  setTimeout(postHeight,300);
+})();
 </script>
 </body>
 </html>

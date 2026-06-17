@@ -133,7 +133,14 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
   .nav-links a:not(.nav-cta){display:none}
   .nav-links a.nav-cta{font-size:.78rem}
 }
+/* ===== embed mode (?embed) — show only the tool ===== */
+.embed-mode header.nav,
+.embed-mode .module.intro,
+.embed-mode .coaching,
+.embed-mode .foot{display:none!important}
+.embed-mode .page{padding:10px}
 </style>
+<script>try{if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed-mode');}catch(e){}</script>
 </head>
 <body>
 
@@ -477,6 +484,16 @@ chipGroup('typeChips',b=>{ state.mode=b.dataset.type; fillSel(); });
 document.getElementById('fretSel').addEventListener('change',e=>{ state.frets=parseInt(e.target.value,10); render(); });
 
 render();
+
+/* ===== iframe auto-resize when embedded (?embed) ===== */
+(function(){
+  if(!document.documentElement.classList.contains('embed-mode')) return;
+  function postHeight(){ try{ parent.postMessage({jamreadybass:true,height:document.documentElement.scrollHeight},'*'); }catch(e){} }
+  window.addEventListener('load',postHeight);
+  window.addEventListener('resize',postHeight);
+  if(window.ResizeObserver){ new ResizeObserver(postHeight).observe(document.body); }
+  setTimeout(postHeight,300);
+})();
 </script>
 </body>
 </html>
