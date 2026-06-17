@@ -186,13 +186,6 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
           <button class="chip" data-label="degree">Degrees</button>
         </div>
       </div>
-      <div class="field">
-        <span class="lab">Spelling</span>
-        <div class="chips" id="accChips">
-          <button class="chip active" data-acc="sharp">&#9839;</button>
-          <button class="chip" data-acc="flat">&#9837;</button>
-        </div>
-      </div>
     </div>
     <div class="spelling">
       <span class="title" id="scaleTitle"></span>
@@ -218,8 +211,24 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 <script>
 "use strict";
 
-const SHARP = ['C','C\u266F','D','D\u266F','E','F','F\u266F','G','G\u266F','A','A\u266F','B'];
-const FLAT  = ['C','D\u266D','D','E\u266D','E','F','G\u266D','G','A\u266D','A','B\u266D','B'];
+// fallback chromatic names (used only for natural open-string labels)
+const NAMES = ['C','C\u266F','D','D\u266F','E','F','F\u266F','G','G\u266F','A','A\u266F','B'];
+// every key choice, including both spellings of each accidental, each with
+// its own letter + pitch class so the scale spells correctly for that choice
+const ROOTS = [
+  {name:'C',pc:0,li:0},
+  {name:'C\u266F',pc:1,li:0}, {name:'D\u266D',pc:1,li:1},
+  {name:'D',pc:2,li:1},
+  {name:'D\u266F',pc:3,li:1}, {name:'E\u266D',pc:3,li:2},
+  {name:'E',pc:4,li:2},
+  {name:'F',pc:5,li:3},
+  {name:'F\u266F',pc:6,li:3}, {name:'G\u266D',pc:6,li:4},
+  {name:'G',pc:7,li:4},
+  {name:'G\u266F',pc:8,li:4}, {name:'A\u266D',pc:8,li:5},
+  {name:'A',pc:9,li:5},
+  {name:'A\u266F',pc:10,li:5}, {name:'B\u266D',pc:10,li:6},
+  {name:'B',pc:11,li:6}
+];
 const LETTERS = ['C','D','E','F','G','A','B'];
 const NAT_PC  = [0,2,4,5,7,9,11];                 // natural pitch class by letter index
 const LETTER_IDX = {C:0,D:1,E:2,F:3,G:4,A:5,B:6};
@@ -265,15 +274,15 @@ const GROUPS = [
 
 const TUNINGS = { 4:[28,33,38,43], 5:[23,28,33,38,43], 6:[23,28,33,38,43,48] };
 
-const state = { strings:5, root:0, scale:'Ionian (Major)', frets:15, labelMode:'note', flats:false };
+const state = { strings:5, root:0, scale:'Ionian (Major)', frets:15, labelMode:'note' };
 
 // ---- accidental helpers ----
 function sym(a){ const t=['\u266D\u266D','\u266D','','\u266F','\u266F\u266F']; return t[a+2] !== undefined ? t[a+2] : (a<0?'\u266D\u266D\u266D':'\u266F\u266F\u266F'); }
 function norm(d){ d=((d%12)+12)%12; if(d>6) d-=12; return d; }
 
 function rootInfo(){
-  const name=(state.flats?FLAT:SHARP)[state.root];
-  return { pc:state.root, letterIdx:LETTER_IDX[name[0]], name:name };
+  const r=ROOTS[state.root];
+  return { pc:r.pc, letterIdx:r.li, name:r.name };
 }
 // proper note name for a pitch class given the scale degree it represents
 function noteName(pc, deg, rt){
@@ -286,8 +295,7 @@ function degLabel(iv, deg){ return sym(iv-MAJ[deg])+deg; }
 const rootSel=document.getElementById('rootSel');
 const scaleSel=document.getElementById('scaleSel');
 function fillRoot(){
-  const names=state.flats?FLAT:SHARP;
-  rootSel.innerHTML=names.map((n,i)=>'<option value="'+i+'"'+(i===state.root?' selected':'')+'>'+n+'</option>').join('');
+  rootSel.innerHTML=ROOTS.map((r,i)=>'<option value="'+i+'"'+(i===state.root?' selected':'')+'>'+r.name+'</option>').join('');
 }
 scaleSel.innerHTML=GROUPS.map(g=>'<optgroup label="'+g[0]+'">'+g[1].map(n=>'<option value="'+n+'"'+(n===state.scale?' selected':'')+'>'+n+'</option>').join('')+'</optgroup>').join('');
 fillRoot();
@@ -341,7 +349,7 @@ function buildSVG(){
   for(let i=0;i<n;i++){ const y=padTop+i*rowH; const sw=(1.1+i*0.55).toFixed(1);
     s+='<line x1="'+nutX+'" y1="'+y+'" x2="'+(nutX+frets*fretW)+'" y2="'+y+'" stroke="#5a4f3d" stroke-width="'+sw+'"/>';
     const openPc=((rows[i]%12)+12)%12;
-    const lbl = ivDeg[((openPc-rt.pc)%12+12)%12]!==undefined ? noteName(openPc, ivDeg[((openPc-rt.pc)%12+12)%12], rt) : (state.flats?FLAT:SHARP)[openPc];
+    const lbl = ivDeg[((openPc-rt.pc)%12+12)%12]!==undefined ? noteName(openPc, ivDeg[((openPc-rt.pc)%12+12)%12], rt) : NAMES[openPc];
     s+='<text x="'+(labelW/2)+'" y="'+(y+4)+'" fill="#9d927e" font-size="13" font-weight="700" text-anchor="middle">'+lbl+'</text>';
   }
 
@@ -384,8 +392,6 @@ function chipGroup(id,fn){ document.getElementById(id).addEventListener('click',
   [...e.currentTarget.children].forEach(c=>c.classList.remove('active')); b.classList.add('active'); fn(b); render(); }); }
 chipGroup('stringChips',b=>state.strings=parseInt(b.dataset.strings,10));
 chipGroup('labelChips',b=>state.labelMode=b.dataset.label);
-document.getElementById('accChips').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return;
-  [...e.currentTarget.children].forEach(c=>c.classList.remove('active')); b.classList.add('active'); state.flats=(b.dataset.acc==='flat'); fillRoot(); render(); });
 rootSel.addEventListener('change',e=>{ state.root=parseInt(e.target.value,10); render(); });
 scaleSel.addEventListener('change',e=>{ state.scale=e.target.value; render(); });
 document.getElementById('fretSel').addEventListener('change',e=>{ state.frets=parseInt(e.target.value,10); render(); });
