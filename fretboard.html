@@ -310,9 +310,9 @@ function play(midi){
   lp.type='lowpass'; lp.frequency.value=freq*4+500;
   const t=ctx.currentTime;
   g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.5,t+0.005);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+1.1);
   o.connect(lp); lp.connect(g); g.connect(ctx.destination);
-  o.start(t); o.stop(t+0.65);
+  o.start(t); o.stop(t+1.2);
 }
 
 // ---- fretboard ----
