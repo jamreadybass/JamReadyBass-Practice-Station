@@ -67,7 +67,10 @@ body{padding:16px}
 
 /* tuner */
 .gauge-col{display:flex;flex-direction:column;align-items:center}
-.strings{display:flex;gap:7px;margin-bottom:14px}
+.tuner-modes{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.tuner-modes .chip{font-size:.68rem;padding:6px 10px}
+.strings{display:flex;gap:7px;margin-bottom:14px;min-height:34px}
+.strings:empty{display:none}
 .string-pip{font-family:var(--ff-mono);font-weight:700;font-size:.78rem;width:34px;height:34px;border-radius:8px;
   display:grid;place-items:center;border:1px solid var(--panel-edge);color:var(--muted);
   background:linear-gradient(180deg,#221b12,#191309);transition:.18s}
@@ -141,7 +144,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .chip{font-family:var(--ff-mono);font-weight:500;font-size:.74rem;padding:7px 11px;border-radius:7px;border:1px solid var(--panel-edge);background:#1d1710;color:var(--muted);cursor:pointer;transition:.16s}
 .chip:hover{border-color:var(--brass)}
 .chip.active{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
-.metro-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.metro-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
 
 /* timer */
 .timer-grid{display:flex;flex-direction:column;align-items:center;gap:16px}
@@ -188,13 +191,13 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
     <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
     <div class="module-label"><span class="n">01</span><h3 id="tuner-h">Tuner</h3></div>
     <div class="gauge-col">
-      <div class="strings" id="strings" aria-hidden="true">
-        <div class="string-pip" data-note="B">B</div>
-        <div class="string-pip" data-note="E">E</div>
-        <div class="string-pip" data-note="A">A</div>
-        <div class="string-pip" data-note="D">D</div>
-        <div class="string-pip" data-note="G">G</div>
+      <div class="tuner-modes" id="tunerModes">
+        <button class="chip" data-tmode="4">4-str</button>
+        <button class="chip active" data-tmode="5">5-str</button>
+        <button class="chip" data-tmode="6">6-str</button>
+        <button class="chip" data-tmode="chromatic">Chromatic</button>
       </div>
+      <div class="strings" id="strings" aria-hidden="true"></div>
       <div class="gauge">
         <svg viewBox="0 0 300 188" role="img" aria-label="Tuning meter">
           <path d="M30 160 A120 120 0 0 1 270 160" fill="none" stroke="#241d12" stroke-width="11" stroke-linecap="round"/>
@@ -237,6 +240,10 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
     </div>
     <div class="pulse-wrap"><div class="pulse" id="pulse"></div></div>
     <div class="submeter" id="submeter" aria-hidden="true"></div>
+    <div class="metro-controls">
+      <button class="btn primary" id="metroToggle" style="min-width:120px">Start</button>
+      <button class="btn" id="tapBtn">Tap</button>
+    </div>
     <div class="slider-row">
       <span class="end">40</span>
       <input type="range" id="bpmSlider" min="40" max="240" value="100" step="1" aria-label="Tempo BPM">
@@ -276,10 +283,6 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
       <button class="chip" data-swing="0.58">Soft</button>
       <button class="chip" data-swing="0.667">Swing</button>
       <button class="chip" data-swing="0.73">Hard</button>
-    </div>
-    <div class="metro-controls">
-      <button class="btn primary" id="metroToggle" style="min-width:120px">Start</button>
-      <button class="btn" id="tapBtn">Tap</button>
     </div>
   </section>
 
@@ -337,7 +340,18 @@ function getCtx(){
     noteEl=document.getElementById('noteName'),hzEl=document.getElementById('hz'),
     centsEl=document.getElementById('cents'),needle=document.getElementById('needle'),
     intune=document.getElementById('intune'),zone=document.getElementById('zone'),
-    ticksG=document.getElementById('ticks'),pips=Array.from(document.querySelectorAll('.string-pip'));
+    ticksG=document.getElementById('ticks');
+  const STRING_SETS={'4':['E','A','D','G'],'5':['B','E','A','D','G'],'6':['B','E','A','D','G','C']};
+  let pips=[]; const stringsEl=document.getElementById('strings');
+  function buildPips(mode){
+    if(mode==='chromatic'){stringsEl.innerHTML='';pips=[];return;}
+    const set=STRING_SETS[mode]||STRING_SETS['5'];
+    stringsEl.innerHTML=set.map(n=>'<div class="string-pip" data-note="'+n+'">'+n+'</div>').join('');
+    pips=Array.from(stringsEl.querySelectorAll('.string-pip'));
+  }
+  buildPips('5');
+  document.getElementById('tunerModes').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;
+    document.querySelectorAll('#tunerModes .chip').forEach(c=>c.classList.remove('active'));b.classList.add('active');buildPips(b.dataset.tmode);});
   const CX=150,CY=160,R=120;
   function pointAt(c,r){const t=(90-c*1.8)*Math.PI/180;return [CX+r*Math.cos(t),CY-r*Math.sin(t)];}
   (function(){
