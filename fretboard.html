@@ -20,18 +20,43 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:radial-gradient(900px 500px at 50% -10%,#211a10 0%,rgba(33,26,16,0) 60%),var(--bg);
   color:var(--cream);font-family:var(--ff-body);line-height:1.5;-webkit-font-smoothing:antialiased}
-body{padding:16px;max-width:1180px;margin:0 auto}
+body{padding:0}
 ::selection{background:var(--amber);color:#1a1304}
+a{color:inherit}
 
-.head{display:flex;align-items:center;gap:10px;margin:2px 4px 18px}
-.head .mark{width:28px;height:28px;border-radius:6px;flex:none;display:grid;place-items:center;
+/* shared top nav */
+header.nav{position:sticky;top:0;z-index:50;background:rgba(18,15,10,.82);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:62px;
+  max-width:1180px;margin:0 auto;padding:0 18px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none}
+.brand .mark{width:30px;height:30px;border-radius:7px;flex:none;display:grid;place-items:center;
   background:linear-gradient(150deg,#2c2417,#15110a);border:1px solid var(--panel-edge)}
-.head .mark::before{content:"";width:13px;height:13px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#ffd27a,var(--amber-deep) 60%,#8a4400);box-shadow:0 0 10px var(--amber-glow)}
-.head .name{font-family:var(--ff-display);font-size:1.1rem;letter-spacing:.02em;text-transform:uppercase}
-.head .name b{color:var(--amber)}
-.head .tag{margin-left:auto;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.24em;
-  text-transform:uppercase;color:var(--faint)}
+.brand .mark::before{content:"";width:14px;height:14px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffd27a,var(--amber-deep) 60%,#8a4400);box-shadow:0 0 12px var(--amber-glow)}
+.brand .name{font-family:var(--ff-display);font-size:1.18rem;letter-spacing:.02em;text-transform:uppercase}
+.brand .name b{color:var(--amber)}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{text-decoration:none;color:var(--muted);font-size:.82rem;font-weight:500;
+  padding:8px 12px;border-radius:8px;letter-spacing:.02em;transition:color .18s,background .18s}
+.nav-links a:hover{color:var(--cream);background:rgba(202,161,92,.08)}
+.nav-links a.active{color:var(--amber);background:rgba(255,138,20,.1)}
+
+.page{max-width:1180px;margin:0 auto;padding:18px}
+
+/* how-to intro */
+.intro h1{font-family:var(--ff-display);text-transform:uppercase;font-weight:400;letter-spacing:.01em;
+  font-size:clamp(1.7rem,5vw,2.4rem);line-height:.98;margin-bottom:10px}
+.intro h1 b{color:var(--amber)}
+.intro p{color:var(--muted);max-width:62ch;font-size:.96rem}
+.steps{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-top:18px}
+.step{display:flex;gap:11px;align-items:flex-start}
+.step .num{flex:none;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+  font-family:var(--ff-mono);font-weight:700;font-size:.8rem;color:#231603;
+  background:linear-gradient(180deg,#ffc25e,var(--amber-deep))}
+.step .txt{font-size:.9rem;color:var(--cream)}
+.step .txt b{color:var(--cream)}
+.step .txt span{color:var(--muted)}
 
 .module{position:relative;border-radius:13px;padding:24px 22px;overflow:hidden;margin-bottom:16px;
   background:linear-gradient(180deg,var(--panel-top),var(--panel-bot));border:1px solid var(--panel-edge);
@@ -83,18 +108,46 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
   .ctrl-row{gap:14px}
   select{min-width:130px}
   .legend .hint{margin-left:0;width:100%}
+  .nav-links a{padding:8px 8px;font-size:.76rem}
+}
+@media (max-width:480px){
+  .nav-links a:not(.nav-cta){display:none}
+  .nav-links a.nav-cta{font-size:.78rem}
 }
 </style>
 </head>
 <body>
 
-<div class="head">
-  <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
-    <span class="mark" aria-hidden="true"></span>
-    <span class="name">Jam<b>Ready</b>Bass</span>
-  </a>
-  <span class="tag">Fretboard Scale Finder</span>
-</div>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html" aria-label="JamReadyBass home">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="name">Jam<b>Ready</b>Bass</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="index.html#tuner">Tuner</a>
+      <a href="index.html#metronome">Metronome</a>
+      <a href="index.html#timer">Timer</a>
+      <a href="fretboard.html" class="active" aria-current="page">Fretboard</a>
+      <a href="index.html#blueprint">Blueprint</a>
+      <a class="nav-cta" href="index.html#consult" style="color:var(--amber)">Book a call</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+
+<section class="module intro">
+  <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+  <h1>Fretboard <b>Scale Finder</b></h1>
+  <p>See any scale mapped across your bass neck. Pick your instrument, key, and scale — the root notes glow amber so the shape stands out, and every note is tappable so you can hear it.</p>
+  <div class="steps">
+    <div class="step"><span class="num">1</span><span class="txt"><b>Pick your bass</b> <span>— 4, 5, or 6-string. The tuning updates automatically.</span></span></div>
+    <div class="step"><span class="num">2</span><span class="txt"><b>Choose key &amp; scale</b> <span>— modes, melodic/harmonic minor, pentatonics, blues, and more.</span></span></div>
+    <div class="step"><span class="num">3</span><span class="txt"><b>Read the pattern</b> <span>— switch between note names and scale degrees to learn the shape.</span></span></div>
+    <div class="step"><span class="num">4</span><span class="txt"><b>Tap to hear it</b> <span>— play any note, or walk the scale up a string to train your ear.</span></span></div>
+  </div>
+</section>
 
 <section class="module">
   <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
@@ -158,6 +211,8 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 </section>
 
 <div class="foot"><a href="index.html">&larr; Back to the Practice Station</a></div>
+
+</div><!-- /page -->
 
 <script>
 "use strict";
