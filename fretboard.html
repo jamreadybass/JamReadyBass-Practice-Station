@@ -127,11 +127,22 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
   .ctrl-row{gap:14px}
   select{min-width:130px}
   .legend .hint{margin-left:0;width:100%}
-  .nav-links a{padding:8px 8px;font-size:.76rem}
+  .nav-inner{flex-wrap:wrap;height:auto;padding:9px 0 0;row-gap:7px}
+  .nav-links{
+    order:2;flex-basis:100%;width:100%;
+    flex-wrap:nowrap;overflow-x:auto;gap:7px;padding-bottom:9px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links a{
+    flex:0 0 auto;white-space:nowrap;
+    padding:8px 13px;font-size:.8rem;
+    border:1px solid var(--panel-edge);background:#1d1710;color:var(--cream);
+  }
+  .nav-links a.nav-cta{border-color:#a85d10;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));color:#231603 !important}
 }
 @media (max-width:480px){
-  .nav-links a:not(.nav-cta){display:none}
-  .nav-links a.nav-cta{font-size:.78rem}
+  .nav-links a{font-size:.78rem;padding:8px 11px}
 }
 /* ===== embed mode (?embed) — show only the tool ===== */
 .embed-mode header.nav,
