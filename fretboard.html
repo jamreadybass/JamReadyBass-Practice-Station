@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JamReadyBass — Fretboard Scale Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#120f0a;--panel-top:#262017;--panel-bot:#19140d;--panel-edge:#3a3024;
+  --screw:#0d0a06;--screw-hi:#4a4031;--cream:#ece2cf;--muted:#9d927e;--faint:#6f6657;
+  --amber:#ffae3b;--amber-deep:#ff8a14;--amber-glow:rgba(255,138,20,.55);
+  --green:#62d59a;--brass:#caa15c;--line:rgba(202,161,92,.18);
+  --ff-display:'Anton',Impact,sans-serif;
+  --ff-body:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --ff-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:radial-gradient(900px 500px at 50% -10%,#211a10 0%,rgba(33,26,16,0) 60%),var(--bg);
+  color:var(--cream);font-family:var(--ff-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+body{padding:16px;max-width:1180px;margin:0 auto}
+::selection{background:var(--amber);color:#1a1304}
+
+.head{display:flex;align-items:center;gap:10px;margin:2px 4px 18px}
+.head .mark{width:28px;height:28px;border-radius:6px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(150deg,#2c2417,#15110a);border:1px solid var(--panel-edge)}
+.head .mark::before{content:"";width:13px;height:13px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffd27a,var(--amber-deep) 60%,#8a4400);box-shadow:0 0 10px var(--amber-glow)}
+.head .name{font-family:var(--ff-display);font-size:1.1rem;letter-spacing:.02em;text-transform:uppercase}
+.head .name b{color:var(--amber)}
+.head .tag{margin-left:auto;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--faint)}
+
+.module{position:relative;border-radius:13px;padding:24px 22px;overflow:hidden;margin-bottom:16px;
+  background:linear-gradient(180deg,var(--panel-top),var(--panel-bot));border:1px solid var(--panel-edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -18px 34px rgba(0,0,0,.3),0 16px 38px rgba(0,0,0,.4)}
+.module::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 2px,transparent 2px 4px)}
+.screw{position:absolute;width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--screw-hi),var(--screw) 70%);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),0 1px 1px rgba(0,0,0,.6)}
+.screw.tl{top:9px;left:9px}.screw.tr{top:9px;right:9px}.screw.bl{bottom:9px;left:9px}.screw.br{bottom:9px;right:9px}
+
+.controls{display:grid;gap:18px;position:relative}
+.ctrl-row{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:7px}
+.field .lab{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
+.chips{display:flex;gap:6px}
+.chip{font-family:var(--ff-mono);font-weight:500;font-size:.82rem;padding:9px 14px;border-radius:8px;
+  border:1px solid var(--panel-edge);background:#1d1710;color:var(--muted);cursor:pointer;transition:.16s}
+.chip:hover{border-color:var(--brass)}
+.chip.active{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
+select{font-family:var(--ff-body);font-size:.95rem;color:var(--cream);background:#16110a;
+  border:1px solid var(--panel-edge);border-radius:9px;padding:11px 13px;min-width:140px;cursor:pointer}
+select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.spelling{display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;margin-top:4px}
+.spelling .title{font-family:var(--ff-display);text-transform:uppercase;font-size:1.5rem;letter-spacing:.01em}
+.spelling .title b{color:var(--amber)}
+.spelling .notes{font-family:var(--ff-mono);color:var(--muted);font-size:.95rem;letter-spacing:.04em}
+
+.board-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.board-scroll svg{display:block}
+.note text{pointer-events:none;user-select:none}
+.note:active circle{opacity:.75}
+
+.legend{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-top:16px;font-family:var(--ff-mono);
+  font-size:.72rem;color:var(--muted);letter-spacing:.04em}
+.legend .item{display:flex;align-items:center;gap:8px}
+.legend .dot{width:16px;height:16px;border-radius:50%}
+.legend .dot.root{background:radial-gradient(circle at 38% 32%,#ffd27a,#ff8a14);box-shadow:0 0 8px var(--amber-glow)}
+.legend .dot.tone{background:#241d12;border:1.5px solid #7a6a4a}
+.legend .hint{margin-left:auto;color:var(--faint)}
+
+.foot{text-align:center;margin:18px 0 4px}
+.foot a{color:var(--faint);text-decoration:none;font-family:var(--ff-mono);font-size:.66rem;letter-spacing:.1em}
+.foot a:hover{color:var(--amber)}
+
+@media (max-width:560px){
+  .module{padding:30px 16px}
+  .ctrl-row{gap:14px}
+  select{min-width:120px}
+  .legend .hint{margin-left:0;width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="mark" aria-hidden="true"></span>
+  <span class="name">Jam<b>Ready</b>Bass</span>
+  <span class="tag">Fretboard Scale Finder</span>
+</div>
+
+<section class="module">
+  <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+  <div class="controls">
+    <div class="ctrl-row">
+      <div class="field">
+        <span class="lab">Bass</span>
+        <div class="chips" id="stringChips">
+          <button class="chip" data-strings="4">4-string</button>
+          <button class="chip active" data-strings="5">5-string</button>
+          <button class="chip" data-strings="6">6-string</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab">Key</span>
+        <select id="rootSel" aria-label="Key / root note"></select>
+      </div>
+      <div class="field">
+        <span class="lab">Scale</span>
+        <select id="scaleSel" aria-label="Scale type"></select>
+      </div>
+      <div class="field">
+        <span class="lab">Frets</span>
+        <select id="fretSel" aria-label="Number of frets">
+          <option value="12">12</option>
+          <option value="15" selected>15</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="lab">Labels</span>
+        <div class="chips" id="labelChips">
+          <button class="chip active" data-label="note">Notes</button>
+          <button class="chip" data-label="degree">Degrees</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab">Spelling</span>
+        <div class="chips" id="accChips">
+          <button class="chip active" data-acc="sharp">♯</button>
+          <button class="chip" data-acc="flat">♭</button>
+        </div>
+      </div>
+    </div>
+    <div class="spelling">
+      <span class="title" id="scaleTitle"></span>
+      <span class="notes" id="scaleNotes"></span>
+    </div>
+  </div>
+</section>
+
+<section class="module" style="padding:22px 18px">
+  <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+  <div class="board-scroll" id="boardScroll"></div>
+  <div class="legend">
+    <div class="item"><span class="dot root"></span> Root</div>
+    <div class="item"><span class="dot tone"></span> Scale tone</div>
+    <span class="hint">Tap any note to hear it · scroll the board sideways to see the whole neck</span>
+  </div>
+</section>
+
+<div class="foot"><a href="#">JamReadyBass — built for the low end</a></div>
+
+<script>
+"use strict";
+
+const CHROM = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const FLATS = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const DEGREE = {0:'R',1:'♭2',2:'2',3:'♭3',4:'3',5:'4',6:'♭5',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'};
+
+const SCALES = {
+  'Major (Ionian)':        [0,2,4,5,7,9,11],
+  'Natural Minor':         [0,2,3,5,7,8,10],
+  'Major Pentatonic':      [0,2,4,7,9],
+  'Minor Pentatonic':      [0,3,5,7,10],
+  'Blues':                 [0,3,5,6,7,10],
+  'Dorian':                [0,2,3,5,7,9,10],
+  'Phrygian':              [0,1,3,5,7,8,10],
+  'Lydian':                [0,2,4,6,7,9,11],
+  'Mixolydian':            [0,2,4,5,7,9,10],
+  'Locrian':               [0,1,3,5,6,8,10],
+  'Harmonic Minor':        [0,2,3,5,7,8,11],
+  'Melodic Minor':         [0,2,3,5,7,9,11],
+};
+
+// open-string MIDI notes, low -> high
+const TUNINGS = {
+  4:[28,33,38,43],          // E1 A1 D2 G2
+  5:[23,28,33,38,43],       // B0 E1 A1 D2 G2
+  6:[23,28,33,38,43,48],    // B0 E1 A1 D2 G2 C3
+};
+
+const state = { strings:5, root:0, scale:'Major (Ionian)', frets:15, labelMode:'note', flats:false };
+
+// ---- populate selects ----
+const rootSel = document.getElementById('rootSel');
+const scaleSel = document.getElementById('scaleSel');
+function fillRoot(){
+  const names = state.flats ? FLATS : CHROM;
+  rootSel.innerHTML = names.map((n,i)=>`<option value="${i}"${i===state.root?' selected':''}>${n}</option>`).join('');
+}
+scaleSel.innerHTML = Object.keys(SCALES).map(k=>`<option value="${k}"${k===state.scale?' selected':''}>${k}</option>`).join('');
+fillRoot();
+
+// ---- audio (click to hear) ----
+let audioCtx=null;
+function getCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
+function play(midi){
+  const ctx=getCtx(); const freq=440*Math.pow(2,(midi-69)/12);
+  const o=ctx.createOscillator(), g=ctx.createGain(), lp=ctx.createBiquadFilter();
+  o.type='triangle'; o.frequency.value=freq;
+  lp.type='lowpass'; lp.frequency.value=freq*4+500;
+  const t=ctx.currentTime;
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.5,t+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.6);
+  o.connect(lp); lp.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t+0.65);
+}
+
+// ---- build the fretboard SVG ----
+function buildSVG(){
+  const rows = TUNINGS[state.strings].slice().reverse();   // top = highest string
+  const n = rows.length;
+  const frets = state.frets;
+  const labelW=34, openW=42, fretW=56, rowH=44, padTop=26, padBottom=34, r=16;
+  const nutX = labelW+openW;
+  const boardTop = padTop;
+  const boardBottom = padTop+(n-1)*rowH;
+  const width = nutX + frets*fretW + 18;
+  const height = boardBottom + padBottom;
+  const cy = (boardTop+boardBottom)/2;
+  const boardH = boardBottom-boardTop;
+  const scale = SCALES[state.scale];
+  const names = state.flats?FLATS:CHROM;
+
+  let s = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">`;
+  s += `<defs>`+
+    `<radialGradient id="rootgrad" cx="38%" cy="32%"><stop offset="0%" stop-color="#ffd27a"/><stop offset="100%" stop-color="#ff8a14"/></radialGradient>`+
+    `<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`+
+    `</defs>`;
+
+  // board surface
+  s += `<rect x="${nutX}" y="${boardTop-14}" width="${frets*fretW}" height="${boardH+28}" rx="6" fill="#1b1610" stroke="#2c2419"/>`;
+
+  // inlays
+  const single=[3,5,7,9,15,17,19,21], dbl=[12,24];
+  for(const f of single){ if(f<=frets){ const x=nutX+(f-0.5)*fretW; s+=`<circle cx="${x}" cy="${cy}" r="4.5" fill="#3a3024"/>`; } }
+  for(const f of dbl){ if(f<=frets){ const x=nutX+(f-0.5)*fretW; s+=`<circle cx="${x}" cy="${cy-boardH*0.28}" r="4.5" fill="#3a3024"/><circle cx="${x}" cy="${cy+boardH*0.28}" r="4.5" fill="#3a3024"/>`; } }
+
+  // fret wires + nut
+  for(let f=0;f<=frets;f++){
+    const x=nutX+f*fretW;
+    if(f===0) s+=`<rect x="${x-3}" y="${boardTop-14}" width="6" height="${boardH+28}" rx="2" fill="#caa15c"/>`;
+    else s+=`<line x1="${x}" y1="${boardTop-14}" x2="${x}" y2="${boardBottom+14}" stroke="#3a3024" stroke-width="2"/>`;
+  }
+
+  // strings + tuning labels
+  for(let i=0;i<n;i++){
+    const y=padTop+i*rowH;
+    const sw=(1.1+i*0.55).toFixed(1);
+    s+=`<line x1="${nutX}" y1="${y}" x2="${nutX+frets*fretW}" y2="${y}" stroke="#5a4f3d" stroke-width="${sw}"/>`;
+    const openPc=((rows[i]%12)+12)%12;
+    s+=`<text x="${labelW/2}" y="${y+4}" fill="#9d927e" font-size="13" font-weight="700" text-anchor="middle">${names[openPc]}</text>`;
+  }
+
+  // fret numbers
+  for(let f=1;f<=frets;f++){
+    const x=nutX+(f-0.5)*fretW;
+    s+=`<text x="${x}" y="${height-10}" fill="#6f6657" font-size="11" text-anchor="middle">${f}</text>`;
+  }
+
+  // note markers
+  for(let i=0;i<n;i++){
+    const y=padTop+i*rowH;
+    const openMidi=rows[i];
+    for(let f=0;f<=frets;f++){
+      const midi=openMidi+f;
+      const pc=((midi%12)+12)%12;
+      const interval=((pc-state.root)%12+12)%12;
+      if(!scale.includes(interval)) continue;
+      const isRoot=interval===0;
+      const x = f===0 ? (labelW+openW/2) : (nutX+(f-0.5)*fretW);
+      const label = state.labelMode==='degree' ? DEGREE[interval] : names[pc];
+      const fill = isRoot?'url(#rootgrad)':'#241d12';
+      const stroke = isRoot?'#a85d10':'#7a6a4a';
+      const txt = isRoot?'#231603':'#ece2cf';
+      const glow = isRoot?' filter="url(#glow)"':'';
+      s+=`<g class="note" data-midi="${midi}">`+
+         `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.6"${glow}/>`+
+         `<text x="${x}" y="${y+4}" fill="${txt}" font-size="12" font-weight="700" text-anchor="middle">${label}</text>`+
+         `</g>`;
+    }
+  }
+
+  s += `</svg>`;
+  return s;
+}
+
+// ---- spelling readout ----
+function renderSpelling(){
+  const names=state.flats?FLATS:CHROM;
+  const root=names[state.root];
+  const ivs=SCALES[state.scale];
+  const spelled=ivs.map(iv=>names[(state.root+iv)%12]);
+  document.getElementById('scaleTitle').innerHTML=`<b>${root}</b> ${state.scale}`;
+  document.getElementById('scaleNotes').textContent=spelled.join('  ·  ');
+}
+
+function render(){
+  document.getElementById('boardScroll').innerHTML=buildSVG();
+  renderSpelling();
+}
+
+// ---- events ----
+document.getElementById('boardScroll').addEventListener('click', e=>{
+  const g=e.target.closest('.note'); if(!g) return;
+  play(parseInt(g.dataset.midi,10));
+});
+document.getElementById('stringChips').addEventListener('click', e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  [...e.currentTarget.children].forEach(c=>c.classList.remove('active'));
+  b.classList.add('active'); state.strings=parseInt(b.dataset.strings,10); render();
+});
+document.getElementById('labelChips').addEventListener('click', e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  [...e.currentTarget.children].forEach(c=>c.classList.remove('active'));
+  b.classList.add('active'); state.labelMode=b.dataset.label; render();
+});
+document.getElementById('accChips').addEventListener('click', e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  [...e.currentTarget.children].forEach(c=>c.classList.remove('active'));
+  b.classList.add('active'); state.flats=(b.dataset.acc==='flat'); fillRoot(); render();
+});
+rootSel.addEventListener('change', e=>{ state.root=parseInt(e.target.value,10); render(); });
+scaleSel.addEventListener('change', e=>{ state.scale=e.target.value; render(); });
+document.getElementById('fretSel').addEventListener('change', e=>{ state.frets=parseInt(e.target.value,10); render(); });
+
+render();
+</script>
+</body>
+</html>
