@@ -199,11 +199,18 @@ header.nav{
 .beat-dot{width:18px;height:18px;border-radius:50%;background:#241d12;border:1px solid #000;transition:transform .05s, background .05s, box-shadow .05s}
 .beat-dot.on{background:var(--cream);box-shadow:0 0 14px rgba(236,226,207,.4);transform:scale(1.12)}
 .beat-dot.accent.on{background:var(--amber);box-shadow:0 0 20px var(--amber-glow)}
+.beat-dot.mute{background:transparent;border:1px dashed var(--faint);opacity:.7}
+.beat-dot.mute.on{background:rgba(157,146,126,.28);box-shadow:none;transform:scale(1.05)}
+.beats .beat-dot{cursor:pointer}
+.accent-hint{text-align:center;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.06em;
+  color:var(--faint);margin:-2px 0 2px;text-transform:uppercase}
 .pulse-wrap{display:grid;place-items:center;height:120px}
 .pulse{width:74px;height:74px;border-radius:50%;
   background:radial-gradient(circle at 38% 32%,#3a2f1d,#181208);
   border:1px solid var(--panel-edge);box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
 .pulse.beat{animation:pulseHit .14s ease-out}
+.pulse.sub{animation:pulseSub .1s ease-out}
+@keyframes pulseSub{0%{transform:scale(1.07)}100%{transform:scale(1)}}
 .pulse.beat.accent{background:radial-gradient(circle at 38% 32%,#ffd27a,#c25e0c);box-shadow:0 0 40px var(--amber-glow)}
 @keyframes pulseHit{0%{transform:scale(1.18)}100%{transform:scale(1)}}
 .slider-row{display:flex;align-items:center;gap:16px;max-width:520px;margin:0 auto;width:100%}
@@ -406,7 +413,8 @@ footer .links a:hover{color:var(--amber)}
         <div class="num led" id="bpmNum">100</div>
         <div class="lab">Beats per minute</div>
       </div>
-      <div class="beats" id="beats" aria-hidden="true"></div>
+      <div class="beats" id="beats"></div>
+      <div class="accent-hint">Tap a beat dot to set its accent &middot; accent &rarr; normal &rarr; mute</div>
       <div class="pulse-wrap"><div class="pulse" id="pulse"></div></div>
       <div class="slider-row">
         <span class="end">40</span>
@@ -419,6 +427,20 @@ footer .links a:hover{color:var(--amber)}
         <button class="chip" data-beats="3">3/4</button>
         <button class="chip active" data-beats="4">4/4</button>
         <button class="chip" data-beats="6">6/8</button>
+      </div>
+      <div class="sig-row">
+        <span class="tag">Subdivision</span>
+        <button class="chip active" data-sub="1">Off</button>
+        <button class="chip" data-sub="2">8ths</button>
+        <button class="chip" data-sub="3">Triplets</button>
+        <button class="chip" data-sub="4">16ths</button>
+      </div>
+      <div class="sig-row">
+        <span class="tag">Swing</span>
+        <button class="chip active" data-swing="0.5">Straight</button>
+        <button class="chip" data-swing="0.58">Soft</button>
+        <button class="chip" data-swing="0.667">Swing</button>
+        <button class="chip" data-swing="0.73">Hard</button>
       </div>
       <div class="metro-controls">
         <button class="btn primary" id="metroToggle" style="min-width:140px">Start</button>
@@ -757,12 +779,18 @@ function getCtx(){
   const pulse    = document.getElementById('pulse');
   const beatsEl  = document.getElementById('beats');
   const chips    = Array.from(document.querySelectorAll('.chip[data-beats]'));
+  const subChips = Array.from(document.querySelectorAll('.chip[data-sub]'));
+  const swingChips = Array.from(document.querySelectorAll('.chip[data-swing]'));
 
   let bpm = 100;
   let beatsPerMeasure = 4;
+  let sub = 1;                   // subdivisions per beat (1 = off)
+  let swingRatio = 0.5;          // 0.5 = straight; up to ~0.73 = hard shuffle
+  let accents = [];              // per-beat level: 2 accent, 1 normal, 0 mute
   let isPlaying = false;
   let currentBeat = 0;
-  let nextNoteTime = 0;
+  let currentSub = 0;
+  let nextBeatTime = 0;          // audio-clock time of the current beat
   const lookahead = 25;          // ms — how often the worker ticks
   const scheduleAhead = 0.15;    // s — how far ahead notes are queued
   const queue = [];
@@ -782,14 +810,27 @@ function getCtx(){
     return w;
   }
 
+  function resetAccents(){
+    accents = [];
+    for(let i=0;i<beatsPerMeasure;i++) accents.push(i===0 ? 2 : 1);
+  }
+  function dotClass(lv){ return 'beat-dot' + (lv===2?' accent':'') + (lv===0?' mute':''); }
   function buildDots(){
     beatsEl.innerHTML='';
     for(let i=0;i<beatsPerMeasure;i++){
       const d=document.createElement('div');
-      d.className = 'beat-dot' + (i===0?' accent':'');
+      d.className = dotClass(accents[i]);
+      d.dataset.i = i;
+      d.setAttribute('role','button');
+      d.setAttribute('tabindex','0');
+      d.setAttribute('aria-label','Beat '+(i+1)+' accent — tap to change');
+      const cycle = ()=>{ accents[i] = accents[i]===0 ? 2 : accents[i]-1; d.className = dotClass(accents[i]); };
+      d.addEventListener('click', cycle);
+      d.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); cycle(); } });
       beatsEl.appendChild(d);
     }
   }
+  resetAccents();
   buildDots();
 
   function setBpm(v){
@@ -797,29 +838,46 @@ function getCtx(){
     slider.value = bpm; bpmNum.textContent = bpm;
   }
 
-  function scheduleNote(beat, time){
-    queue.push({beat, time});
+  // subdivision offsets within a beat (as fraction of the beat), with swing
+  function subOffsets(s, sw){
+    if(s===2) return [0, sw];                        // eighth-note swing
+    if(s===4) return [0, sw*0.5, 0.5, 0.5 + sw*0.5]; // sixteenth-note swing
+    const a=[]; for(let k=0;k<s;k++) a.push(k/s); return a;  // quarters/triplets: even
+  }
+
+  function scheduleNote(beat, subIdx, time){
+    queue.push({beat, sub:subIdx, time});
+    const isMain = subIdx === 0;
+    const lv = isMain ? accents[beat] : 1;
+    if(isMain && lv === 0) return;                 // muted beat: silent, still shown
     const ctx = audioCtx;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    const accent = beat === 0;
-    osc.frequency.value = accent ? 1600 : 1000;
+    const accent = isMain && lv === 2;
+    const freq = accent ? 1600 : (isMain ? 1000 : 1300);   // subdivisions a touch higher
+    const vol  = accent ? 0.35 : (isMain ? 0.22 : 0.09);   // ...and quieter
+    const dur  = isMain ? 0.05 : 0.03;
+    osc.frequency.value = freq;
     osc.type = 'square';
     gain.gain.setValueAtTime(0, time);
-    gain.gain.linearRampToValueAtTime(accent ? 0.35 : 0.22, time + 0.001);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    gain.gain.linearRampToValueAtTime(vol, time + 0.001);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + dur);
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(time); osc.stop(time + 0.06);
-  }
-  function advance(){
-    nextNoteTime += 60.0 / bpm;
-    currentBeat = (currentBeat + 1) % beatsPerMeasure;
+    osc.start(time); osc.stop(time + dur + 0.01);
   }
   function scheduler(){
     if(!isPlaying) return;
-    while(nextNoteTime < audioCtx.currentTime + scheduleAhead){
-      scheduleNote(currentBeat, nextNoteTime);
-      advance();
+    while(true){
+      const beatDur = 60.0 / bpm;
+      const noteTime = nextBeatTime + subOffsets(sub, swingRatio)[currentSub] * beatDur;
+      if(noteTime >= audioCtx.currentTime + scheduleAhead) break;
+      scheduleNote(currentBeat, currentSub, noteTime);
+      currentSub++;
+      if(currentSub >= sub){
+        currentSub = 0;
+        currentBeat = (currentBeat + 1) % beatsPerMeasure;
+        nextBeatTime += beatDur;
+      }
     }
   }
   function draw(){
@@ -829,19 +887,24 @@ function getCtx(){
     while(queue.length && queue[0].time + lat <= now){
       const item = queue.shift();
       if(now - (item.time + lat) > 0.2) continue;   // tab was hidden — don't flash old beats
-      const beat = item.beat;
-      const dots = beatsEl.children;
-      for(let i=0;i<dots.length;i++) dots[i].classList.toggle('on', i===beat);
-      pulse.classList.remove('beat','accent'); void pulse.offsetWidth;
-      pulse.classList.add('beat'); if(beat===0) pulse.classList.add('accent');
+      if(item.sub === 0){                            // main beat
+        const beat = item.beat;
+        const dots = beatsEl.children;
+        for(let i=0;i<dots.length;i++) dots[i].classList.toggle('on', i===beat);
+        pulse.classList.remove('beat','accent','sub'); void pulse.offsetWidth;
+        pulse.classList.add('beat'); if(accents[beat]===2) pulse.classList.add('accent');
+      } else {                                       // subdivision — subtle pulse only
+        pulse.classList.remove('beat','accent','sub'); void pulse.offsetWidth;
+        pulse.classList.add('sub');
+      }
     }
     requestAnimationFrame(draw);
   }
   function start(){
     getCtx();
     if(!ticker) ticker = makeTicker();
-    isPlaying = true; currentBeat = 0;
-    nextNoteTime = audioCtx.currentTime + 0.1;
+    isPlaying = true; currentBeat = 0; currentSub = 0;
+    nextBeatTime = audioCtx.currentTime + 0.1;
     ticker.postMessage('start');
     requestAnimationFrame(draw);
     toggle.textContent = 'Stop';
@@ -859,7 +922,18 @@ function getCtx(){
     chips.forEach(x=>x.classList.remove('active'));
     c.classList.add('active');
     beatsPerMeasure = parseInt(c.dataset.beats,10);
-    currentBeat = 0; buildDots();
+    currentBeat = 0; resetAccents(); buildDots();
+  }));
+  subChips.forEach(c=> c.addEventListener('click', ()=>{
+    subChips.forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    sub = parseInt(c.dataset.sub,10);
+    currentSub = 0;
+  }));
+  swingChips.forEach(c=> c.addEventListener('click', ()=>{
+    swingChips.forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    swingRatio = parseFloat(c.dataset.swing);
   }));
 
   // tap tempo

@@ -96,9 +96,15 @@ body{padding:16px}
 .beat-dot{width:15px;height:15px;border-radius:50%;background:#241d12;border:1px solid #000;transition:transform .05s,background .05s,box-shadow .05s}
 .beat-dot.on{background:var(--cream);box-shadow:0 0 12px rgba(236,226,207,.4);transform:scale(1.12)}
 .beat-dot.accent.on{background:var(--amber);box-shadow:0 0 16px var(--amber-glow)}
+.beat-dot.mute{background:transparent;border:1px dashed var(--faint);opacity:.7}
+.beat-dot.mute.on{background:rgba(157,146,126,.28);box-shadow:none;transform:scale(1.05)}
+.beats .beat-dot{cursor:pointer}
+.accent-hint{text-align:center;font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.05em;color:var(--faint);margin:2px 0 -4px;text-transform:uppercase}
 .pulse-wrap{display:grid;place-items:center;height:92px}
 .pulse{width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#3a2f1d,#181208);border:1px solid var(--panel-edge);box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
 .pulse.beat{animation:pulseHit .14s ease-out}
+.pulse.sub{animation:pulseSub .1s ease-out}
+@keyframes pulseSub{0%{transform:scale(1.07)}100%{transform:scale(1)}}
 .pulse.beat.accent{background:radial-gradient(circle at 38% 32%,#ffd27a,#c25e0c);box-shadow:0 0 34px var(--amber-glow)}
 @keyframes pulseHit{0%{transform:scale(1.18)}100%{transform:scale(1)}}
 .slider-row{display:flex;align-items:center;gap:12px;width:100%}
@@ -198,7 +204,8 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
     <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
     <div class="module-label"><span class="n">02</span><h3 id="metro-h">Metronome</h3></div>
     <div class="bpm-display"><div class="num" id="bpmNum">100</div><div class="lab">Beats / min</div></div>
-    <div class="beats" id="beats" aria-hidden="true"></div>
+    <div class="beats" id="beats"></div>
+    <div class="accent-hint">Tap a beat dot &middot; accent &rarr; normal &rarr; mute</div>
     <div class="pulse-wrap"><div class="pulse" id="pulse"></div></div>
     <div class="slider-row">
       <span class="end">40</span>
@@ -211,6 +218,20 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
       <button class="chip" data-beats="3">3/4</button>
       <button class="chip active" data-beats="4">4/4</button>
       <button class="chip" data-beats="6">6/8</button>
+    </div>
+    <div class="sig-row">
+      <span class="tag">Subdiv</span>
+      <button class="chip active" data-sub="1">Off</button>
+      <button class="chip" data-sub="2">8ths</button>
+      <button class="chip" data-sub="3">Trips</button>
+      <button class="chip" data-sub="4">16ths</button>
+    </div>
+    <div class="sig-row">
+      <span class="tag">Swing</span>
+      <button class="chip active" data-swing="0.5">Straight</button>
+      <button class="chip" data-swing="0.58">Soft</button>
+      <button class="chip" data-swing="0.667">Swing</button>
+      <button class="chip" data-swing="0.73">Hard</button>
     </div>
     <div class="metro-controls">
       <button class="btn primary" id="metroToggle" style="min-width:120px">Start</button>
@@ -351,40 +372,73 @@ function getCtx(){
   const slider=document.getElementById('bpmSlider'),bpmNum=document.getElementById('bpmNum'),
     toggle=document.getElementById('metroToggle'),tapBtn=document.getElementById('tapBtn'),
     pulse=document.getElementById('pulse'),beatsEl=document.getElementById('beats'),
-    chips=Array.from(document.querySelectorAll('.chip[data-beats]'));
-  let bpm=100,beatsPerMeasure=4,isPlaying=false,currentBeat=0,nextNoteTime=0,ticker=null;
+    chips=Array.from(document.querySelectorAll('.chip[data-beats]')),
+    subChips=Array.from(document.querySelectorAll('.chip[data-sub]')),
+    swingChips=Array.from(document.querySelectorAll('.chip[data-swing]'));
+  let bpm=100,beatsPerMeasure=4,sub=1,swingRatio=0.5,accents=[],isPlaying=false,currentBeat=0,currentSub=0,nextBeatTime=0,ticker=null;
   const lookahead=25,scheduleAhead=0.15,queue=[];
   function makeTicker(){
     const code="let t=null,iv=25;onmessage=function(e){if(e.data==='start'){t=setInterval(function(){postMessage('tick');},iv);}else if(e.data==='stop'){clearInterval(t);t=null;}else if(e.data&&e.data.interval){iv=e.data.interval;if(t){clearInterval(t);t=setInterval(function(){postMessage('tick');},iv);}}};";
     const w=new Worker(URL.createObjectURL(new Blob([code],{type:'application/javascript'})));
     w.onmessage=function(e){if(e.data==='tick')scheduler();};return w;
   }
-  function buildDots(){beatsEl.innerHTML='';for(let i=0;i<beatsPerMeasure;i++){const d=document.createElement('div');d.className='beat-dot'+(i===0?' accent':'');beatsEl.appendChild(d);}}
-  buildDots();
-  function setBpm(v){bpm=Math.max(40,Math.min(240,Math.round(v)));slider.value=bpm;bpmNum.textContent=bpm;}
-  function scheduleNote(beat,time){
-    queue.push({beat,time});const ctx=audioCtx,osc=ctx.createOscillator(),gain=ctx.createGain(),accent=beat===0;
-    osc.frequency.value=accent?1600:1000;osc.type='square';
-    gain.gain.setValueAtTime(0,time);gain.gain.linearRampToValueAtTime(accent?0.35:0.22,time+0.001);
-    gain.gain.exponentialRampToValueAtTime(0.0001,time+0.05);
-    osc.connect(gain);gain.connect(ctx.destination);osc.start(time);osc.stop(time+0.06);
+  function resetAccents(){accents=[];for(let i=0;i<beatsPerMeasure;i++)accents.push(i===0?2:1);}
+  function dotClass(lv){return 'beat-dot'+(lv===2?' accent':'')+(lv===0?' mute':'');}
+  function buildDots(){
+    beatsEl.innerHTML='';
+    for(let i=0;i<beatsPerMeasure;i++){
+      const d=document.createElement('div');d.className=dotClass(accents[i]);d.dataset.i=i;
+      d.setAttribute('role','button');d.setAttribute('tabindex','0');d.setAttribute('aria-label','Beat '+(i+1)+' accent');
+      const cycle=()=>{accents[i]=accents[i]===0?2:accents[i]-1;d.className=dotClass(accents[i]);};
+      d.addEventListener('click',cycle);
+      d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cycle();}});
+      beatsEl.appendChild(d);
+    }
   }
-  function advance(){nextNoteTime+=60.0/bpm;currentBeat=(currentBeat+1)%beatsPerMeasure;}
-  function scheduler(){if(!isPlaying)return;while(nextNoteTime<audioCtx.currentTime+scheduleAhead){scheduleNote(currentBeat,nextNoteTime);advance();}}
+  resetAccents();buildDots();
+  function setBpm(v){bpm=Math.max(40,Math.min(240,Math.round(v)));slider.value=bpm;bpmNum.textContent=bpm;}
+  function subOffsets(s,sw){if(s===2)return[0,sw];if(s===4)return[0,sw*0.5,0.5,0.5+sw*0.5];const a=[];for(let k=0;k<s;k++)a.push(k/s);return a;}
+  function scheduleNote(beat,subIdx,time){
+    queue.push({beat,sub:subIdx,time});
+    const isMain=subIdx===0,lv=isMain?accents[beat]:1;
+    if(isMain&&lv===0)return;
+    const ctx=audioCtx,osc=ctx.createOscillator(),gain=ctx.createGain();
+    const accent=isMain&&lv===2;
+    const freq=accent?1600:(isMain?1000:1300),vol=accent?0.35:(isMain?0.22:0.09),dur=isMain?0.05:0.03;
+    osc.frequency.value=freq;osc.type='square';
+    gain.gain.setValueAtTime(0,time);gain.gain.linearRampToValueAtTime(vol,time+0.001);
+    gain.gain.exponentialRampToValueAtTime(0.0001,time+dur);
+    osc.connect(gain);gain.connect(ctx.destination);osc.start(time);osc.stop(time+dur+0.01);
+  }
+  function scheduler(){
+    if(!isPlaying)return;
+    while(true){
+      const beatDur=60.0/bpm;
+      const noteTime=nextBeatTime+subOffsets(sub,swingRatio)[currentSub]*beatDur;
+      if(noteTime>=audioCtx.currentTime+scheduleAhead)break;
+      scheduleNote(currentBeat,currentSub,noteTime);
+      currentSub++;
+      if(currentSub>=sub){currentSub=0;currentBeat=(currentBeat+1)%beatsPerMeasure;nextBeatTime+=beatDur;}
+    }
+  }
   function draw(){
     if(!isPlaying)return;const now=audioCtx.currentTime;const lat=Math.min(audioCtx.outputLatency||audioCtx.baseLatency||0,0.1);
     while(queue.length&&queue[0].time+lat<=now){
-      const item=queue.shift();if(now-(item.time+lat)>0.2)continue;const beat=item.beat,dots=beatsEl.children;
-      for(let i=0;i<dots.length;i++)dots[i].classList.toggle('on',i===beat);
-      pulse.classList.remove('beat','accent');void pulse.offsetWidth;pulse.classList.add('beat');if(beat===0)pulse.classList.add('accent');
+      const item=queue.shift();if(now-(item.time+lat)>0.2)continue;
+      if(item.sub===0){const beat=item.beat,dots=beatsEl.children;
+        for(let i=0;i<dots.length;i++)dots[i].classList.toggle('on',i===beat);
+        pulse.classList.remove('beat','accent','sub');void pulse.offsetWidth;pulse.classList.add('beat');if(accents[beat]===2)pulse.classList.add('accent');
+      } else { pulse.classList.remove('beat','accent','sub');void pulse.offsetWidth;pulse.classList.add('sub'); }
     }
     requestAnimationFrame(draw);
   }
-  function startM(){getCtx();if(!ticker)ticker=makeTicker();isPlaying=true;currentBeat=0;nextNoteTime=audioCtx.currentTime+0.1;ticker.postMessage('start');requestAnimationFrame(draw);toggle.textContent='Stop';}
+  function startM(){getCtx();if(!ticker)ticker=makeTicker();isPlaying=true;currentBeat=0;currentSub=0;nextBeatTime=audioCtx.currentTime+0.1;ticker.postMessage('start');requestAnimationFrame(draw);toggle.textContent='Stop';}
   function stopM(){isPlaying=false;if(ticker)ticker.postMessage('stop');queue.length=0;toggle.textContent='Start';Array.from(beatsEl.children).forEach(d=>d.classList.remove('on'));}
   toggle.addEventListener('click',()=>isPlaying?stopM():startM());
   slider.addEventListener('input',e=>setBpm(e.target.value));
-  chips.forEach(c=>c.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));c.classList.add('active');beatsPerMeasure=parseInt(c.dataset.beats,10);currentBeat=0;buildDots();}));
+  chips.forEach(c=>c.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));c.classList.add('active');beatsPerMeasure=parseInt(c.dataset.beats,10);currentBeat=0;resetAccents();buildDots();}));
+  subChips.forEach(c=>c.addEventListener('click',()=>{subChips.forEach(x=>x.classList.remove('active'));c.classList.add('active');sub=parseInt(c.dataset.sub,10);currentSub=0;}));
+  swingChips.forEach(c=>c.addEventListener('click',()=>{swingChips.forEach(x=>x.classList.remove('active'));c.classList.add('active');swingRatio=parseFloat(c.dataset.swing);}));
   let taps=[];
   tapBtn.addEventListener('click',()=>{
     const now=performance.now();
