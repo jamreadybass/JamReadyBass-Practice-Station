@@ -363,9 +363,9 @@ function getCtx(){
   function advance(){nextNoteTime+=60.0/bpm;currentBeat=(currentBeat+1)%beatsPerMeasure;}
   function scheduler(){if(!isPlaying)return;while(nextNoteTime<audioCtx.currentTime+scheduleAhead){scheduleNote(currentBeat,nextNoteTime);advance();}}
   function draw(){
-    if(!isPlaying)return;const now=audioCtx.currentTime;
-    while(queue.length&&queue[0].time<=now){
-      const item=queue.shift();if(now-item.time>0.2)continue;const beat=item.beat,dots=beatsEl.children;
+    if(!isPlaying)return;const now=audioCtx.currentTime;const lat=audioCtx.outputLatency||audioCtx.baseLatency||0;
+    while(queue.length&&queue[0].time+lat<=now){
+      const item=queue.shift();if(now-(item.time+lat)>0.2)continue;const beat=item.beat,dots=beatsEl.children;
       for(let i=0;i<dots.length;i++)dots[i].classList.toggle('on',i===beat);
       pulse.classList.remove('beat','accent');void pulse.offsetWidth;pulse.classList.add('beat');if(beat===0)pulse.classList.add('accent');
     }
