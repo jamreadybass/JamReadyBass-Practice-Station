@@ -53,7 +53,7 @@ body{padding:16px;max-width:1180px;margin:0 auto}
 .chip:hover{border-color:var(--brass)}
 .chip.active{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
 select{font-family:var(--ff-body);font-size:.95rem;color:var(--cream);background:#16110a;
-  border:1px solid var(--panel-edge);border-radius:9px;padding:11px 13px;min-width:140px;cursor:pointer}
+  border:1px solid var(--panel-edge);border-radius:9px;padding:11px 13px;min-width:150px;cursor:pointer}
 select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
 .spelling{display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;margin-top:4px}
@@ -81,7 +81,7 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 @media (max-width:560px){
   .module{padding:30px 16px}
   .ctrl-row{gap:14px}
-  select{min-width:120px}
+  select{min-width:130px}
   .legend .hint{margin-left:0;width:100%}
 }
 </style>
@@ -89,8 +89,10 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 <body>
 
 <div class="head">
-  <span class="mark" aria-hidden="true"></span>
-  <span class="name">Jam<b>Ready</b>Bass</span>
+  <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="name">Jam<b>Ready</b>Bass</span>
+  </a>
   <span class="tag">Fretboard Scale Finder</span>
 </div>
 
@@ -133,8 +135,8 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
       <div class="field">
         <span class="lab">Spelling</span>
         <div class="chips" id="accChips">
-          <button class="chip active" data-acc="sharp">♯</button>
-          <button class="chip" data-acc="flat">♭</button>
+          <button class="chip active" data-acc="sharp">&#9839;</button>
+          <button class="chip" data-acc="flat">&#9837;</button>
         </div>
       </div>
     </div>
@@ -151,54 +153,90 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
   <div class="legend">
     <div class="item"><span class="dot root"></span> Root</div>
     <div class="item"><span class="dot tone"></span> Scale tone</div>
-    <span class="hint">Tap any note to hear it · scroll the board sideways to see the whole neck</span>
+    <span class="hint">Tap any note to hear it &middot; scroll the board sideways to see the whole neck</span>
   </div>
 </section>
 
-<div class="foot"><a href="#">JamReadyBass — built for the low end</a></div>
+<div class="foot"><a href="index.html">&larr; Back to the Practice Station</a></div>
 
 <script>
 "use strict";
 
-const CHROM = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
-const FLATS = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
-const DEGREE = {0:'R',1:'♭2',2:'2',3:'♭3',4:'3',5:'4',6:'♭5',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'};
+const SHARP = ['C','C\u266F','D','D\u266F','E','F','F\u266F','G','G\u266F','A','A\u266F','B'];
+const FLAT  = ['C','D\u266D','D','E\u266D','E','F','G\u266D','G','A\u266D','A','B\u266D','B'];
+const LETTERS = ['C','D','E','F','G','A','B'];
+const NAT_PC  = [0,2,4,5,7,9,11];                 // natural pitch class by letter index
+const LETTER_IDX = {C:0,D:1,E:2,F:3,G:4,A:5,B:6};
+const MAJ = {1:0,2:2,3:4,4:5,5:7,6:9,7:11};       // major-scale semitone for each degree number
 
+// each scale = ordered list of [semitone-from-root, degree-number]
 const SCALES = {
-  'Major (Ionian)':        [0,2,4,5,7,9,11],
-  'Natural Minor':         [0,2,3,5,7,8,10],
-  'Major Pentatonic':      [0,2,4,7,9],
-  'Minor Pentatonic':      [0,3,5,7,10],
-  'Blues':                 [0,3,5,6,7,10],
-  'Dorian':                [0,2,3,5,7,9,10],
-  'Phrygian':              [0,1,3,5,7,8,10],
-  'Lydian':                [0,2,4,6,7,9,11],
-  'Mixolydian':            [0,2,4,5,7,9,10],
-  'Locrian':               [0,1,3,5,6,8,10],
-  'Harmonic Minor':        [0,2,3,5,7,8,11],
-  'Melodic Minor':         [0,2,3,5,7,9,11],
+  'Ionian (Major)':           [[0,1],[2,2],[4,3],[5,4],[7,5],[9,6],[11,7]],
+  'Dorian':                   [[0,1],[2,2],[3,3],[5,4],[7,5],[9,6],[10,7]],
+  'Phrygian':                 [[0,1],[1,2],[3,3],[5,4],[7,5],[8,6],[10,7]],
+  'Lydian':                   [[0,1],[2,2],[4,3],[6,4],[7,5],[9,6],[11,7]],
+  'Mixolydian':               [[0,1],[2,2],[4,3],[5,4],[7,5],[9,6],[10,7]],
+  'Aeolian (Natural Minor)':  [[0,1],[2,2],[3,3],[5,4],[7,5],[8,6],[10,7]],
+  'Locrian':                  [[0,1],[1,2],[3,3],[5,4],[6,5],[8,6],[10,7]],
+
+  'Melodic Minor':            [[0,1],[2,2],[3,3],[5,4],[7,5],[9,6],[11,7]],
+  'Dorian \u266D2':           [[0,1],[1,2],[3,3],[5,4],[7,5],[9,6],[10,7]],
+  'Lydian Augmented':         [[0,1],[2,2],[4,3],[6,4],[8,5],[9,6],[11,7]],
+  'Lydian Dominant':          [[0,1],[2,2],[4,3],[6,4],[7,5],[9,6],[10,7]],
+  'Mixolydian \u266D6':       [[0,1],[2,2],[4,3],[5,4],[7,5],[8,6],[10,7]],
+  'Locrian \u266E2 (Half-Dim)':[[0,1],[2,2],[3,3],[5,4],[6,5],[8,6],[10,7]],
+  'Altered (Super Locrian)':  [[0,1],[1,2],[3,3],[4,4],[6,5],[8,6],[10,7]],
+
+  'Harmonic Minor':           [[0,1],[2,2],[3,3],[5,4],[7,5],[8,6],[11,7]],
+  'Locrian \u266E6':          [[0,1],[1,2],[3,3],[5,4],[6,5],[9,6],[10,7]],
+  'Ionian \u266F5':           [[0,1],[2,2],[4,3],[5,4],[8,5],[9,6],[11,7]],
+  'Dorian \u266F4':           [[0,1],[2,2],[3,3],[6,4],[7,5],[9,6],[10,7]],
+  'Phrygian Dominant':        [[0,1],[1,2],[4,3],[5,4],[7,5],[8,6],[10,7]],
+  'Lydian \u266F2':           [[0,1],[3,2],[4,3],[6,4],[7,5],[9,6],[11,7]],
+  'Ultralocrian':             [[0,1],[1,2],[3,3],[4,4],[6,5],[8,6],[9,7]],
+
+  'Whole Tone':               [[0,1],[2,2],[4,3],[6,4],[8,5],[10,7]],
+  'Blues':                    [[0,1],[3,3],[5,4],[6,5],[7,5],[10,7]],
+  'Half-Whole Diminished':    [[0,1],[1,2],[3,3],[4,3],[6,5],[7,5],[9,6],[10,7]],
 };
 
-// open-string MIDI notes, low -> high
-const TUNINGS = {
-  4:[28,33,38,43],          // E1 A1 D2 G2
-  5:[23,28,33,38,43],       // B0 E1 A1 D2 G2
-  6:[23,28,33,38,43,48],    // B0 E1 A1 D2 G2 C3
-};
+const GROUPS = [
+  ['Major Modes', ['Ionian (Major)','Dorian','Phrygian','Lydian','Mixolydian','Aeolian (Natural Minor)','Locrian']],
+  ['Melodic Minor Modes', ['Melodic Minor','Dorian \u266D2','Lydian Augmented','Lydian Dominant','Mixolydian \u266D6','Locrian \u266E2 (Half-Dim)','Altered (Super Locrian)']],
+  ['Harmonic Minor Modes', ['Harmonic Minor','Locrian \u266E6','Ionian \u266F5','Dorian \u266F4','Phrygian Dominant','Lydian \u266F2','Ultralocrian']],
+  ['Symmetric / Other', ['Whole Tone','Blues','Half-Whole Diminished']],
+];
 
-const state = { strings:5, root:0, scale:'Major (Ionian)', frets:15, labelMode:'note', flats:false };
+const TUNINGS = { 4:[28,33,38,43], 5:[23,28,33,38,43], 6:[23,28,33,38,43,48] };
 
-// ---- populate selects ----
-const rootSel = document.getElementById('rootSel');
-const scaleSel = document.getElementById('scaleSel');
-function fillRoot(){
-  const names = state.flats ? FLATS : CHROM;
-  rootSel.innerHTML = names.map((n,i)=>`<option value="${i}"${i===state.root?' selected':''}>${n}</option>`).join('');
+const state = { strings:5, root:0, scale:'Ionian (Major)', frets:15, labelMode:'note', flats:false };
+
+// ---- accidental helpers ----
+function sym(a){ const t=['\u266D\u266D','\u266D','','\u266F','\u266F\u266F']; return t[a+2] !== undefined ? t[a+2] : (a<0?'\u266D\u266D\u266D':'\u266F\u266F\u266F'); }
+function norm(d){ d=((d%12)+12)%12; if(d>6) d-=12; return d; }
+
+function rootInfo(){
+  const name=(state.flats?FLAT:SHARP)[state.root];
+  return { pc:state.root, letterIdx:LETTER_IDX[name[0]], name:name };
 }
-scaleSel.innerHTML = Object.keys(SCALES).map(k=>`<option value="${k}"${k===state.scale?' selected':''}>${k}</option>`).join('');
+// proper note name for a pitch class given the scale degree it represents
+function noteName(pc, deg, rt){
+  const li=(rt.letterIdx+deg-1)%7;
+  return LETTERS[li]+sym(norm(pc-NAT_PC[li]));
+}
+function degLabel(iv, deg){ return sym(iv-MAJ[deg])+deg; }
+
+// ---- selects ----
+const rootSel=document.getElementById('rootSel');
+const scaleSel=document.getElementById('scaleSel');
+function fillRoot(){
+  const names=state.flats?FLAT:SHARP;
+  rootSel.innerHTML=names.map((n,i)=>'<option value="'+i+'"'+(i===state.root?' selected':'')+'>'+n+'</option>').join('');
+}
+scaleSel.innerHTML=GROUPS.map(g=>'<optgroup label="'+g[0]+'">'+g[1].map(n=>'<option value="'+n+'"'+(n===state.scale?' selected':'')+'>'+n+'</option>').join('')+'</optgroup>').join('');
 fillRoot();
 
-// ---- audio (click to hear) ----
+// ---- audio ----
 let audioCtx=null;
 function getCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
 function play(midi){
@@ -213,123 +251,88 @@ function play(midi){
   o.start(t); o.stop(t+0.65);
 }
 
-// ---- build the fretboard SVG ----
+// ---- fretboard ----
+function fontFor(label){ const L=[...label].length; return L>=3?9.5:(L===2?11.5:13); }
+
 function buildSVG(){
-  const rows = TUNINGS[state.strings].slice().reverse();   // top = highest string
-  const n = rows.length;
-  const frets = state.frets;
+  const rt=rootInfo();
+  const rows=TUNINGS[state.strings].slice().reverse();
+  const n=rows.length, frets=state.frets;
   const labelW=34, openW=42, fretW=56, rowH=44, padTop=26, padBottom=34, r=16;
-  const nutX = labelW+openW;
-  const boardTop = padTop;
-  const boardBottom = padTop+(n-1)*rowH;
-  const width = nutX + frets*fretW + 18;
-  const height = boardBottom + padBottom;
-  const cy = (boardTop+boardBottom)/2;
-  const boardH = boardBottom-boardTop;
-  const scale = SCALES[state.scale];
-  const names = state.flats?FLATS:CHROM;
+  const nutX=labelW+openW, boardTop=padTop, boardBottom=padTop+(n-1)*rowH;
+  const width=nutX+frets*fretW+18, height=boardBottom+padBottom;
+  const cy=(boardTop+boardBottom)/2, boardH=boardBottom-boardTop;
 
-  let s = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">`;
-  s += `<defs>`+
-    `<radialGradient id="rootgrad" cx="38%" cy="32%"><stop offset="0%" stop-color="#ffd27a"/><stop offset="100%" stop-color="#ff8a14"/></radialGradient>`+
-    `<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`+
-    `</defs>`;
+  // interval -> degree for the chosen scale
+  const ivDeg={};
+  SCALES[state.scale].forEach(p=>{ ivDeg[p[0]]=p[1]; });
 
-  // board surface
-  s += `<rect x="${nutX}" y="${boardTop-14}" width="${frets*fretW}" height="${boardH+28}" rx="6" fill="#1b1610" stroke="#2c2419"/>`;
+  let s='<svg viewBox="0 0 '+width+' '+height+'" width="'+width+'" height="'+height+'" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">';
+  s+='<defs><radialGradient id="rg" cx="38%" cy="32%"><stop offset="0%" stop-color="#ffd27a"/><stop offset="100%" stop-color="#ff8a14"/></radialGradient>'+
+     '<filter id="gl" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
 
-  // inlays
+  s+='<rect x="'+nutX+'" y="'+(boardTop-14)+'" width="'+(frets*fretW)+'" height="'+(boardH+28)+'" rx="6" fill="#1b1610" stroke="#2c2419"/>';
+
   const single=[3,5,7,9,15,17,19,21], dbl=[12,24];
-  for(const f of single){ if(f<=frets){ const x=nutX+(f-0.5)*fretW; s+=`<circle cx="${x}" cy="${cy}" r="4.5" fill="#3a3024"/>`; } }
-  for(const f of dbl){ if(f<=frets){ const x=nutX+(f-0.5)*fretW; s+=`<circle cx="${x}" cy="${cy-boardH*0.28}" r="4.5" fill="#3a3024"/><circle cx="${x}" cy="${cy+boardH*0.28}" r="4.5" fill="#3a3024"/>`; } }
+  single.forEach(f=>{ if(f<=frets){ const x=nutX+(f-0.5)*fretW; s+='<circle cx="'+x+'" cy="'+cy+'" r="4.5" fill="#3a3024"/>'; }});
+  dbl.forEach(f=>{ if(f<=frets){ const x=nutX+(f-0.5)*fretW; s+='<circle cx="'+x+'" cy="'+(cy-boardH*0.28)+'" r="4.5" fill="#3a3024"/><circle cx="'+x+'" cy="'+(cy+boardH*0.28)+'" r="4.5" fill="#3a3024"/>'; }});
 
-  // fret wires + nut
-  for(let f=0;f<=frets;f++){
-    const x=nutX+f*fretW;
-    if(f===0) s+=`<rect x="${x-3}" y="${boardTop-14}" width="6" height="${boardH+28}" rx="2" fill="#caa15c"/>`;
-    else s+=`<line x1="${x}" y1="${boardTop-14}" x2="${x}" y2="${boardBottom+14}" stroke="#3a3024" stroke-width="2"/>`;
+  for(let f=0;f<=frets;f++){ const x=nutX+f*fretW;
+    if(f===0) s+='<rect x="'+(x-3)+'" y="'+(boardTop-14)+'" width="6" height="'+(boardH+28)+'" rx="2" fill="#caa15c"/>';
+    else s+='<line x1="'+x+'" y1="'+(boardTop-14)+'" x2="'+x+'" y2="'+(boardBottom+14)+'" stroke="#3a3024" stroke-width="2"/>';
   }
 
-  // strings + tuning labels
-  for(let i=0;i<n;i++){
-    const y=padTop+i*rowH;
-    const sw=(1.1+i*0.55).toFixed(1);
-    s+=`<line x1="${nutX}" y1="${y}" x2="${nutX+frets*fretW}" y2="${y}" stroke="#5a4f3d" stroke-width="${sw}"/>`;
+  for(let i=0;i<n;i++){ const y=padTop+i*rowH; const sw=(1.1+i*0.55).toFixed(1);
+    s+='<line x1="'+nutX+'" y1="'+y+'" x2="'+(nutX+frets*fretW)+'" y2="'+y+'" stroke="#5a4f3d" stroke-width="'+sw+'"/>';
     const openPc=((rows[i]%12)+12)%12;
-    s+=`<text x="${labelW/2}" y="${y+4}" fill="#9d927e" font-size="13" font-weight="700" text-anchor="middle">${names[openPc]}</text>`;
+    const lbl = ivDeg[((openPc-rt.pc)%12+12)%12]!==undefined ? noteName(openPc, ivDeg[((openPc-rt.pc)%12+12)%12], rt) : (state.flats?FLAT:SHARP)[openPc];
+    s+='<text x="'+(labelW/2)+'" y="'+(y+4)+'" fill="#9d927e" font-size="13" font-weight="700" text-anchor="middle">'+lbl+'</text>';
   }
 
-  // fret numbers
-  for(let f=1;f<=frets;f++){
-    const x=nutX+(f-0.5)*fretW;
-    s+=`<text x="${x}" y="${height-10}" fill="#6f6657" font-size="11" text-anchor="middle">${f}</text>`;
+  for(let f=1;f<=frets;f++){ const x=nutX+(f-0.5)*fretW;
+    s+='<text x="'+x+'" y="'+(height-10)+'" fill="#6f6657" font-size="11" text-anchor="middle">'+f+'</text>';
   }
 
-  // note markers
-  for(let i=0;i<n;i++){
-    const y=padTop+i*rowH;
-    const openMidi=rows[i];
+  for(let i=0;i<n;i++){ const y=padTop+i*rowH, openMidi=rows[i];
     for(let f=0;f<=frets;f++){
-      const midi=openMidi+f;
-      const pc=((midi%12)+12)%12;
-      const interval=((pc-state.root)%12+12)%12;
-      if(!scale.includes(interval)) continue;
-      const isRoot=interval===0;
-      const x = f===0 ? (labelW+openW/2) : (nutX+(f-0.5)*fretW);
-      const label = state.labelMode==='degree' ? DEGREE[interval] : names[pc];
-      const fill = isRoot?'url(#rootgrad)':'#241d12';
-      const stroke = isRoot?'#a85d10':'#7a6a4a';
-      const txt = isRoot?'#231603':'#ece2cf';
-      const glow = isRoot?' filter="url(#glow)"':'';
-      s+=`<g class="note" data-midi="${midi}">`+
-         `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.6"${glow}/>`+
-         `<text x="${x}" y="${y+4}" fill="${txt}" font-size="12" font-weight="700" text-anchor="middle">${label}</text>`+
-         `</g>`;
+      const midi=openMidi+f, pc=((midi%12)+12)%12, iv=((pc-rt.pc)%12+12)%12;
+      const deg=ivDeg[iv]; if(deg===undefined) continue;
+      const isRoot=iv===0;
+      const x=f===0?(labelW+openW/2):(nutX+(f-0.5)*fretW);
+      const label=state.labelMode==='degree'?degLabel(iv,deg):noteName(pc,deg,rt);
+      const fill=isRoot?'url(#rg)':'#241d12', stroke=isRoot?'#a85d10':'#7a6a4a', txt=isRoot?'#231603':'#ece2cf';
+      s+='<g class="note" data-midi="'+midi+'">'+
+         '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6"'+(isRoot?' filter="url(#gl)"':'')+'/>'+
+         '<text x="'+x+'" y="'+(y+4)+'" fill="'+txt+'" font-size="'+fontFor(label)+'" font-weight="700" text-anchor="middle">'+label+'</text>'+
+         '</g>';
     }
   }
-
-  s += `</svg>`;
+  s+='</svg>';
   return s;
 }
 
-// ---- spelling readout ----
 function renderSpelling(){
-  const names=state.flats?FLATS:CHROM;
-  const root=names[state.root];
-  const ivs=SCALES[state.scale];
-  const spelled=ivs.map(iv=>names[(state.root+iv)%12]);
-  document.getElementById('scaleTitle').innerHTML=`<b>${root}</b> ${state.scale}`;
-  document.getElementById('scaleNotes').textContent=spelled.join('  ·  ');
+  const rt=rootInfo();
+  const defs=SCALES[state.scale];
+  const notes=defs.map(p=>noteName((rt.pc+p[0])%12, p[1], rt));
+  const degs=defs.map(p=>degLabel(p[0],p[1]));
+  document.getElementById('scaleTitle').innerHTML='<b>'+rt.name+'</b> '+state.scale;
+  document.getElementById('scaleNotes').textContent=notes.join('  ')+'      ('+degs.join('  ')+')';
 }
 
-function render(){
-  document.getElementById('boardScroll').innerHTML=buildSVG();
-  renderSpelling();
-}
+function render(){ document.getElementById('boardScroll').innerHTML=buildSVG(); renderSpelling(); }
 
 // ---- events ----
-document.getElementById('boardScroll').addEventListener('click', e=>{
-  const g=e.target.closest('.note'); if(!g) return;
-  play(parseInt(g.dataset.midi,10));
-});
-document.getElementById('stringChips').addEventListener('click', e=>{
-  const b=e.target.closest('.chip'); if(!b) return;
-  [...e.currentTarget.children].forEach(c=>c.classList.remove('active'));
-  b.classList.add('active'); state.strings=parseInt(b.dataset.strings,10); render();
-});
-document.getElementById('labelChips').addEventListener('click', e=>{
-  const b=e.target.closest('.chip'); if(!b) return;
-  [...e.currentTarget.children].forEach(c=>c.classList.remove('active'));
-  b.classList.add('active'); state.labelMode=b.dataset.label; render();
-});
-document.getElementById('accChips').addEventListener('click', e=>{
-  const b=e.target.closest('.chip'); if(!b) return;
-  [...e.currentTarget.children].forEach(c=>c.classList.remove('active'));
-  b.classList.add('active'); state.flats=(b.dataset.acc==='flat'); fillRoot(); render();
-});
-rootSel.addEventListener('change', e=>{ state.root=parseInt(e.target.value,10); render(); });
-scaleSel.addEventListener('change', e=>{ state.scale=e.target.value; render(); });
-document.getElementById('fretSel').addEventListener('change', e=>{ state.frets=parseInt(e.target.value,10); render(); });
+document.getElementById('boardScroll').addEventListener('click',e=>{ const g=e.target.closest('.note'); if(g) play(parseInt(g.dataset.midi,10)); });
+function chipGroup(id,fn){ document.getElementById(id).addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return;
+  [...e.currentTarget.children].forEach(c=>c.classList.remove('active')); b.classList.add('active'); fn(b); render(); }); }
+chipGroup('stringChips',b=>state.strings=parseInt(b.dataset.strings,10));
+chipGroup('labelChips',b=>state.labelMode=b.dataset.label);
+document.getElementById('accChips').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return;
+  [...e.currentTarget.children].forEach(c=>c.classList.remove('active')); b.classList.add('active'); state.flats=(b.dataset.acc==='flat'); fillRoot(); render(); });
+rootSel.addEventListener('change',e=>{ state.root=parseInt(e.target.value,10); render(); });
+scaleSel.addEventListener('change',e=>{ state.scale=e.target.value; render(); });
+document.getElementById('fretSel').addEventListener('change',e=>{ state.frets=parseInt(e.target.value,10); render(); });
 
 render();
 </script>
