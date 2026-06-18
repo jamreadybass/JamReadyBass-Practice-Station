@@ -170,7 +170,14 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
 .embed-foot a:hover{color:var(--amber)}
 
 @media (prefers-reduced-motion:reduce){.needle{transition:none}.pulse.beat{animation:none}.beat-dot{transition:none}}
+/* ===== single-tool mode (?tool=tuner|metronome|timer) ===== */
+html[data-solo] .embed-head{display:none!important}
+html[data-solo] .grid{margin-top:2px}
+html[data-solo="tuner"] .module:not([data-tool="tuner"]),
+html[data-solo="metronome"] .module:not([data-tool="metronome"]),
+html[data-solo="timer"] .module:not([data-tool="timer"]){display:none!important}
 </style>
+<script>try{var _t=new URLSearchParams(location.search).get('tool');if(_t&&['tuner','metronome','timer'].indexOf(_t)>-1)document.documentElement.setAttribute('data-solo',_t);}catch(e){}</script>
 </head>
 <body>
 
@@ -187,7 +194,7 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
 <div class="grid">
 
   <!-- TUNER -->
-  <section class="module" aria-labelledby="tuner-h">
+  <section class="module" data-tool="tuner" aria-labelledby="tuner-h">
     <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
     <div class="module-label"><span class="n">01</span><h3 id="tuner-h">Tuner</h3></div>
     <div class="gauge-col">
@@ -227,7 +234,7 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
   </section>
 
   <!-- METRONOME -->
-  <section class="module" aria-labelledby="metro-h">
+  <section class="module" data-tool="metronome" aria-labelledby="metro-h">
     <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
     <div class="module-label"><span class="n">02</span><h3 id="metro-h">Metronome</h3></div>
     <div class="bpm-display"><div class="num" id="bpmNum">100</div><div class="lab">Beats / min</div></div>
@@ -287,7 +294,7 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
   </section>
 
   <!-- TIMER -->
-  <section class="module" aria-labelledby="timer-h">
+  <section class="module" data-tool="timer" aria-labelledby="timer-h">
     <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
     <div class="module-label"><span class="n">03</span><h3 id="timer-h">Practice Timer</h3></div>
     <div class="timer-grid">
