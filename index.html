@@ -374,7 +374,7 @@ footer .links a:hover{color:var(--amber)}
       <a href="fretboard.html">FretNav</a>
       <a href="groove.html">GrooveChallenge</a>
       <a href="#blueprint">Blueprint</a>
-      <a class="nav-cta" href="#consult" style="color:var(--amber)">Book a call</a>
+      <a class="nav-cta" href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" style="color:var(--amber)">Book a call</a>
     </nav>
   </div>
 </header>
@@ -592,29 +592,9 @@ footer .links a:hover{color:var(--amber)}
         </ul>
       </div>
       <div class="form-card">
-        <div class="field">
-          <label for="csName">Name</label>
-          <input type="text" id="csName" placeholder="Your name" autocomplete="name">
-        </div>
-        <div class="field">
-          <label for="csEmail">Email</label>
-          <input type="email" id="csEmail" placeholder="you@email.com" autocomplete="email">
-        </div>
-        <div class="field">
-          <label for="csGoal">Where are you now?</label>
-          <select id="csGoal">
-            <option value="Just starting out">Just starting out</option>
-            <option value="Playing but stuck">Playing but stuck</option>
-            <option value="Returning after a break">Returning after a break</option>
-            <option value="Prepping for a jam or gig">Prepping for a jam or gig</option>
-          </select>
-        </div>
-        <button class="btn primary" id="csBtn">Request my free session</button>
-        <p class="form-note">No cost, no pressure. We'll reply within one business day.</p>
-        <div class="form-success" id="csSuccess" role="status">
-          <span class="ic">✓</span>
-          <span>Request received. We'll be in touch within one business day to lock in a time.</span>
-        </div>
+        <p class="lead" style="margin:0 0 20px">Pick a time that works for you and we'll talk through where your playing's at and exactly what to work on next.</p>
+        <a class="btn primary" href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" style="display:block;text-align:center">Book my free session →</a>
+        <p class="form-note">Opens my booking calendar in a new tab · no cost, no pressure.</p>
       </div>
     </div>
   </section>
@@ -635,7 +615,7 @@ footer .links a:hover{color:var(--amber)}
       <a href="fretboard.html">FretNav</a>
       <a href="groove.html">GrooveChallenge</a>
       <a href="#blueprint">Blueprint</a>
-      <a href="#consult">Book a call</a>
+      <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener">Book a call</a>
     </div>
     <p class="small">Built for the low end. &copy; <span id="year"></span> JamReadyBass.</p>
   </div>
@@ -1196,28 +1176,6 @@ NEXT STEP
     setTimeout(()=>URL.revokeObjectURL(url), 1000);
     ok.classList.add('show');
     if(email.value) email.setAttribute('disabled','');
-  });
-})();
-
-/* ============================================================
-   CONSULTATION FORM (front-end confirmation)
-   ============================================================ */
-(function(){
-  const btn = document.getElementById('csBtn');
-  const ok  = document.getElementById('csSuccess');
-  const name = document.getElementById('csName');
-  const email = document.getElementById('csEmail');
-
-  btn.addEventListener('click', ()=>{
-    if(!email.value || !/.+@.+\..+/.test(email.value)){
-      email.focus(); email.style.borderColor = 'var(--red)';
-      return;
-    }
-    email.style.borderColor = '';
-    ok.classList.add('show');
-    [name,email,document.getElementById('csGoal')].forEach(el=> el.setAttribute('disabled',''));
-    btn.setAttribute('disabled',''); btn.textContent = 'Request sent';
-    btn.style.opacity = '.7';
   });
 })();
 </script>
