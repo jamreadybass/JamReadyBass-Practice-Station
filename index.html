@@ -373,7 +373,7 @@ footer .links a:hover{color:var(--amber)}
       <a href="#timer">Timer</a>
       <a href="fretboard.html">FretNav</a>
       <a href="groove.html">GrooveChallenge</a>
-      <a href="#blueprint">Blueprint</a>
+      <a href="jamreadyroadmap.pdf" target="_blank" rel="noopener">Roadmap</a>
       <a class="nav-cta" href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" style="color:var(--amber)">Book a call</a>
     </nav>
   </div>
@@ -551,27 +551,20 @@ footer .links a:hover{color:var(--amber)}
   <section class="cta" id="blueprint" aria-labelledby="bp-h">
     <div class="cta-grid">
       <div>
-        <span class="eyebrow">Free download</span>
-        <h2 id="bp-h">The Jam-Ready<br>Practice Blueprint</h2>
-        <p class="lead">A focused, no-fluff plan that takes you from noodling alone to holding down the low end with a band. Four weeks, built for real practice sessions.</p>
+        <span class="eyebrow">Free roadmap</span>
+        <h2 id="bp-h">The JamReady<br>Roadmap</h2>
+        <p class="lead">Six clear steps that take you from Hammin' to Jammin' — groove, harmony, vocabulary, ears, ensemble skills, and your first jam. Then take the JamReady Test to see exactly where you stand.</p>
         <ul class="blueprint-list">
-          <li>A 20-minute warm-up routine that actually warms you up</li>
-          <li>Groove drills to lock your timing with any drummer</li>
-          <li>A fretboard map for finding any note, fast</li>
-          <li>A week-by-week plan from bedroom to jam-ready</li>
+          <li>A step-by-step path from first notes to first jam</li>
+          <li>Concrete daily actions and a checkpoint for each stage</li>
+          <li>The 10-point JamReady Test, scored live</li>
+          <li>Print it or save it as a PDF to keep by your bass</li>
         </ul>
       </div>
-      <div class="form-card">
-        <div class="field">
-          <label for="bpEmail">Email</label>
-          <input type="email" id="bpEmail" placeholder="you@email.com" autocomplete="email">
-        </div>
-        <button class="btn primary" id="bpBtn">Download the blueprint</button>
-        <p class="form-note">Instant download. We'll email you the next steps too.</p>
-        <div class="form-success" id="bpSuccess" role="status">
-          <span class="ic">✓</span>
-          <span>Your blueprint is downloading. Check your folder — and your inbox for the follow-up.</span>
-        </div>
+      <div class="form-card" style="display:flex;flex-direction:column;justify-content:center;gap:16px">
+        <p class="lead" style="margin:0">Free, no signup needed — open the full roadmap and start working through it today.</p>
+        <a class="btn primary" href="jamreadyroadmap.pdf" target="_blank" rel="noopener" style="display:block;text-align:center">Get the JamReady Roadmap →</a>
+        <p class="form-note">Opens the interactive roadmap &amp; JamReady Test.</p>
       </div>
     </div>
   </section>
@@ -614,7 +607,7 @@ footer .links a:hover{color:var(--amber)}
       <a href="#timer">Timer</a>
       <a href="fretboard.html">FretNav</a>
       <a href="groove.html">GrooveChallenge</a>
-      <a href="#blueprint">Blueprint</a>
+      <a href="jamreadyroadmap.pdf" target="_blank" rel="noopener">Roadmap</a>
       <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener">Book a call</a>
     </div>
     <p class="small">Built for the low end. &copy; <span id="year"></span> JamReadyBass.</p>
@@ -1123,60 +1116,6 @@ function getCtx(){
   customIn.addEventListener('keydown', e=>{ if(e.key==='Enter') applyCustom(); });
 
   render();
-})();
-
-/* ============================================================
-   BLUEPRINT DOWNLOAD  (generates a real file) + form handling
-   ============================================================ */
-(function(){
-  const btn = document.getElementById('bpBtn');
-  const email = document.getElementById('bpEmail');
-  const ok = document.getElementById('bpSuccess');
-
-  const BLUEPRINT = `JamReadyBass — THE JAM-READY PRACTICE BLUEPRINT
-==================================================
-Four weeks from noodling alone to holding down the low end with a band.
-
-DAILY WARM-UP (20 MINUTES)
-  1. Open-string finger stretch ....... 3 min
-  2. One-finger-per-fret chromatics .... 5 min
-  3. Major scale, two octaves .......... 5 min
-  4. Slow groove to a metronome ........ 7 min
-  Keep it slow. Clean beats sloppy, every time.
-
-GROOVE & TIMING DRILLS
-  - Lock to the metronome on beats 2 and 4 only.
-  - Play a root-note groove, drop the click, stay in time.
-  - Record 60 seconds. Listen back for rushing or dragging.
-
-FRETBOARD MAP
-  - Learn every natural note on the E and A strings first.
-  - "Octave shape": up two strings, over two frets.
-  - Name a note, find it in 3 places, under 5 seconds.
-
-THE 4-WEEK PLAN
-  Week 1 — Tone & timing. Clean notes, steady tempo.
-  Week 2 — Roots & fifths. Lock to a drum loop.
-  Week 3 — Simple grooves in 3 keys. Memorize one tune.
-  Week 4 — Play along with full songs. Record yourself.
-
-NEXT STEP
-  Want a plan built around your playing? Book a free
-  consultation at JamReadyBass and we'll map it out together.
-
--- Built for the low end. JamReadyBass.
-`;
-
-  btn.addEventListener('click', ()=>{
-    const blob = new Blob([BLUEPRINT], {type:'text/plain'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'JamReadyBass-Practice-Blueprint.txt';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-    ok.classList.add('show');
-    if(email.value) email.setAttribute('disabled','');
-  });
 })();
 </script>
 </body>
