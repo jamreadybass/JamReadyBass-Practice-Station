@@ -34,14 +34,20 @@ body{padding:16px}
 .embed-head .tag{margin-left:auto;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.26em;
   text-transform:uppercase;color:var(--faint)}
 .embed-nav{margin-left:auto;display:flex;gap:13px;flex-wrap:wrap;justify-content:flex-end}
-.embed-nav a{font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+.embed-nav a,.embed-nav span{font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--faint);text-decoration:none;transition:color .16s}
 .embed-nav a:hover{color:var(--amber)}
-.embed-nav a.active{color:var(--amber)}
+.embed-nav .active{color:var(--amber)}
 .embed-nav a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border:1px solid #a85d10;border-radius:7px;padding:4px 10px}
 .embed-nav a.em-book:hover{color:#231603;filter:brightness(1.05)}
 
 .grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:600px;margin:0 auto}
+
+/* big title + description (matches FretNav intro) */
+.intro h1{font-family:var(--ff-display);text-transform:uppercase;font-weight:400;letter-spacing:.01em;
+  font-size:clamp(1.7rem,5vw,2.4rem);line-height:.98;margin:0 0 10px}
+.intro h1 b{color:var(--amber)}
+.intro p{color:var(--muted);max-width:60ch;font-size:.95rem;margin:0}
 
 .module{position:relative;border-radius:13px;padding:22px 20px 24px;overflow:hidden;
   background:linear-gradient(180deg,var(--panel-top),var(--panel-bot));border:1px solid var(--panel-edge);
@@ -186,17 +192,24 @@ html[data-solo="timer"] .module:not([data-tool="timer"]){display:none!important}
 
 <div class="embed-head">
   <span class="mark" aria-hidden="true"></span>
-  <span class="name">Practice <b>Station</b></span>
+  <span class="name">Jam<b>Ready</b>Bass</span>
   <nav class="embed-nav" aria-label="Primary">
-    <a href="index.html" data-jrb-scroll="jrb-station" class="active">Station</a>
-    <a href="fretboard.html" data-jrb-scroll="jrb-fretnav">FretNav</a>
-    <a href="groove.html" data-jrb-scroll="jrb-groove">GrooveChallenge</a>
+    <span class="active">Station</span>
+    <a href="fretboard.html?embed" target="_blank" rel="noopener">FretNav</a>
+    <a href="groove.html?embed" target="_blank" rel="noopener">GrooveChallenge</a>
     <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
     <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
   </nav>
 </div>
 
 <div class="grid">
+
+  <!-- INTRO -->
+  <section class="module intro">
+    <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+    <h1>JamReadyBass <b>Practice Station</b></h1>
+    <p>A precision tuner, a feature-rich metronome, and a session timer in one place. Tune up, lock in your timing, and track your reps so every session leaves you more jam ready.</p>
+  </section>
 
   <!-- TUNER -->
   <section class="module" data-tool="tuner" aria-labelledby="tuner-h">
