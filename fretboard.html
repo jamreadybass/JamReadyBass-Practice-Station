@@ -147,6 +147,14 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 .embed-mode .coaching,
 .embed-mode .foot{display:none!important}
 .embed-mode .page{padding:10px}
+.embed-menu{display:none}
+.embed-mode .embed-menu{display:flex;gap:9px;justify-content:flex-end;align-items:center;
+  padding:2px 0 10px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.embed-menu a{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;padding:6px 11px;border:1px solid var(--panel-edge);border-radius:8px;transition:.16s}
+.embed-menu a:hover{color:var(--cream);border-color:var(--brass)}
+.embed-menu a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
+.embed-menu a.em-book:hover{color:#231603;filter:brightness(1.05)}
 </style>
 <script>try{if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed-mode');}catch(e){}</script>
 </head>
@@ -171,6 +179,11 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 </header>
 
 <div class="page">
+
+<div class="embed-menu">
+  <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
+  <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
+</div>
 
 <section class="module intro">
   <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>

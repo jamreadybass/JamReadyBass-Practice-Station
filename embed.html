@@ -38,6 +38,8 @@ body{padding:16px}
   color:var(--faint);text-decoration:none;transition:color .16s}
 .embed-nav a:hover{color:var(--amber)}
 .embed-nav a.active{color:var(--amber)}
+.embed-nav a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border:1px solid #a85d10;border-radius:7px;padding:4px 10px}
+.embed-nav a.em-book:hover{color:#231603;filter:brightness(1.05)}
 
 .grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:600px;margin:0 auto}
 
@@ -111,8 +113,8 @@ body{padding:16px}
 .accent-legend .beat-dot{width:12px;height:12px;cursor:default;transition:none}
 .accent-legend .al-tip{color:var(--faint);text-transform:none;letter-spacing:.02em}
 .accent-hint{text-align:center;font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.05em;color:var(--faint);margin:2px 0 -4px;text-transform:uppercase}
-.subgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;flex:1 1 0;min-width:0}
-.subdiv-row{flex-wrap:nowrap}
+.subgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.subdiv-row{flex-direction:column;align-items:stretch;gap:8px}
 .sub-btn{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:9px 7px 8px;
   border-radius:10px;border:1px solid var(--panel-edge);background:#1d1710;color:var(--muted);
   transition:transform .08s,border-color .16s,background .16s,color .16s;min-width:0}
@@ -170,10 +172,6 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
 .embed-foot a{color:var(--faint);text-decoration:none;font-family:var(--ff-mono);font-size:.66rem;letter-spacing:.1em}
 .embed-foot a:hover{color:var(--amber)}
 
-@media (max-width:560px){
-  .subdiv-row{flex-direction:column;align-items:stretch;gap:8px}
-  .subgrid{grid-template-columns:repeat(2,1fr)}
-}
 @media (prefers-reduced-motion:reduce){.needle{transition:none}.pulse.beat{animation:none}.beat-dot{transition:none}}
 /* ===== single-tool mode (?tool=tuner|metronome|timer) ===== */
 html[data-solo] .embed-head{display:none!important}
@@ -188,11 +186,13 @@ html[data-solo="timer"] .module:not([data-tool="timer"]){display:none!important}
 
 <div class="embed-head">
   <span class="mark" aria-hidden="true"></span>
-  <span class="name">Jam<b>Ready</b>Bass</span>
+  <span class="name">Practice <b>Station</b></span>
   <nav class="embed-nav" aria-label="Primary">
     <a href="index.html" data-jrb-scroll="jrb-station" class="active">Station</a>
     <a href="fretboard.html" data-jrb-scroll="jrb-fretnav">FretNav</a>
     <a href="groove.html" data-jrb-scroll="jrb-groove">GrooveChallenge</a>
+    <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
+    <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
   </nav>
 </div>
 
