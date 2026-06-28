@@ -190,9 +190,9 @@ html[data-solo="timer"] .module:not([data-tool="timer"]){display:none!important}
   <span class="mark" aria-hidden="true"></span>
   <span class="name">Jam<b>Ready</b>Bass</span>
   <nav class="embed-nav" aria-label="Primary">
-    <a href="index.html">Station</a>
-    <a href="fretboard.html">FretNav</a>
-    <a href="groove.html">GrooveChallenge</a>
+    <a href="index.html" data-jrb-scroll="jrb-station" class="active">Station</a>
+    <a href="fretboard.html" data-jrb-scroll="jrb-fretnav">FretNav</a>
+    <a href="groove.html" data-jrb-scroll="jrb-groove">GrooveChallenge</a>
   </nav>
 </div>
 
@@ -555,6 +555,18 @@ function getCtx(){
   window.addEventListener('resize',postHeight);
   if('ResizeObserver' in window){ new ResizeObserver(postHeight).observe(document.body); }
   setTimeout(postHeight,400);
+})();
+
+/* ===== menu jump-links: scroll the parent page when embedded ===== */
+(function(){
+  var embedded = (window.parent !== window);
+  document.querySelectorAll('.embed-nav a[data-jrb-scroll]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      if(!embedded) return; // standalone: follow the href to the full page
+      e.preventDefault();
+      try{ parent.postMessage({jamreadybass_scroll: a.dataset.jrbScroll}, '*'); }catch(_){}
+    });
+  });
 })();
 </script>
 </body>
