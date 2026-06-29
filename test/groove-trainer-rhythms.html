@@ -90,6 +90,20 @@
       <button data-s="quarter" class="active">Quarter</button>
       <button data-s="eighth">Eighth</button>
       <button data-s="sixteenth">16th</button>
+      <button data-s="random">🎲 Random</button>
+    </div>
+  </div>
+  <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
+    <div class="seg" id="diffSeg">
+      <button data-d="1">Basic</button>
+      <button data-d="2" class="active">Sixteenths</button>
+      <button data-d="3">Syncopated</button>
+    </div>
+    <div class="transport" style="margin-top:10px">
+      <button id="newRhythmBtn">🎲 New rhythm</button>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)">
+        <input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar
+      </label>
     </div>
   </div>
   <div class="row" style="margin-bottom:14px">
@@ -247,11 +261,11 @@ function setupFallback(){
 const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
   eighth:[0,.5,1,1.5,2,2.5,3,3.5],
   sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
-function positions(){return SUBDIV[subdiv];}
+let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, genOnsets=[];
+function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
-// apply eighth swing to offbeats, returns beats
 function swungBeats(posBeats){
-  if(swing>0 && (subdiv==='eighth')){
+  if(!randomMode && swing>0 && subdiv==='eighth'){
     const base=Math.floor(posBeats), frac=posBeats-base;
     if(Math.abs(frac-0.5)<1e-6) return base+(0.5+(swing/100)*0.18);
   }
@@ -259,48 +273,100 @@ function swungBeats(posBeats){
 }
 function expectedAbsTime(barStart,posBeats){ return barStart + swungBeats(posBeats)*beatDur + feelMs/1000; }
 
-// ---- Notation rendering (one-line rhythmic staff) ----
-function renderNotation(){
-  const svg=$('notation'); const pos=positions();
-  const x0=60,x1=660,y=80,stem=36,nhrx=8,nhry=5.5;
-  const X=p=>x0+(p/4)*(x1-x0);
-  let s='';
-  // staff line
-  s+=`<line x1="40" y1="${y}" x2="680" y2="${y}" stroke="#9a917c" stroke-width="1.5"/>`;
-  // time sig-ish + beat ticks/numbers
-  for(let b=0;b<4;b++){const bx=X(b);
-    s+=`<line x1="${bx}" y1="${y-3}" x2="${bx}" y2="${y+3}" stroke="#c3b89c" stroke-width="1"/>`;
-    s+=`<text x="${bx}" y="${y+28}" fill="#9a917c" font-size="12" font-family="${'ui-monospace,monospace'}" text-anchor="middle">${b+1}</text>`;}
-  // barline at end
-  s+=`<line x1="675" y1="${y-26}" x2="675" y2="${y+10}" stroke="#9a917c" stroke-width="2"/>`;
-  const open = (subdiv==='whole'||subdiv==='half');
-  const npb=notesPerBeat();
-  // noteheads + stems
-  pos.forEach((p,i)=>{
-    const cx=X(p);
-    const fill = open ? '#f5f1e6' : '#23201a';
-    s+=`<ellipse id="nh-${i}" cx="${cx}" cy="${y}" rx="${nhrx}" ry="${nhry}" fill="${fill}" stroke="#23201a" stroke-width="1.6" transform="rotate(-18 ${cx} ${y})"/>`;
-    if(subdiv!=='whole'){ // stem
-      s+=`<line id="st-${i}" x1="${cx+nhrx-1}" y1="${y-2}" x2="${cx+nhrx-1}" y2="${y-stem}" stroke="#23201a" stroke-width="1.6"/>`;
-    }
-  });
-  // beams for eighth/sixteenth (group per beat)
-  if(npb>=2){
-    for(let b=0;b<4;b++){
-      const grp=[]; pos.forEach((p,i)=>{ if(Math.floor(p)===b) grp.push(i); });
-      if(grp.length>=2){
-        const xa=X(pos[grp[0]])+nhrx-1, xb=X(pos[grp[grp.length-1]])+nhrx-1, by=y-stem;
-        s+=`<line x1="${xa}" y1="${by}" x2="${xb}" y2="${by}" stroke="#23201a" stroke-width="4"/>`;
-        if(npb===4) s+=`<line x1="${xa}" y1="${by+6}" x2="${xb}" y2="${by+6}" stroke="#23201a" stroke-width="4"/>`;
+// beat-cell vocabulary: d in sixteenths (1=16th,2=8th,3=dotted8th,4=quarter); s=slot 0-3
+const CELLS=[
+  {dif:1,notes:[{s:0,d:4}],rests:[]},                                   // quarter
+  {dif:1,notes:[{s:0,d:2},{s:2,d:2}],rests:[]},                         // two eighths
+  {dif:1,notes:[{s:2,d:2}],rests:[{s:0,d:2}]},                          // 8th-rest + 8th (the "and")
+  {dif:1,notes:[{s:0,d:2}],rests:[{s:2,d:2}]},                          // 8th + 8th-rest
+  {dif:1,notes:[],rests:[{s:0,d:4}]},                                   // beat rest
+  {dif:2,notes:[{s:0,d:1},{s:1,d:1},{s:2,d:1},{s:3,d:1}],rests:[]},     // four 16ths
+  {dif:2,notes:[{s:0,d:2},{s:2,d:1},{s:3,d:1}],rests:[]},               // 8th + two 16ths
+  {dif:2,notes:[{s:0,d:1},{s:1,d:1},{s:2,d:2}],rests:[]},               // two 16ths + 8th
+  {dif:2,notes:[{s:0,d:1},{s:1,d:2},{s:3,d:1}],rests:[]},               // 16-8-16 (syncopated)
+  {dif:3,notes:[{s:0,d:3},{s:3,d:1}],rests:[]},                         // dotted-8th + 16th (gallop)
+  {dif:3,notes:[{s:0,d:1},{s:1,d:3}],rests:[]},                         // 16th + dotted-8th
+  {dif:3,notes:[{s:1,d:1},{s:2,d:2}],rests:[{s:0,d:1}]},                // 16-rest, e, +8th
+  {dif:3,notes:[{s:0,d:2},{s:2,d:1}],rests:[{s:3,d:1}]},                // 8th + 16th + 16-rest
+];
+function generateBar(){
+  const pool=CELLS.filter(c=>c.dif<=genDiff);
+  let bar,onsets,tries=0;
+  do{
+    bar=[0,1,2,3].map(()=>pool[Math.floor(Math.random()*pool.length)]);
+    onsets=[]; bar.forEach((c,b)=>c.notes.forEach(n=>onsets.push(b+n.s/4)));
+    tries++;
+  }while(onsets.length<3 && tries<25);
+  onsets.sort((a,b)=>a-b);
+  currentBar=bar; genOnsets=onsets;
+}
+
+// ---- Notation primitives (shared) ----
+const NX0=60,NX1=660,NY=80,NSTEM=36,NHRX=8,NHRY=5.5,FILL='#23201a',PAPER='#f5f1e6';
+const NX=p=>NX0+(p/4)*(NX1-NX0);
+let noteCount=0, noteFills=[];
+function gHead(x,fill,id){return `<ellipse id="${id}" cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${FILL}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
+function gStem(x,id){return `<line id="${id}" x1="${x+NHRX-1}" y1="${NY-2}" x2="${x+NHRX-1}" y2="${NY-NSTEM}" stroke="${FILL}" stroke-width="1.6"/>`;}
+function gDot(x){return `<circle cx="${x+NHRX+5}" cy="${NY-3}" r="2.1" fill="${FILL}"/>`;}
+function gBeam(x1,x2,yy){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${FILL}" stroke-width="4"/>`;}
+function gFlag(x,dbl){const sx=x+NHRX-1,ty=NY-NSTEM;let s=`<path d="M${sx} ${ty} q11 5 8 17" stroke="${FILL}" stroke-width="2.4" fill="none"/>`;if(dbl)s+=`<path d="M${sx} ${ty+7} q11 5 8 17" stroke="${FILL}" stroke-width="2.4" fill="none"/>`;return s;}
+function gRest(x,d){
+  if(d>=4) return `<path d="M${x-3} ${NY-16} l6 7 l-6 7 l7 6" stroke="${FILL}" stroke-width="2.4" fill="none" stroke-linejoin="round"/>`;
+  if(d>=2) return `<g><circle cx="${x-1}" cy="${NY-8}" r="2.7" fill="${FILL}"/><path d="M${x+1} ${NY-10} l-3 15" stroke="${FILL}" stroke-width="2.2" fill="none"/></g>`+(d===3?gDot(x+2):'');
+  return `<g><circle cx="${x-1}" cy="${NY-9}" r="2.3" fill="${FILL}"/><circle cx="${x+2}" cy="${NY-3}" r="2.3" fill="${FILL}"/><path d="M${x+3} ${NY-11} l-5 16" stroke="${FILL}" stroke-width="2" fill="none"/></g>`;
+}
+function gStaff(){
+  let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="#9a917c" stroke-width="1.5"/>`;
+  for(let b=0;b<4;b++){const bx=NX(b);
+    s+=`<line x1="${bx}" y1="${NY-3}" x2="${bx}" y2="${NY+3}" stroke="#c3b89c" stroke-width="1"/>`;
+    s+=`<text x="${bx}" y="${NY+28}" fill="#9a917c" font-size="12" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
+  s+=`<line x1="675" y1="${NY-26}" x2="675" y2="${NY+10}" stroke="#9a917c" stroke-width="2"/>`;
+  return s;
+}
+const gPlayhead=`<line id="playhead" x1="${NX0}" y1="${NY-44}" x2="${NX0}" y2="${NY+16}" stroke="#ffb020" stroke-width="2" opacity="0"/>`;
+
+function renderNotation(){ randomMode ? renderRandom() : renderUniform(); }
+
+function renderUniform(){
+  const svg=$('notation'),pos=SUBDIV[subdiv],open=(subdiv==='whole'||subdiv==='half'),npb=notesPerBeat();
+  let s=gStaff(); noteFills=[];
+  pos.forEach((p,i)=>{const cx=NX(p),fill=open?PAPER:FILL;
+    s+=gHead(cx,fill,'nh-'+i); noteFills.push(fill);
+    if(subdiv!=='whole') s+=gStem(cx,'st-'+i);});
+  if(npb>=2){for(let b=0;b<4;b++){const grp=[];pos.forEach((p,i)=>{if(Math.floor(p)===b)grp.push(i);});
+    if(grp.length>=2){const xa=NX(pos[grp[0]])+NHRX-1,xb=NX(pos[grp[grp.length-1]])+NHRX-1,by=NY-NSTEM;
+      s+=gBeam(xa,xb,by); if(npb===4)s+=gBeam(xa,xb,by+6);}}}
+  noteCount=pos.length;
+  svg.innerHTML=s+gPlayhead;
+}
+
+function renderRandom(){
+  if(!currentBar) generateBar();
+  const svg=$('notation'); let s=gStaff(); noteFills=[]; let idx=0;
+  for(let b=0;b<4;b++){
+    const cell=currentBar[b], beamable=[];
+    cell.notes.forEach(n=>{const x=NX(b+n.s/4);
+      s+=gHead(x,FILL,'nh-'+idx); noteFills.push(FILL); s+=gStem(x,'st-'+idx);
+      if(n.d===3) s+=gDot(x);
+      n._x=x; if(n.d>=1&&n.d<=3) beamable.push(n);
+      idx++;});
+    cell.rests.forEach(r=>{ const cx=NX(b+(r.s+r.d/2)/4); s+=gRest(cx,r.d); });
+    if(beamable.length>=2){
+      const by=NY-NSTEM, x0=beamable[0]._x+NHRX-1, x1=beamable[beamable.length-1]._x+NHRX-1;
+      s+=gBeam(x0,x1,by);
+      for(let i=0;i<beamable.length;i++){const n=beamable[i]; if(n.d!==1)continue;
+        const prev=beamable[i-1],next=beamable[i+1],sx=n._x+NHRX-1;
+        if(next&&next.d===1){ s+=gBeam(sx,next._x+NHRX-1,by+6); }
+        else if(prev&&prev.d===1){ /* already drawn as prev's next */ }
+        else { const left=!!prev; s+=gBeam(sx, left?sx-11:sx+11, by+6); }
       }
-    }
+    } else if(beamable.length===1){ const n=beamable[0]; s+=gFlag(n._x, n.d===1); }
   }
-  // playhead
-  s+=`<line id="playhead" x1="${x0}" y1="${y-44}" x2="${x0}" y2="${y+16}" stroke="#ffb020" stroke-width="2" opacity="0"/>`;
-  svg.innerHTML=s;
+  noteCount=idx;
+  svg.innerHTML=s+gPlayhead;
 }
 function setNoteColor(i,color){const e=$('nh-'+i);if(e){e.setAttribute('fill',color);e.setAttribute('stroke',color);} const st=$('st-'+i);if(st)st.setAttribute('stroke',color);}
-function clearNoteColors(){const open=(subdiv==='whole'||subdiv==='half');positions().forEach((p,i)=>{const e=$('nh-'+i);if(e){e.setAttribute('fill',open?'#f5f1e6':'#23201a');e.setAttribute('stroke','#23201a');}const st=$('st-'+i);if(st)st.setAttribute('stroke','#23201a');});}
+function clearNoteColors(){for(let i=0;i<noteCount;i++){const e=$('nh-'+i);if(e){e.setAttribute('fill',noteFills[i]||FILL);e.setAttribute('stroke',FILL);}const st=$('st-'+i);if(st)st.setAttribute('stroke',FILL);}}
 
 // ---- Timing strip (centered on the beat; time falls down; x = ahead/behind) ----
 let strip=null,sctx=null,DPR=1,striphits=[];
@@ -393,6 +459,7 @@ function scheduleClick(t,accent){
 }
 let curBarStart=0;
 function registerBar(barStart){
+  if(randomMode && autoAdv){ generateBar(); renderNotation(); }
   clearNoteColors();
   curBarStart=barStart;
   const pos=positions();
@@ -427,8 +494,9 @@ function handleOnset(t){
   let best=null,bd=Infinity;
   for(const e of expected){ if(e.hit)continue; const d=Math.abs(tc-e.time); if(d<bd){bd=d;best=e;} }
   const pos=positions();
-  const spacingBeats = pos.length>1 ? (pos[1]-pos[0]) : 4;
-  const win=Math.min(0.18, spacingBeats*beatDur*0.5);
+  let minGap=4; for(let i=1;i<pos.length;i++){const g=pos[i]-pos[i-1];if(g<minGap)minGap=g;}
+  if(pos.length<2)minGap=4;
+  const win=Math.min(0.18, minGap*beatDur*0.5);
   if(best && bd<win){
     best.hit=true;
     const delta=(tc-best.time)*1000;   // latency already removed via tc; this is vs the feel target
@@ -495,8 +563,15 @@ function drawPlayhead(){
 
 // ---- Controls ----
 $('subdivSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  subdiv=b.dataset.s;[...$('subdivSeg').children].forEach(x=>x.classList.toggle('active',x===b));
-  $('swing').disabled=(subdiv!=='eighth'); renderNotation();});
+  [...$('subdivSeg').children].forEach(x=>x.classList.toggle('active',x===b));
+  if(b.dataset.s==='random'){ randomMode=true; $('randomRow').style.display='block'; $('swing').disabled=true; generateBar(); }
+  else { randomMode=false; subdiv=b.dataset.s; $('randomRow').style.display='none'; $('swing').disabled=(subdiv!=='eighth'); }
+  renderNotation();});
+$('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  genDiff=+b.dataset.d;[...$('diffSeg').children].forEach(x=>x.classList.toggle('active',x===b));
+  generateBar(); renderNotation();});
+$('newRhythmBtn').onclick=()=>{ generateBar(); renderNotation(); };
+$('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; };
 $('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   feelMs=+b.dataset.f;[...$('feelSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
 $('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;};
