@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pocket Probe (mobile) — Bass Timing Detection Test</title>
+<style>
+  :root{
+    --bg:#0c0d10; --panel:#14161b; --panel2:#1b1e25; --line:#2a2e38;
+    --ink:#e9e6dd; --muted:#8b8f9a; --amber:#ffb020; --amber-dim:#5a3f12;
+    --green:#46d39a; --red:#ff5a52; --blue:#58b6ff;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+  body{padding:24px;max-width:920px;margin:0 auto;line-height:1.5}
+  h1{font-size:13px;letter-spacing:.32em;text-transform:uppercase;font-weight:800;margin:0;color:var(--amber)}
+  .sub{color:var(--muted);font-size:13px;margin:6px 0 0}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .badge{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+  .badge.live{color:var(--green);border-color:#1e3b30}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .panel h2{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 14px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .ctrl{display:flex;flex-direction:column;gap:6px;min-width:120px;flex:1}
+  .ctrl label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .ctrl .val{font-family:var(--mono);color:var(--amber);font-size:13px}
+  input[type=range]{width:100%;accent-color:var(--amber)}
+  button{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:11px 16px;cursor:pointer;transition:.12s}
+  button:hover{border-color:var(--amber);color:var(--amber)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+  button.primary:hover{background:#ffc24d;color:#1a1205}
+  button.active{border-color:var(--amber);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+  button.danger:hover{border-color:var(--red);color:var(--red)}
+  .modes{display:flex;gap:10px;flex-wrap:wrap}
+  .warn{font-size:13px;color:var(--amber);background:rgba(255,176,32,.08);border:1px solid var(--amber-dim);border-radius:9px;padding:10px 13px;margin-top:14px;font-family:var(--mono)}
+  .warn b{color:var(--amber)}
+  .err{color:var(--red);font-family:var(--mono);font-size:13px;margin-top:10px}
+  /* viz */
+  .viz-wrap{display:grid;grid-template-columns:1fr 280px;gap:16px}
+  @media(max-width:720px){.viz-wrap{grid-template-columns:1fr}}
+  canvas{display:block;width:100%;background:#08090c;border:1px solid var(--line);border-radius:9px}
+  #strip{height:240px}
+  #energy{height:56px}
+  @media(max-width:720px){
+    body{padding:14px}
+    h1{font-size:12px}
+    .stat .v{font-size:22px}
+    .modes button{flex:1 1 calc(50% - 6px)}
+    .big-readout .lr{font-size:34px}
+    #strip{height:200px}
+  }
+  .legend{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:5px}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .stat{background:var(--panel2);padding:14px 16px}
+  .stat .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-family:var(--mono);font-size:26px;font-weight:700;margin-top:4px;line-height:1}
+  .stat .u{font-size:12px;color:var(--muted);font-weight:400}
+  .stat .note{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+  .big-readout{font-family:var(--mono);text-align:center;padding:10px 0}
+  .big-readout .lr{font-size:40px;font-weight:800;line-height:1}
+  .big-readout .lbl{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+  .log{font-family:var(--mono);font-size:12px;max-height:150px;overflow:auto;border:1px solid var(--line);border-radius:9px;background:#08090c}
+  .log div{padding:4px 12px;border-bottom:1px solid #15171d;display:flex;justify-content:space-between}
+  .log div:last-child{border-bottom:none}
+  .muted{color:var(--muted)}
+  .help{font-size:13px;color:var(--muted);line-height:1.6}
+  .help b{color:var(--ink)}
+  code{font-family:var(--mono);color:var(--amber);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Pocket&nbsp;Probe</h1>
+    <p class="sub">A diagnostic for one question: can mic onset detection measure bass timing tightly enough to build a trainer on?</p>
+  </div>
+  <div class="badge" id="statusBadge">audio off</div>
+</header>
+
+<div class="panel">
+  <h2>Step 1 · Start the audio engine</h2>
+  <div class="row">
+    <button class="primary" id="startBtn">Enable mic &amp; click</button>
+    <div class="ctrl" style="flex:2">
+      <label>What this does</label>
+      <span class="help">Asks for mic access, starts the timing engine, and loads the onset detector. Grant the mic prompt when it appears.</span>
+    </div>
+  </div>
+  <div class="warn"><b>Use headphones.</b> If the click plays through speakers, the mic hears it and logs phantom hits. Headphones keep the click out of the signal.</div>
+  <div class="err" id="errBox" style="display:none"></div>
+  <div class="warn" id="infoBox" style="display:none"></div>
+</div>
+
+<div class="panel" id="controlPanel" style="opacity:.4;pointer-events:none">
+  <h2>Step 2 · Tune the detector to your bass &amp; room</h2>
+  <div class="row" style="margin-bottom:16px">
+    <div class="ctrl"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="180" value="90"></div>
+    <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+    <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">5</span></label><input type="range" id="sens" min="1" max="10" value="5"></div>
+    <div class="ctrl"><label>Min gap <span class="val" id="refVal">90</span> ms</label><input type="range" id="ref" min="40" max="200" value="90"></div>
+  </div>
+  <div class="modes">
+    <button id="mDetect" class="active">Detect only</button>
+    <button id="mCalib">Calibrate offset</button>
+    <button id="mRun">Measure timing</button>
+    <button id="reset" class="danger" style="margin-left:auto">Reset data</button>
+  </div>
+  <p class="help" id="modeHelp" style="margin-top:12px">
+    <b>Detect only:</b> play notes and watch the energy meter fire. No timing — this is purely to confirm it catches every note with no doubles or phantom hits. Tune Sensitivity / Min gap until the hit count matches what you played.
+  </p>
+</div>
+
+<div class="panel" id="vizPanel" style="opacity:.4;pointer-events:none">
+  <h2>Live monitor</h2>
+  <div class="viz-wrap">
+    <div>
+      <canvas id="strip" height="300"></canvas>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--green)"></span>in pocket ≤35ms</span>
+        <span><span class="dot" style="background:var(--amber)"></span>loose ≤70ms</span>
+        <span><span class="dot" style="background:var(--red)"></span>off &gt;70ms</span>
+        <span class="muted">← rush &nbsp;|&nbsp; on beat &nbsp;|&nbsp; drag →</span>
+      </div>
+    </div>
+    <div>
+      <div class="big-readout">
+        <div class="lr" id="lastDelta">—</div>
+        <div class="lbl" id="lastLbl">last hit</div>
+      </div>
+      <canvas id="energy" height="70" style="margin-top:6px"></canvas>
+      <div class="legend"><span class="muted">energy</span><span style="color:var(--amber)">— threshold</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="statsPanel" style="opacity:.4;pointer-events:none">
+  <h2>Readout</h2>
+  <div class="stats">
+    <div class="stat"><div class="k">Hits detected</div><div class="v" id="sCount">0</div><div class="note" id="sExpected">expected: —</div></div>
+    <div class="stat"><div class="k">Consistency <span class="u">(std dev)</span></div><div class="v" id="sStd">—<span class="u"> ms</span></div><div class="note">the viability number — smaller = tighter detection</div></div>
+    <div class="stat"><div class="k">Accuracy <span class="u">(mean abs)</span></div><div class="v" id="sAcc">—<span class="u"> ms</span></div><div class="note">avg distance from the beat</div></div>
+    <div class="stat"><div class="k">Bias <span class="u">(rush / drag)</span></div><div class="v" id="sBias">—<span class="u"> ms</span></div><div class="note" id="sBiasNote">systematic lead or lag</div></div>
+  </div>
+  <div class="log" id="log" style="margin-top:14px"><div class="muted"><span>waiting for hits…</span><span></span></div></div>
+</div>
+
+<div class="panel">
+  <h2>How to read the result</h2>
+  <p class="help">
+    Play steady quarter notes straight to the click. The thing that decides viability is <b>Consistency (std dev)</b>, because it's unaffected by latency — it measures only how noisy the detection timestamps are.<br><br>
+    <b>Std dev under ~15&nbsp;ms</b> → detection is tight enough to build a real trainer on. <b>15–30&nbsp;ms</b> → usable but borderline; you'd lean on coarser feedback. <b>Over ~30&nbsp;ms</b> → the mic path is too noisy on bass, and the differentiating feature won't hold up (this is the answer you need to know now, not after building it).<br><br>
+    Also watch <b>Hits vs expected</b> in Detect-only: if it misses notes or fires twice on one, fix that with Sensitivity / Min gap before trusting any timing number. Try it on different basses, pickup positions, and tones — a clean bridge-pickup attack detects far better than a dark neck-pickup thump.
+  </p>
+</div>
+
+<script>
+"use strict";
+
+// ---- Worklet source (inlined, single-file friendly) ----
+const workletSrc = `
+class OnsetProcessor extends AudioWorkletProcessor {
+  constructor(){
+    super();
+    this.prev=0; this.baseline=1e-6; this.lastOnset=-1; this.armed=true;
+    this.threshFactor=4.0; this.refractory=0.09; this.absFloor=1e-5;
+    this.prevEnergy=0; this.fc=0;
+    this.port.onmessage=(e)=>{const d=e.data;
+      if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
+      if(d.refractory!==undefined)this.refractory=d.refractory;
+    };
+  }
+  process(inputs){
+    const inp=inputs[0]; if(!inp||!inp[0])return true;
+    const ch=inp[0], N=ch.length;
+    let e=0;
+    for(let i=0;i<N;i++){const x=ch[i];const y=x-0.97*this.prev;this.prev=x;e+=y*y;}
+    e/=N;
+    this.baseline=0.995*this.baseline+0.005*e;
+    const thresh=Math.max(this.absFloor,this.baseline*this.threshFactor);
+    const now=currentTime;
+    const rising=e>this.prevEnergy;
+    if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
+      this.lastOnset=now; this.armed=false;
+      this.port.postMessage({type:'onset',time:currentTime,strength:e/(thresh+1e-12)});
+    }
+    if(!this.armed&&e<thresh*0.5)this.armed=true;
+    this.prevEnergy=e;
+    if((this.fc++ %3)===0) this.port.postMessage({type:'level',e:e,thresh:thresh});
+    return true;
+  }
+}
+registerProcessor('onset-processor',OnsetProcessor);
+`;
+
+// ---- State ----
+let ac=null, micStream=null, src=null, node=null;
+let running=false, mode='detect';
+let gridTimes=[], nextNote=0, schedId=null;
+let bpm=90, clickVol=0.5;
+let calibSamples=[], calibOffset=0;
+let deltas=[], hitCount=0, runStart=0;
+let lastLevel={e:0,thresh:1};
+let params={threshFactor:5.2,refractory:0.09};
+let usingFallback=false, spNode=null, fb=null;
+
+const $=id=>document.getElementById(id);
+const badge=$('statusBadge'), errBox=$('errBox');
+
+// ---- Start ----
+$('startBtn').onclick=async()=>{
+  if(!window.isSecureContext){
+    showErr("This page needs a secure context for mic access. Open it in Chrome directly (file:// works), or serve it over https / localhost.");
+    return;
+  }
+  try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    await ac.resume();
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    src=ac.createMediaStreamSource(micStream);
+    try{
+      const blob=new Blob([workletSrc],{type:'application/javascript'});
+      await ac.audioWorklet.addModule(URL.createObjectURL(blob));
+      node=new AudioWorkletNode(ac,'onset-processor');
+      node.port.onmessage=onWorklet;
+      src.connect(node);            // node has no output; just analyses
+    }catch(werr){
+      setupFallback();              // local file:// blocks worklet module load
+    }
+    pushParams();
+    running=true; nextNote=ac.currentTime+0.2;
+    schedId=setInterval(scheduler,25);
+    badge.textContent='live'; badge.className='badge live';
+    $('startBtn').disabled=true; $('startBtn').textContent='Running';
+    ['controlPanel','vizPanel','statsPanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
+    sizeCanvases(); requestAnimationFrame(draw);
+    setTimeout(sizeCanvases,300);   // mobile layout often settles a beat after panels show
+  }catch(err){
+    showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address-bar permissions and reload.");
+  }
+};
+function showErr(m){errBox.style.display='block';errBox.textContent=m;}
+function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<b>Compatibility mode.</b> '+m;}
+
+// ---- Click scheduler (lookahead) ----
+function scheduler(){
+  if(!running)return;
+  while(nextNote < ac.currentTime+0.12){
+    scheduleClick(nextNote);
+    gridTimes.push(nextNote);
+    if(gridTimes.length>240)gridTimes.shift();
+    nextNote += 60/bpm;
+  }
+}
+function scheduleClick(t){
+  if(clickVol<=0)return;
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.frequency.value=1000; o.type='square';
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(clickVol*0.5,t+0.001);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.04);
+  o.connect(g).connect(ac.destination);
+  o.start(t); o.stop(t+0.05);
+}
+
+// ---- Worklet messages ----
+function onWorklet(ev){
+  const d=ev.data;
+  if(d.type==='level'){ lastLevel=d; return; }
+  if(d.type==='onset'){ handleOnset(d.time); }
+}
+
+// ---- ScriptProcessor fallback (for local file:// where worklet module load is blocked) ----
+function setupFallback(){
+  usingFallback=true;
+  showInfo("Opened as a local file, so it's using an older audio path that works without a server. Timing resolution is coarser here \u2014 for a trustworthy std-dev reading, serve it over https (GitHub Pages) and reload.");
+  const bufSize=512;
+  spNode=ac.createScriptProcessor(bufSize,1,1);
+  fb={prev:0,baseline:1e-6,lastOnset:-1,armed:true,prevEnergy:0};
+  spNode.onaudioprocess=(e)=>{
+    const ch=e.inputBuffer.getChannelData(0), sr=ac.sampleRate;
+    const bufStart=ac.currentTime-ch.length/sr, B=128;
+    for(let off=0; off+B<=ch.length; off+=B){
+      let en=0;
+      for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.97*fb.prev;fb.prev=x;en+=y*y;}
+      en/=B;
+      fb.baseline=0.995*fb.baseline+0.005*en;
+      const thresh=Math.max(1e-5,fb.baseline*params.threshFactor);
+      const tNow=bufStart+(off+B)/sr, rising=en>fb.prevEnergy;
+      if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){
+        fb.lastOnset=tNow; fb.armed=false; handleOnset(bufStart+off/sr);
+      }
+      if(!fb.armed&&en<thresh*0.5)fb.armed=true;
+      fb.prevEnergy=en; lastLevel={e:en,thresh:thresh};
+    }
+  };
+  const mute=ac.createGain(); mute.gain.value=0;       // SP needs a destination to run
+  src.connect(spNode); spNode.connect(mute).connect(ac.destination);
+}
+function nearestGrid(t){
+  let best=Infinity,g=null;
+  for(const x of gridTimes){const dd=Math.abs(t-x);if(dd<best){best=dd;g=x;}}
+  return g;
+}
+function handleOnset(t){
+  hitCount++;
+  if(mode==='detect'){ flashHit(0,'#58b6ff'); $('sCount').textContent=hitCount; return; }
+  const g=nearestGrid(t); if(g===null)return;
+  const rawMs=(t-g)*1000;
+  const beatMs=(60/bpm)*1000;
+  if(Math.abs(rawMs)>beatMs*0.5) return; // closer to a neighbouring beat; skip
+  if(mode==='calibrate'){
+    calibSamples.push(rawMs);
+    calibOffset=median(calibSamples);
+    $('lastDelta').textContent=calibSamples.length;
+    $('lastLbl').textContent='calib taps';
+    flashHit(rawMs,'#ffb020');
+    return;
+  }
+  // measure
+  const delta=rawMs-calibOffset;
+  deltas.push(delta);
+  hitCount; $('sCount').textContent=deltas.length;
+  const col = Math.abs(delta)<=35?'#46d39a':Math.abs(delta)<=70?'#ffb020':'#ff5a52';
+  flashHit(delta,col);
+  $('lastDelta').textContent=(delta>0?'+':'')+delta.toFixed(0);
+  $('lastDelta').style.color=col;
+  $('lastLbl').textContent=delta>4?'dragging':delta<-4?'rushing':'on beat';
+  addLog(delta,col);
+  updateStats();
+}
+
+// ---- Stats ----
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
+function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
+function updateStats(){
+  if(!deltas.length)return;
+  const s=std(deltas), acc=mean(deltas.map(Math.abs)), bias=mean(deltas);
+  $('sStd').innerHTML=s.toFixed(1)+'<span class="u"> ms</span>';
+  $('sStd').style.color = s<15?'#46d39a':s<30?'#ffb020':'#ff5a52';
+  $('sAcc').innerHTML=acc.toFixed(1)+'<span class="u"> ms</span>';
+  $('sBias').innerHTML=(bias>0?'+':'')+bias.toFixed(1)+'<span class="u"> ms</span>';
+  $('sBiasNote').textContent = bias>4?'tends to drag (late)':bias<-4?'tends to rush (early)':'centred';
+  const elapsed=(ac.currentTime-runStart);
+  $('sExpected').textContent='expected: ~'+Math.max(0,Math.round(elapsed/(60/bpm)));
+}
+
+// ---- Log ----
+function addLog(d,col){
+  const log=$('log');
+  if(log.firstChild&&log.firstChild.classList&&log.firstChild.classList.contains('muted'))log.innerHTML='';
+  const row=document.createElement('div');
+  row.innerHTML='<span>'+(d>0?'+':'')+d.toFixed(0)+' ms</span><span class="muted">'+(d>4?'drag':d<-4?'rush':'pocket')+'</span>';
+  row.firstChild.style.color=col;
+  log.insertBefore(row,log.firstChild);
+  while(log.children.length>40)log.removeChild(log.lastChild);
+}
+
+// ---- Canvas viz ----
+let strip,sctx,energy,ectx, hits=[], DPR=1;
+function sizeCanvases(){
+  strip=$('strip'); sctx=strip.getContext('2d');
+  energy=$('energy'); ectx=energy.getContext('2d');
+  DPR=Math.min(window.devicePixelRatio||1,2);   // cap so high-density phones don't blow up the buffer
+  for(const c of [strip,energy]){
+    const r=c.getBoundingClientRect();
+    c.width=Math.max(1,Math.round(r.width*DPR));
+    c.height=Math.max(1,Math.round(r.height*DPR));
+  }
+}
+window.addEventListener('resize',()=>{if(running)sizeCanvases();});
+window.addEventListener('orientationchange',()=>{setTimeout(()=>{if(running)sizeCanvases();},250);});
+function flashHit(delta,col){ hits.push({delta,col,t:performance.now()}); }
+function draw(){
+  if(!running)return;
+  // timing strip: center=on beat, x maps ±120ms; hits fall downward & fade
+  const W=strip.width,H=strip.height,cx=W/2,range=120;
+  sctx.clearRect(0,0,W,H);
+  // grid
+  sctx.strokeStyle='#1a1d24';sctx.lineWidth=1;
+  for(const ms of [-100,-50,50,100]){const x=cx+(ms/range)*(W/2);sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();}
+  // pocket band
+  sctx.fillStyle='rgba(70,211,154,.06)';
+  const pb=(35/range)*(W/2); sctx.fillRect(cx-pb,0,pb*2,H);
+  // center line
+  sctx.strokeStyle='#46d39a';sctx.lineWidth=2*DPR;
+  sctx.beginPath();sctx.moveTo(cx,0);sctx.lineTo(cx,H);sctx.stroke();
+  // hits
+  const now=performance.now();
+  hits=hits.filter(h=>now-h.t<3200);
+  for(const h of hits){
+    const age=(now-h.t)/3200;
+    const y=age*H, x=cx+(Math.max(-range,Math.min(range,h.delta))/range)*(W/2);
+    sctx.globalAlpha=1-age;
+    sctx.fillStyle=h.col;
+    sctx.beginPath();sctx.arc(x,y,5*DPR,0,7);sctx.fill();
+  }
+  sctx.globalAlpha=1;
+  // running mean marker
+  if(mode==='run'&&deltas.length>3){
+    const m=mean(deltas.slice(-30)); const x=cx+(Math.max(-range,Math.min(range,m))/range)*(W/2);
+    sctx.strokeStyle='#ffb020';sctx.lineWidth=1.5*DPR;
+    sctx.setLineDash([4,4]);sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();sctx.setLineDash([]);
+  }
+  // energy meter
+  const EW=energy.width,EH=energy.height;
+  ectx.clearRect(0,0,EW,EH);
+  const e=Math.min(1,Math.sqrt(lastLevel.e)*6), th=Math.min(1,Math.sqrt(lastLevel.thresh)*6);
+  ectx.fillStyle='#46d39a';ectx.fillRect(0,EH*(1-e),EW,EH*e);
+  ectx.strokeStyle='#ffb020';ectx.lineWidth=2*DPR;
+  ectx.beginPath();ectx.moveTo(0,EH*(1-th));ectx.lineTo(EW,EH*(1-th));ectx.stroke();
+  requestAnimationFrame(draw);
+}
+
+// ---- Controls ----
+$('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;};
+$('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
+$('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
+$('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
+function pushParams(){
+  const sens=+$('sens').value;
+  params.threshFactor=8.0-(sens-1)*0.7;
+  params.refractory=(+$('ref').value)/1000;
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});
+}
+function setMode(m){
+  mode=m;
+  $('mDetect').classList.toggle('active',m==='detect');
+  $('mCalib').classList.toggle('active',m==='calibrate');
+  $('mRun').classList.toggle('active',m==='run');
+  const h={
+    detect:"<b>Detect only:</b> play notes and watch the energy meter fire. No timing — confirm it catches every note with no doubles or phantom hits. Match the hit count to what you played using Sensitivity / Min gap.",
+    calibrate:"<b>Calibrate:</b> play steady quarter notes on the beat for ~15–20 hits. This sets the latency offset so 'on the beat' reads near zero. (Consistency/std dev doesn't need this — it's offset-proof.)",
+    run:"<b>Measure timing:</b> play steady quarters to the click. Watch Consistency (std dev) — that's the number that tells you if detection is tight enough to build on."
+  }[m];
+  $('modeHelp').innerHTML=h;
+  runStart=ac?ac.currentTime:0;
+}
+$('mDetect').onclick=()=>{hitCount=0;$('sCount').textContent=0;setMode('detect');};
+$('mCalib').onclick=()=>{calibSamples=[];setMode('calibrate');};
+$('mRun').onclick=()=>{deltas=[];$('log').innerHTML='<div class="muted"><span>waiting for hits…</span><span></span></div>';setMode('run');};
+$('reset').onclick=()=>{
+  deltas=[];calibSamples=[];calibOffset=0;hitCount=0;hits=[];
+  $('sCount').textContent=0;$('sStd').innerHTML='—<span class="u"> ms</span>';
+  $('sAcc').innerHTML='—<span class="u"> ms</span>';$('sBias').innerHTML='—<span class="u"> ms</span>';
+  $('lastDelta').textContent='—';$('lastDelta').style.color='';$('lastLbl').textContent='last hit';
+  $('log').innerHTML='<div class="muted"><span>waiting for hits…</span><span></span></div>';
+  $('sExpected').textContent='expected: —';
+};
+</script>
+</body>
+</html>
