@@ -110,7 +110,7 @@
     <button id="resetBtn" class="danger" style="margin-left:auto">Reset score</button>
   </div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)">
-    <input type="checkbox" id="guideChk" style="accent-color:var(--amber)"> Play a soft guide tick on every note (hear the rhythm)
+    <input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)
   </label>
   <details>
     <summary>Detection tuning</summary>
@@ -187,7 +187,7 @@ registerProcessor('onset-processor',OnsetProcessor);`;
 let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
 let running=false;
 let params={threshFactor:5.2,refractory:0.09};
-let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=false;
+let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0;
 let deltas=[], hits=0, missed=0, extra=0;
@@ -254,7 +254,7 @@ function expectedAbsTime(barStart,posBeats){ return barStart + swungBeats(posBea
 // ---- Notation rendering (one-line rhythmic staff) ----
 function renderNotation(){
   const svg=$('notation'); const pos=positions();
-  const x0=60,x1=660,y=82,stem=36,nhrx=8,nhry=6;
+  const x0=60,x1=660,y=80,stem=36,nhrx=8,nhry=5.5;
   const X=p=>x0+(p/4)*(x1-x0);
   let s='';
   // staff line
@@ -354,10 +354,10 @@ function registerBar(barStart){
   pos.forEach((p,i)=>{
     const t=expectedAbsTime(barStart,p);
     expected.push({time:t,hit:false,idx:i});
-    if(guide){ // soft guide tick at each note
+    if(guide && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
       o.frequency.value=2200;o.type='sine';
-      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.18,t+0.001);
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.22,t+0.001);
       g.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
       o.connect(g).connect(ac.destination);o.start(t);o.stop(t+0.04);
     }
@@ -368,22 +368,25 @@ function registerCalibBeat(t){ expected.push({time:t,hit:false,idx:-1}); }
 // ---- Onset handling ----
 function handleOnset(t){
   if(mode==='idle') return;
-  // nearest expected within window
-  let best=null,bd=Infinity;
-  for(const e of expected){ if(e.hit)continue; const d=Math.abs(t-e.time); if(d<bd){bd=d;best=e;} }
-  const pos=positions();
-  const spacingBeats = pos.length>1 ? (pos[1]-pos[0]) : 4;
-  const win=Math.min(0.18, spacingBeats*beatDur*0.5);
   if(mode==='calibrate'){
+    // match on raw time to measure latency
+    let best=null,bd=Infinity;
+    for(const e of expected){ if(e.hit)continue; const d=Math.abs(t-e.time); if(d<bd){bd=d;best=e;} }
     if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw); calibOffset=median(calibSamples);
       $('countin').textContent='calibrating… '+calibSamples.length+' / 16 taps';
       if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+calibOffset.toFixed(0)+'ms'; setTimeout(()=>stopTransport(false),50); } }
     return;
   }
-  // play
+  // play: remove measured latency BEFORE matching so the right slot is chosen
+  const tc = t - calibOffset/1000;
+  let best=null,bd=Infinity;
+  for(const e of expected){ if(e.hit)continue; const d=Math.abs(tc-e.time); if(d<bd){bd=d;best=e;} }
+  const pos=positions();
+  const spacingBeats = pos.length>1 ? (pos[1]-pos[0]) : 4;
+  const win=Math.min(0.18, spacingBeats*beatDur*0.5);
   if(best && bd<win){
     best.hit=true;
-    const delta=(t-best.time)*1000 - calibOffset;
+    const delta=(tc-best.time)*1000;   // latency already removed via tc
     deltas.push(delta); hits++;
     const r=rating(Math.abs(delta));
     setNoteColor(best.idx, r.c);
