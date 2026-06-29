@@ -304,6 +304,7 @@ function startTransport(forCalib){
   if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; }
   nextBeatTime=ac.currentTime+0.25;
   $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
+  $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
   schedId=setInterval(scheduler,25);
   requestAnimationFrame(drawPlayhead);
 }
@@ -311,6 +312,7 @@ function stopTransport(silent){
   if(schedId){clearInterval(schedId);schedId=null;}
   $('playhead') && $('playhead').setAttribute('opacity','0');
   $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
+  $('stopBtn').textContent='■ Stop';
   if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent=''; }
   if(!silent) mode='idle';
 }
@@ -374,7 +376,8 @@ function handleOnset(t){
   const win=Math.min(0.18, spacingBeats*beatDur*0.5);
   if(mode==='calibrate'){
     if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw); calibOffset=median(calibSamples);
-      $('countin').textContent='calibrating… '+calibSamples.length+' taps'; }
+      $('countin').textContent='calibrating… '+calibSamples.length+' / 16 taps';
+      if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+calibOffset.toFixed(0)+'ms'; setTimeout(()=>stopTransport(false),50); } }
     return;
   }
   // play
