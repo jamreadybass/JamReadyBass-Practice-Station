@@ -131,7 +131,7 @@ body{padding:16px}
 .sub-btn .glyph svg{display:block}
 .sub-btn .lbl{font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.05em;text-transform:uppercase}
 .sub-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
-.submeter{display:flex;gap:8px;justify-content:center;align-items:center;min-height:14px;margin:2px 0 -2px}
+.submeter{display:none}
 .submeter .sd{width:9px;height:9px;border-radius:50%;background:#241d12;border:1px solid #000;transition:transform .06s,background .06s,box-shadow .06s}
 .submeter .sd.main{width:12px;height:12px}
 .submeter .sd.on{background:var(--cream);box-shadow:0 0 9px rgba(236,226,207,.4);transform:scale(1.18)}
@@ -195,8 +195,8 @@ html[data-solo="timer"] .module:not([data-tool="timer"]){display:none!important}
   <span class="name">Jam<b>Ready</b>Bass</span>
   <nav class="embed-nav" aria-label="Primary">
     <span class="active">Station</span>
-    <a href="fretboard.html?embed" target="_blank" rel="noopener">FretNav</a>
-    <a href="groove.html?embed" target="_blank" rel="noopener">GrooveChallenge</a>
+    <a href="#" data-jrb-scroll="jrb-fretnav">FretNav</a>
+    <a href="#" data-jrb-scroll="jrb-groove">GrooveChallenge</a>
     <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
     <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
   </nav>
@@ -577,7 +577,7 @@ function getCtx(){
     a.addEventListener('click', function(e){
       if(!embedded) return; // standalone: follow the href to the full page
       e.preventDefault();
-      try{ parent.postMessage({jamreadybass_scroll: a.dataset.jrbScroll}, '*'); }catch(_){}
+      try{ parent.postMessage({jamreadybass:true, jamreadybass_scroll: a.dataset.jrbScroll}, '*'); }catch(_){}
     });
   });
 })();

@@ -229,9 +229,10 @@ footer .small{color:var(--faint);font-size:.72rem;font-family:var(--ff-mono);mar
 .embed-menu{display:none}
 .embed-mode .embed-menu{display:flex;gap:9px;justify-content:flex-end;align-items:center;
   padding:8px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line)}
-.embed-menu a{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;
+.embed-menu a,.embed-menu span{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;
   color:var(--muted);text-decoration:none;padding:6px 11px;border:1px solid var(--panel-edge);border-radius:8px;transition:.16s}
 .embed-menu a:hover{color:var(--cream);border-color:var(--brass)}
+.embed-menu span.active{color:var(--amber);border-color:var(--brass);cursor:default}
 .embed-menu a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
 .embed-menu a.em-book:hover{color:#231603;filter:brightness(1.05)}
 </style>
@@ -261,6 +262,9 @@ footer .small{color:var(--faint);font-size:.72rem;font-family:var(--ff-mono);mar
 <main>
 
 <div class="embed-menu wrap">
+  <a href="#" data-jrb-scroll="jrb-station">Station</a>
+  <a href="#" data-jrb-scroll="jrb-fretnav">FretNav</a>
+  <span class="active">GrooveChallenge</span>
   <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
   <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
 </div>
@@ -643,6 +647,15 @@ renderReflections();
   window.addEventListener('resize',postHeight);
   if(window.ResizeObserver){ new ResizeObserver(postHeight).observe(document.body); }
   setTimeout(postHeight,300);
+})();
+(function(){
+  if(window.parent===window) return;
+  document.querySelectorAll('.embed-menu a[data-jrb-scroll]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      e.preventDefault();
+      try{ parent.postMessage({jamreadybass:true, jamreadybass_scroll: a.dataset.jrbScroll}, '*'); }catch(_){}
+    });
+  });
 })();
 </script>
 </body>
