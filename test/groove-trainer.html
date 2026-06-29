@@ -69,11 +69,13 @@
   .log div:last-child{border-bottom:none}
   .muted{color:var(--muted)}
   /* scoring */
-  .score-hero{display:flex;align-items:center;gap:18px;margin-bottom:16px}
-  .score-num{font-family:var(--mono);font-size:64px;font-weight:800;line-height:.9;min-width:110px;text-align:center;color:var(--muted)}
-  .score-meta{flex:1}
-  .score-grade{font-size:18px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:10px}
-  .score-bar{height:10px;background:#0a0b0e;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  .score-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .score-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .sc-k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .sc-k .u{text-transform:none;letter-spacing:0}
+  .sc-num{font-family:var(--mono);font-size:46px;font-weight:800;line-height:1;margin:6px 0 2px;color:var(--muted)}
+  .sc-grade{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:10px;min-height:18px}
+  .score-bar{height:8px;background:#0a0b0e;border:1px solid var(--line);border-radius:99px;overflow:hidden}
   .score-bar span{display:block;height:100%;width:0;background:var(--muted);border-radius:99px;transition:width .25s,background .25s}
   .dist{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
   .drow{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px}
@@ -83,7 +85,7 @@
   .dpct{width:38px;text-align:right;color:var(--muted);flex:none}
   .coach{font-size:14px;line-height:1.5;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:12px 14px}
   .coach b{color:var(--amber)}
-  @media(max-width:720px){.score-num{font-size:52px;min-width:90px}}
+  @media(max-width:720px){.sc-num{font-size:38px}}
   .help{font-size:13px;color:var(--muted);line-height:1.6}
   .help b{color:var(--ink)}
   code{font-family:var(--mono);color:var(--amber);font-size:12px}
@@ -155,16 +157,23 @@
 </div>
 
 <div class="panel" id="statsPanel" style="opacity:.4;pointer-events:none">
-  <h2>Pocket score</h2>
-  <div class="score-hero">
-    <div class="score-num" id="pScore">—</div>
-    <div class="score-meta">
-      <div class="score-grade" id="pGrade">play in Measure timing to start scoring</div>
-      <div class="score-bar"><span id="pBar"></span></div>
+  <h2>Your timing, two ways</h2>
+  <div class="score-cards">
+    <div class="score-card">
+      <div class="sc-k">Center <span class="u">· on the beat</span></div>
+      <div class="sc-num" id="cenNum">—</div>
+      <div class="sc-grade" id="cenGrade">play to score</div>
+      <div class="score-bar"><span id="cenBar"></span></div>
+    </div>
+    <div class="score-card">
+      <div class="sc-k">Evenness <span class="u">· repeatable</span></div>
+      <div class="sc-num" id="evnNum">—</div>
+      <div class="sc-grade" id="evnGrade">play to score</div>
+      <div class="score-bar"><span id="evnBar"></span></div>
     </div>
   </div>
   <div class="dist" id="dist"></div>
-  <div class="coach" id="coach">Keep playing — a few more hits and the coaching reads in.</div>
+  <div class="coach" id="coach">Keep playing — a few more hits and the read settles.</div>
   <h2 style="margin-top:20px">Underlying readout</h2>
   <div class="stats">
     <div class="stat"><div class="k">Hits detected</div><div class="v" id="sCount">0</div><div class="note" id="sExpected">expected: —</div></div>
@@ -377,26 +386,36 @@ function rating(absd){
 function pocketScore(){
   if(deltas.length<3)return null;
   const acc=mean(deltas.map(Math.abs)), s=std(deltas);
-  return Math.max(0,Math.min(100, 100 - acc*0.6 - s*0.8)); // consistency weighted a touch heavier
+  return Math.max(0,Math.min(100, 100 - acc*0.6 - s*0.8));
 }
-function grade(sc){
-  if(sc>=90)return{w:'In the pocket',c:'#46d39a'};
+// two co-equal skills: Center (where your average sits) and Evenness (how repeatable)
+function centerScore(bias){return Math.max(0,Math.min(100,100-Math.abs(bias)*1.4));}   // latency-sensitive; rewards a locked center
+function evennessScore(s){return Math.max(0,Math.min(100,100-s*0.9));}                  // latency-proof; rewards a tight spread
+function centerGrade(sc,bias){
+  const dir = Math.abs(bias)<6?'':bias>0?' · drag':' · rush';
+  const w = sc>=90?'Dead center':sc>=75?'Centered':sc>=60?'Slightly off':sc>=40?'Off-center':'Drifting';
+  const c = sc>=75?'#46d39a':sc>=60?'#ffb020':sc>=40?'#ff8a3d':'#ff5a52';
+  return {w:w+dir,c};
+}
+function evennessGrade(sc){
+  if(sc>=90)return{w:'Locked',c:'#46d39a'};
   if(sc>=75)return{w:'Tight',c:'#7ad39a'};
-  if(sc>=60)return{w:'Solid',c:'#ffb020'};
+  if(sc>=60)return{w:'Steady',c:'#ffb020'};
   if(sc>=40)return{w:'Loose',c:'#ff8a3d'};
-  return{w:'Work the click',c:'#ff5a52'};
+  return{w:'Scattered',c:'#ff5a52'};
 }
 const RTYPES=[['Perfect',15,'#46d39a'],['Great',35,'#7ad39a'],['Good',60,'#ffb020'],['Loose',100,'#ff8a3d'],['Miss',Infinity,'#ff5a52']];
 function renderScore(){
-  const sc=pocketScore();
-  if(sc===null){return;}
-  const g=grade(sc);
-  $('pScore').textContent=Math.round(sc);
-  $('pScore').style.color=g.c;
-  $('pGrade').textContent=g.w;
-  $('pGrade').style.color=g.c;
-  $('pBar').style.width=sc+'%';
-  $('pBar').style.background=g.c;
+  if(deltas.length<3)return;
+  const bias=mean(deltas), s=std(deltas);
+  const cs=centerScore(bias), es=evennessScore(s);
+  const cg=centerGrade(cs,bias), eg=evennessGrade(es);
+  $('cenNum').textContent=Math.round(cs); $('cenNum').style.color=cg.c;
+  $('cenGrade').textContent=cg.w; $('cenGrade').style.color=cg.c;
+  $('cenBar').style.width=cs+'%'; $('cenBar').style.background=cg.c;
+  $('evnNum').textContent=Math.round(es); $('evnNum').style.color=eg.c;
+  $('evnGrade').textContent=eg.w; $('evnGrade').style.color=eg.c;
+  $('evnBar').style.width=es+'%'; $('evnBar').style.background=eg.c;
   // distribution
   const counts=RTYPES.map(()=>0);
   for(const d of deltas){const a=Math.abs(d);for(let i=0;i<RTYPES.length;i++){if(a<=RTYPES[i][1]){counts[i]++;break;}}}
@@ -407,18 +426,17 @@ function renderScore(){
       +'<span class="dbar"><i style="width:'+pct+'%;background:'+r[2]+'"></i></span>'
       +'<span class="dpct">'+pct+'%</span></div>';
   }).join('');
-  // coaching
-  const bias=mean(deltas), s=std(deltas);
+  // coaching, in center/evenness terms
   let line;
-  if(deltas.length<6) line='Keep playing — a few more hits and the coaching reads in.';
+  if(deltas.length<6) line='Keep playing — a few more hits and the read settles.';
   else{
-    const dir = bias>6?('You tend to <b>drag</b>, landing ~'+Math.abs(bias).toFixed(0)+'ms late. Anticipate the click a hair.')
-             : bias<-6?('You tend to <b>rush</b>, landing ~'+Math.abs(bias).toFixed(0)+'ms early. Let the click lead.')
-             : 'Your center is locked — no consistent rush or drag.';
-    const spread = s>30?(' Your timing is scattered (±'+s.toFixed(0)+'ms) — chase evenness before speed.')
-                 : s>15?(' Spread is decent (±'+s.toFixed(0)+'ms); tighten toward the line.')
-                 : ' And your spread is tight — that&rsquo;s real pocket.';
-    line=dir+spread;
+    const cen = Math.abs(bias)<6 ? 'Your <b>center is locked</b> — you sit right on the beat.'
+             : bias>0 ? 'Your center <b>drags</b> ~'+Math.abs(bias).toFixed(0)+'ms late.'
+             : 'Your center <b>rushes</b> ~'+Math.abs(bias).toFixed(0)+'ms early.';
+    const evn = s>50 ? ' The work right now is evenness — notes scatter ±'+s.toFixed(0)+'ms, so chase repeatable before perfect.'
+             : s>25 ? ' Evenness is coming along (±'+s.toFixed(0)+'ms); tighten the spread next.'
+             : ' And your spread is tight (±'+s.toFixed(0)+'ms) — that&rsquo;s real pocket.';
+    line=cen+evn;
   }
   $('coach').innerHTML=line;
 }
@@ -539,10 +557,14 @@ $('reset').onclick=()=>{
   $('lastDelta').textContent='—';$('lastDelta').style.color='';$('lastLbl').textContent='last hit';
   $('log').innerHTML='<div class="muted"><span>waiting for hits…</span><span></span></div>';
   $('sExpected').textContent='expected: —';
-  $('pScore').textContent='—';$('pScore').style.color='';
-  $('pGrade').textContent='play in Measure timing to start scoring';$('pGrade').style.color='';
-  $('pBar').style.width='0';$('dist').innerHTML='';
-  $('coach').innerHTML='Keep playing — a few more hits and the coaching reads in.';
+  $('cenNum').textContent='—';$('cenNum').style.color='';
+  $('cenGrade').textContent='play to score';$('cenGrade').style.color='';
+  $('cenBar').style.width='0';
+  $('evnNum').textContent='—';$('evnNum').style.color='';
+  $('evnGrade').textContent='play to score';$('evnGrade').style.color='';
+  $('evnBar').style.width='0';
+  $('dist').innerHTML='';
+  $('coach').innerHTML='Keep playing — a few more hits and the read settles.';
 };
 </script>
 </body>
