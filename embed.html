@@ -24,22 +24,14 @@ html,body{background:radial-gradient(900px 500px at 50% -10%,#211a10 0%,rgba(33,
 body{padding:16px}
 ::selection{background:var(--amber);color:#1a1304}
 
-.embed-head{display:flex;align-items:center;gap:10px;margin:2px 4px 16px}
-.embed-head .mark{width:26px;height:26px;border-radius:6px;flex:none;display:grid;place-items:center;
-  background:linear-gradient(150deg,#2c2417,#15110a);border:1px solid var(--panel-edge)}
-.embed-head .mark::before{content:"";width:12px;height:12px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#ffd27a,var(--amber-deep) 60%,#8a4400);box-shadow:0 0 10px var(--amber-glow)}
-.embed-head .name{font-family:var(--ff-display);font-size:1.05rem;letter-spacing:.02em;text-transform:uppercase}
-.embed-head .name b{color:var(--amber)}
-.embed-head .tag{margin-left:auto;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.26em;
-  text-transform:uppercase;color:var(--faint)}
-.embed-nav{margin-left:auto;display:flex;gap:13px;flex-wrap:wrap;justify-content:flex-end}
-.embed-nav a,.embed-nav span{font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--faint);text-decoration:none;transition:color .16s}
-.embed-nav a:hover{color:var(--amber)}
-.embed-nav .active{color:var(--amber)}
-.embed-nav a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border:1px solid #a85d10;border-radius:7px;padding:4px 10px}
-.embed-nav a.em-book:hover{color:#231603;filter:brightness(1.05)}
+.embed-menu{display:flex;gap:9px;justify-content:flex-end;align-items:center;flex-wrap:wrap;
+  margin:2px 0 16px;padding:2px 0 12px;border-bottom:1px solid var(--line)}
+.embed-menu a,.embed-menu span{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;padding:6px 11px;border:1px solid var(--panel-edge);border-radius:8px;transition:.16s}
+.embed-menu a:hover{color:var(--cream);border-color:var(--brass)}
+.embed-menu span.active{color:var(--amber);border-color:var(--brass);cursor:default}
+.embed-menu a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
+.embed-menu a.em-book:hover{color:#231603;filter:brightness(1.05)}
 
 .grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:600px;margin:0 auto}
 
@@ -180,7 +172,7 @@ input[type=number]{font-family:var(--ff-mono);font-size:.9rem;color:var(--cream)
 
 @media (prefers-reduced-motion:reduce){.needle{transition:none}.pulse.beat{animation:none}.beat-dot{transition:none}}
 /* ===== single-tool mode (?tool=tuner|metronome|timer) ===== */
-html[data-solo] .embed-head{display:none!important}
+html[data-solo] .embed-menu{display:none!important}
 html[data-solo] .grid{margin-top:2px}
 html[data-solo="tuner"] .module:not([data-tool="tuner"]),
 html[data-solo="metronome"] .module:not([data-tool="metronome"]),
@@ -190,16 +182,12 @@ html[data-solo="timer"] .module:not([data-tool="timer"]){display:none!important}
 </head>
 <body>
 
-<div class="embed-head">
-  <span class="mark" aria-hidden="true"></span>
-  <span class="name">Jam<b>Ready</b>Bass</span>
-  <nav class="embed-nav" aria-label="Primary">
-    <span class="active">Station</span>
-    <a href="#" data-jrb-scroll="jrb-fretnav">FretNav</a>
-    <a href="#" data-jrb-scroll="jrb-groove">GrooveChallenge</a>
-    <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
-    <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
-  </nav>
+<div class="embed-menu">
+  <span class="active">PracticeStation</span>
+  <a href="#" data-jrb-scroll="jrb-fretnav">FretNav</a>
+  <a href="#" data-jrb-scroll="jrb-groove">GrooveChallenge</a>
+  <a href="https://www.jamreadybass.com/roadmap" target="_blank" rel="noopener">Roadmap</a>
+  <a href="https://jamreadybass.as.me/?appointmentType=94455793" target="_blank" rel="noopener" class="em-book">Book Now</a>
 </div>
 
 <div class="grid">
@@ -573,7 +561,7 @@ function getCtx(){
 /* ===== menu jump-links: scroll the parent page when embedded ===== */
 (function(){
   var embedded = (window.parent !== window);
-  document.querySelectorAll('.embed-nav a[data-jrb-scroll]').forEach(function(a){
+  document.querySelectorAll('.embed-menu a[data-jrb-scroll]').forEach(function(a){
     a.addEventListener('click', function(e){
       if(!embedded) return; // standalone: follow the href to the full page
       e.preventDefault();
