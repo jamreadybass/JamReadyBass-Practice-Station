@@ -126,6 +126,13 @@
   <h2>The rhythm</h2>
   <div id="notewrap"><svg id="notation" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg"></svg></div>
   <div class="countin" id="countin"></div>
+  <canvas id="strip" height="150" style="width:100%;margin-top:12px;background:#08090c;border:1px solid var(--line);border-radius:9px"></canvas>
+  <div class="legend" style="display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap">
+    <span style="color:var(--green)">│ beat (0&nbsp;ms)</span>
+    <span style="color:var(--amber)">┊ your feel target</span>
+    <span>← ahead&nbsp;·&nbsp;behind →</span>
+    <span>time scrolls down</span>
+  </div>
 </div>
 
 <div class="panel" id="scorePanel" style="opacity:.4;pointer-events:none">
@@ -216,6 +223,7 @@ $('startBtn').onclick=async()=>{
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
+    sizeStrip(); requestAnimationFrame(drawStrip);
   }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
@@ -294,6 +302,43 @@ function renderNotation(){
 function setNoteColor(i,color){const e=$('nh-'+i);if(e){e.setAttribute('fill',color);e.setAttribute('stroke',color);} const st=$('st-'+i);if(st)st.setAttribute('stroke',color);}
 function clearNoteColors(){const open=(subdiv==='whole'||subdiv==='half');positions().forEach((p,i)=>{const e=$('nh-'+i);if(e){e.setAttribute('fill',open?'#f5f1e6':'#23201a');e.setAttribute('stroke','#23201a');}const st=$('st-'+i);if(st)st.setAttribute('stroke','#23201a');});}
 
+// ---- Timing strip (centered on the beat; time falls down; x = ahead/behind) ----
+let strip=null,sctx=null,DPR=1,striphits=[];
+function sizeStrip(){ strip=$('strip'); if(!strip)return; sctx=strip.getContext('2d');
+  DPR=Math.min(window.devicePixelRatio||1,2); const r=strip.getBoundingClientRect();
+  strip.width=Math.max(1,Math.round(r.width*DPR)); strip.height=Math.max(1,Math.round(r.height*DPR)); }
+window.addEventListener('resize',()=>{if(running)sizeStrip();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{if(running)sizeStrip();},250));
+function drawStrip(){
+  if(strip&&sctx){
+    const W=strip.width,H=strip.height,cx=W/2,range=120;
+    sctx.clearRect(0,0,W,H);
+    sctx.strokeStyle='#1a1d24';sctx.lineWidth=1;
+    for(const ms of [-100,-50,50,100]){const x=cx+(ms/range)*(W/2);sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();}
+    // pocket band around the beat
+    sctx.fillStyle='rgba(70,211,154,.06)';const pb=(35/range)*(W/2);sctx.fillRect(cx-pb,0,pb*2,H);
+    // beat line (green)
+    sctx.strokeStyle='#46d39a';sctx.lineWidth=2*DPR;sctx.beginPath();sctx.moveTo(cx,0);sctx.lineTo(cx,H);sctx.stroke();
+    // feel target (amber dashed) when not "on the beat"
+    if(feelMs!==0){const fx=cx+(Math.max(-range,Math.min(range,feelMs))/range)*(W/2);
+      sctx.strokeStyle='#ffb020';sctx.lineWidth=1.5*DPR;sctx.setLineDash([5,5]);
+      sctx.beginPath();sctx.moveTo(fx,0);sctx.lineTo(fx,H);sctx.stroke();sctx.setLineDash([]);}
+    // labels
+    sctx.fillStyle='#5a5f6b';sctx.font=(10*DPR)+'px ui-monospace,monospace';
+    sctx.textAlign='left';sctx.fillText('ahead',8*DPR,16*DPR);
+    sctx.textAlign='right';sctx.fillText('behind',W-8*DPR,16*DPR);
+    // hits fall down, fade
+    const now=performance.now();
+    striphits=striphits.filter(h=>now-h.t<3500);
+    for(const h of striphits){const age=(now-h.t)/3500;const y=age*H;
+      const x=cx+(Math.max(-range,Math.min(range,h.dev))/range)*(W/2);
+      sctx.globalAlpha=1-age;sctx.fillStyle=h.col;
+      sctx.beginPath();sctx.arc(x,y,5*DPR,0,7);sctx.fill();}
+    sctx.globalAlpha=1;
+  }
+  requestAnimationFrame(drawStrip);
+}
+
 // ---- Transport ----
 function startTransport(forCalib){
   if(!running)return;
@@ -301,7 +346,7 @@ function startTransport(forCalib){
   beatDur=60/bpm; barDur=4*beatDur;
   mode=forCalib?'calibrate':'play';
   expected=[]; beatIndex=0; repCount=0;
-  if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; }
+  if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
   nextBeatTime=ac.currentTime+0.25;
   $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
   $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
@@ -386,10 +431,11 @@ function handleOnset(t){
   const win=Math.min(0.18, spacingBeats*beatDur*0.5);
   if(best && bd<win){
     best.hit=true;
-    const delta=(tc-best.time)*1000;   // latency already removed via tc
+    const delta=(tc-best.time)*1000;   // latency already removed via tc; this is vs the feel target
     deltas.push(delta); hits++;
     const r=rating(Math.abs(delta));
     setNoteColor(best.idx, r.c);
+    striphits.push({dev: delta+feelMs, col:r.c, t:performance.now()}); // delta+feelMs = distance from the actual beat
     renderScore();
   } else {
     extra++; renderScore();
@@ -467,7 +513,7 @@ $('stopBtn').onclick=()=>{stopTransport(false);};
 $('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;
   ['cen','evn'].forEach(k=>{$(k+'Num').textContent='—';$(k+'Num').style.color='';$(k+'Grade').textContent='play to score';$(k+'Grade').style.color='';$(k+'Bar').style.width='0';});
   $('rhyNum').textContent='—';$('rhyNum').style.color='';$('rhyGrade').textContent='hit / miss / extra';$('rhyGrade').style.color='';$('rhyBar').style.width='0';
-  $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';clearNoteColors();};
+  $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';clearNoteColors();striphits=[];};
 
 function flashCountIn(n){$('countin').textContent='count-in… '+n;}
 </script>
