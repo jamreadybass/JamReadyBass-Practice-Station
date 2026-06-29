@@ -148,7 +148,7 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 .embed-mode .foot{display:none!important}
 .embed-mode .page{padding:10px}
 .embed-menu{display:none}
-.embed-mode .embed-menu{display:flex;gap:9px;justify-content:flex-end;align-items:center;
+.embed-mode .embed-menu{display:flex;gap:9px;justify-content:center;align-items:center;
   padding:2px 0 10px;margin-bottom:10px;border-bottom:1px solid var(--line)}
 .embed-menu a,.embed-menu span{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;
   color:var(--muted);text-decoration:none;padding:6px 11px;border:1px solid var(--panel-edge);border-radius:8px;transition:.16s}
@@ -156,7 +156,6 @@ select:focus-visible,.chip:focus-visible{outline:2px solid var(--amber);outline-
 .embed-menu span.active{color:var(--amber);border-color:var(--brass);cursor:default}
 .embed-menu a.em-book{color:#231603;background:linear-gradient(180deg,#ffc25e,var(--amber-deep));border-color:#a85d10}
 .embed-menu a.em-book:hover{color:#231603;filter:brightness(1.05)}
-@media (max-width:560px){.embed-mode .embed-menu{justify-content:center}}
 </style>
 <script>try{if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed-mode');}catch(e){}</script>
 </head>
