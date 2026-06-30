@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PocketLocker · JamReadyBass.com</title>
+<style>
+  :root{
+    --bg:#0c0d10; --panel:#14161b; --panel2:#1b1e25; --line:#2a2e38;
+    --ink:#e9e6dd; --muted:#8b8f9a; --amber:#ffb020; --amber-dim:#5a3f12;
+    --green:#46d39a; --red:#ff5a52; --blue:#58b6ff;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+  body{padding:24px;max-width:920px;margin:0 auto;line-height:1.5}
+  h1{font-size:13px;letter-spacing:.32em;text-transform:uppercase;font-weight:800;margin:0;color:var(--amber)}
+  .sub{color:var(--muted);font-size:13px;margin:6px 0 0}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .badge{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+  .badge.live{color:var(--green);border-color:#1e3b30}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .panel h2{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 14px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .ctrl{display:flex;flex-direction:column;gap:6px;min-width:120px;flex:1}
+  .ctrl label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .ctrl .val{font-family:var(--mono);color:var(--amber);font-size:13px}
+  input[type=range]{width:100%;accent-color:var(--amber)}
+  button{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:11px 16px;cursor:pointer;transition:.12s}
+  button:hover{border-color:var(--amber);color:var(--amber)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+  button.primary:hover{background:#ffc24d;color:#1a1205}
+  button.active{border-color:var(--amber);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+  button.danger:hover{border-color:var(--red);color:var(--red)}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:86px}
+  .transport{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .warn{font-size:13px;color:var(--amber);background:rgba(255,176,32,.08);border:1px solid var(--amber-dim);border-radius:9px;padding:10px 13px;margin-top:14px;font-family:var(--mono)}
+  .warn b{color:var(--amber)}
+  .err{color:var(--red);font-family:var(--mono);font-size:13px;margin-top:10px}
+  details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  summary{cursor:pointer;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  /* notation */
+  #notewrap{background:#f5f1e6;border:1px solid var(--line);border-radius:9px;padding:6px}
+  #notation{display:block;width:100%;height:auto}
+  .countin{font-family:var(--mono);font-size:13px;color:var(--amber);text-align:center;margin-top:8px;min-height:18px}
+  /* scoring */
+  .score-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+  @media(max-width:620px){.score-cards{grid-template-columns:1fr}}
+  .score-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .sc-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .sc-k .u{text-transform:none;letter-spacing:0}
+  .sc-num{font-family:var(--mono);font-size:42px;font-weight:800;line-height:1;margin:6px 0 2px;color:var(--muted)}
+  .sc-grade{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;min-height:18px}
+  .score-bar{height:8px;background:#0a0b0e;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  .score-bar span{display:block;height:100%;width:0;background:var(--muted);border-radius:99px;transition:width .25s,background .25s}
+  .coach{font-size:14px;line-height:1.5;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:12px 14px;margin-top:14px}
+  .coach b{color:var(--amber)}
+  .help{font-size:13px;color:var(--muted);line-height:1.6}
+  .help b{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>PocketLocker</h1>
+    <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
+  </div>
+  <div class="badge" id="statusBadge">audio off</div>
+</header>
+
+<div class="panel">
+  <h2>Step 1 · Start audio</h2>
+  <div class="row">
+    <button class="primary" id="startBtn">Enable mic &amp; click</button>
+    <div class="ctrl" style="flex:2"><label>Note</label><span class="help">Grant the mic prompt. Wear headphones so the click doesn't bleed into the mic as phantom notes.</span></div>
+  </div>
+  <div class="err" id="errBox" style="display:none"></div>
+  <div class="warn" id="infoBox" style="display:none"></div>
+</div>
+
+<div class="panel" id="setupPanel" style="opacity:.4;pointer-events:none">
+  <h2>Step 2 · Choose the rhythm</h2>
+  <div class="ctrl" style="margin-bottom:14px"><label>Note value (the bar fills with these)</label>
+    <div class="seg" id="subdivSeg">
+      <button data-s="whole">Whole</button>
+      <button data-s="half">Half</button>
+      <button data-s="quarter" class="active">Quarter</button>
+      <button data-s="eighth">Eighth</button>
+      <button data-s="sixteenth">16th</button>
+      <button data-s="random">🎲 Random</button>
+    </div>
+  </div>
+  <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
+    <div class="seg" id="diffSeg">
+      <button data-d="1">Basic</button>
+      <button data-d="2" class="active">Sixteenths</button>
+      <button data-d="3">Syncopated</button>
+    </div>
+    <div class="transport" style="margin-top:10px">
+      <button id="newRhythmBtn">🎲 New rhythm</button>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)">
+        <input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar
+      </label>
+    </div>
+  </div>
+  <div class="row" style="margin-bottom:14px">
+    <div class="ctrl"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="170" value="90"></div>
+    <div class="ctrl"><label>Swing <span class="val" id="swingVal">0</span><span class="muted" style="font-size:11px"> (eighths)</span></label><input type="range" id="swing" min="0" max="100" value="0"></div>
+  </div>
+  <div class="ctrl" style="margin-bottom:14px"><label>Feel — where you aim relative to the beat</label>
+    <div class="seg" id="feelSeg">
+      <button data-f="-25">Push ahead</button>
+      <button data-f="0" class="active">On the beat</button>
+      <button data-f="25">Lay back</button>
+    </div>
+  </div>
+  <div class="transport">
+    <button id="calibBtn">Calibrate offset</button>
+    <button class="primary" id="playBtn">▶ Play rhythm</button>
+    <button id="stopBtn" disabled>■ Stop</button>
+    <button id="resetBtn" class="danger" style="margin-left:auto">Reset score</button>
+  </div>
+  <div id="calibPrompt" class="warn" style="display:none">
+    <b>Calibrate first?</b> Your device's audio delay shifts every note late — without calibrating, fast notes (eighths &amp; sixteenths) land in the wrong slot. Takes ~16 taps.
+    <div class="transport" style="margin-top:8px">
+      <button class="primary" id="calibNowBtn">Calibrate now</button>
+      <button id="playAnywayBtn">Play anyway</button>
+    </div>
+  </div>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)">
+    <input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)
+  </label>
+  <details>
+    <summary>Detection tuning</summary>
+    <div class="row" style="margin-top:12px">
+      <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">5</span></label><input type="range" id="sens" min="1" max="10" value="5"></div>
+      <div class="ctrl"><label>Min gap <span class="val" id="refVal">90</span> ms</label><input type="range" id="ref" min="40" max="200" value="90"></div>
+    </div>
+  </details>
+</div>
+
+<div class="panel" id="notePanel" style="opacity:.4;pointer-events:none">
+  <h2>The rhythm</h2>
+  <div id="notewrap"><svg id="notation" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="countin" id="countin"></div>
+  <div id="nextwrap" style="display:none;margin-top:10px">
+    <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Coming up next ↓</div>
+    <div style="background:#ece8db;border:1px solid var(--line);border-radius:9px;padding:4px"><svg id="notationNext" viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto"></svg></div>
+  </div>
+  <canvas id="strip" height="150" style="width:100%;margin-top:12px;background:#08090c;border:1px solid var(--line);border-radius:9px"></canvas>
+  <div class="legend" style="display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap">
+    <span style="color:var(--green)">│ beat (0&nbsp;ms)</span>
+    <span style="color:var(--amber)">┊ your feel target</span>
+    <span>← ahead&nbsp;·&nbsp;behind →</span>
+    <span>time scrolls down</span>
+  </div>
+</div>
+
+<div class="panel" id="scorePanel" style="opacity:.4;pointer-events:none">
+  <h2>Score</h2>
+  <div class="score-cards">
+    <div class="score-card">
+      <div class="sc-k">Center <span class="u">· on the feel</span></div>
+      <div class="sc-num" id="cenNum">—</div>
+      <div class="sc-grade" id="cenGrade">play to score</div>
+      <div class="score-bar"><span id="cenBar"></span></div>
+    </div>
+    <div class="score-card">
+      <div class="sc-k">Evenness <span class="u">· repeatable</span></div>
+      <div class="sc-num" id="evnNum">—</div>
+      <div class="sc-grade" id="evnGrade">play to score</div>
+      <div class="score-bar"><span id="evnBar"></span></div>
+    </div>
+    <div class="score-card">
+      <div class="sc-k">Rhythm <span class="u">· right notes</span></div>
+      <div class="sc-num" id="rhyNum">—</div>
+      <div class="sc-grade" id="rhyGrade">hit / miss / extra</div>
+      <div class="score-bar"><span id="rhyBar"></span></div>
+    </div>
+  </div>
+  <div class="coach" id="coach">Pick a note value, hit Play, and read the rhythm to the click.</div>
+</div>
+
+<div class="panel">
+  <h2>How it works</h2>
+  <p class="help">
+    The bar fills with the note value you pick. Hit <b>Play</b> — you get a one-bar count-in, then the bar loops. Read the notation and play each note to the click.<br><br>
+    <b>Center</b> is whether your average lands on your chosen feel (on / ahead / behind). <b>Evenness</b> is how repeatable you are, regardless of center. <b>Rhythm</b> is whether you played the right notes — missed notes and extra notes pull it down. Calibrate first (play steady on the beat ~15 hits) so Center reads true; Evenness is latency-proof either way.
+  </p>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+
+// ---- Onset detector worklet (validated) ----
+const workletSrc=`
+class OnsetProcessor extends AudioWorkletProcessor {
+  constructor(){super();this.prev=0;this.baseline=1e-6;this.lastOnset=-1;this.armed=true;
+    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;
+    this.port.onmessage=(e)=>{const d=e.data;
+      if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
+      if(d.refractory!==undefined)this.refractory=d.refractory;};}
+  process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
+    let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.97*this.prev;this.prev=x;e+=y*y;}e/=N;
+    this.baseline=0.995*this.baseline+0.005*e;
+    const thresh=Math.max(1e-5,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
+    if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
+      this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime});}
+    if(!this.armed&&e<thresh*0.5)this.armed=true;this.prevEnergy=e;return true;}
+}
+registerProcessor('onset-processor',OnsetProcessor);`;
+
+// ---- State ----
+let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
+let running=false;
+let params={threshFactor:5.2,refractory:0.09};
+let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
+let mode='idle';            // idle | calibrate | play
+let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false;
+let deltas=[], hits=0, missed=0, extra=0;
+// transport
+let beatDur=60/90, barDur=4*beatDur;
+let schedId=null, nextBeatTime=0, beatIndex=0, countInBeats=4, maxBars=16;
+let expected=[];            // {time, hit, idx}
+let playStartBar=0, repCount=0;
+
+// ---- Start audio ----
+$('startBtn').onclick=async()=>{
+  if(!window.isSecureContext){showErr("Needs a secure context for mic access — open over https (GitHub Pages) or localhost.");return;}
+  try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    await ac.resume();
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    src=ac.createMediaStreamSource(micStream);
+    try{
+      const blob=new Blob([workletSrc],{type:'application/javascript'});
+      await ac.audioWorklet.addModule(URL.createObjectURL(blob));
+      node=new AudioWorkletNode(ac,'onset-processor'); node.port.onmessage=onWorklet; src.connect(node);
+    }catch(werr){ setupFallback(); }
+    pushParams();
+    running=true;
+    $('statusBadge').textContent='live'; $('statusBadge').className='badge live';
+    $('startBtn').disabled=true; $('startBtn').textContent='Running';
+    ['setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
+    renderNotation();
+    sizeStrip(); requestAnimationFrame(drawStrip);
+  }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
+};
+function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
+function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<b>Compatibility mode.</b> '+m;}
+function onWorklet(ev){ if(ev.data.type==='onset') handleOnset(ev.data.time); }
+function setupFallback(){
+  showInfo("Opened as a local file — using an older audio path. Serve over https for full timing accuracy.");
+  const bufSize=512; spNode=ac.createScriptProcessor(bufSize,1,1);
+  fb={prev:0,baseline:1e-6,lastOnset:-1,armed:true,prevEnergy:0};
+  spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
+    for(let off=0;off+B<=ch.length;off+=B){let en=0;
+      for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.97*fb.prev;fb.prev=x;en+=y*y;}en/=B;
+      fb.baseline=0.995*fb.baseline+0.005*en;const thresh=Math.max(1e-5,fb.baseline*params.threshFactor);
+      const tNow=bufStart+(off+B)/sr,rising=en>fb.prevEnergy;
+      if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
+      if(!fb.armed&&en<thresh*0.5)fb.armed=true;fb.prevEnergy=en;}};
+  const mute=ac.createGain();mute.gain.value=0;src.connect(spNode);spNode.connect(mute).connect(ac.destination);
+}
+
+// ---- Rhythm model ----
+const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
+  eighth:[0,.5,1,1.5,2,2.5,3,3.5],
+  sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
+let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
+function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
+function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
+function swungBeats(posBeats){
+  if(!randomMode && swing>0 && subdiv==='eighth'){
+    const base=Math.floor(posBeats), frac=posBeats-base;
+    if(Math.abs(frac-0.5)<1e-6) return base+(0.5+(swing/100)*0.18);
+  }
+  return posBeats;
+}
+function expectedAbsTime(barStart,posBeats){ return barStart + swungBeats(posBeats)*beatDur + feelMs/1000; }
+
+// beat-cell vocabulary: d in sixteenths (1=16th,2=8th,3=dotted8th,4=quarter); s=slot 0-3
+const CELLS=[
+  {dif:1,notes:[{s:0,d:4}],rests:[]},                                   // quarter
+  {dif:1,notes:[{s:0,d:2},{s:2,d:2}],rests:[]},                         // two eighths
+  {dif:1,notes:[{s:2,d:2}],rests:[{s:0,d:2}]},                          // 8th-rest + 8th (the "and")
+  {dif:1,notes:[{s:0,d:2}],rests:[{s:2,d:2}]},                          // 8th + 8th-rest
+  {dif:1,notes:[],rests:[{s:0,d:4}]},                                   // beat rest
+  {dif:2,notes:[{s:0,d:1},{s:1,d:1},{s:2,d:1},{s:3,d:1}],rests:[]},     // four 16ths
+  {dif:2,notes:[{s:0,d:2},{s:2,d:1},{s:3,d:1}],rests:[]},               // 8th + two 16ths
+  {dif:2,notes:[{s:0,d:1},{s:1,d:1},{s:2,d:2}],rests:[]},               // two 16ths + 8th
+  {dif:2,notes:[{s:0,d:1},{s:1,d:2},{s:3,d:1}],rests:[]},               // 16-8-16 (syncopated)
+  {dif:3,notes:[{s:0,d:3},{s:3,d:1}],rests:[]},                         // dotted-8th + 16th (gallop)
+  {dif:3,notes:[{s:0,d:1},{s:1,d:3}],rests:[]},                         // 16th + dotted-8th
+  {dif:3,notes:[{s:1,d:1},{s:2,d:2}],rests:[{s:0,d:1}]},                // 16-rest, e, +8th
+  {dif:3,notes:[{s:0,d:2},{s:2,d:1}],rests:[{s:3,d:1}]},                // 8th + 16th + 16-rest
+];
+function makeBar(){
+  const pool=CELLS.filter(c=>c.dif<=genDiff);
+  let cells,onsets,tries=0;
+  do{
+    cells=[0,1,2,3].map(()=>pool[Math.floor(Math.random()*pool.length)]);
+    onsets=[]; cells.forEach((c,b)=>c.notes.forEach(n=>onsets.push(b+n.s/4)));
+    tries++;
+  }while(onsets.length<3 && tries<25);
+  onsets.sort((a,b)=>a-b);
+  return {cells,onsets};
+}
+function onsetsOf(cells){const o=[];cells.forEach((c,b)=>c.notes.forEach(n=>o.push(b+n.s/4)));o.sort((a,b)=>a-b);return o;}
+function generateBar(){
+  const c=makeBar(); currentBar=c.cells; genOnsets=c.onsets;
+  nextBar=(randomMode&&autoAdv)?makeBar().cells:null;
+}
+
+// ---- Notation primitives (shared) ----
+const NX0=60,NX1=660,NY=80,NSTEM=30,NHRX=8,NHRY=5.5,FILL='#23201a',PAPER='#f5f1e6';
+const NX=p=>NX0+(p/4)*(NX1-NX0);
+let noteCount=0, noteFills=[];
+function gHead(x,fill,id){return `<ellipse ${id?`id="${id}" `:''}cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${fill===PAPER?FILL:fill}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
+function gStem(x,id,c){return `<line ${id?`id="${id}" `:''}x1="${x+NHRX-1}" y1="${NY-2}" x2="${x+NHRX-1}" y2="${NY-NSTEM}" stroke="${c||FILL}" stroke-width="1.6"/>`;}
+function gDot(x,c){return `<circle cx="${x+NHRX+5}" cy="${NY-3}" r="2.1" fill="${c||FILL}"/>`;}
+function gBeam(x1,x2,yy,c){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${c||FILL}" stroke-width="4" stroke-linecap="butt"/>`;}
+function gFlag(x,dbl,c){const col=c||FILL,sx=x+NHRX-1,ty=NY-NSTEM;
+  const flag=oy=>`<path d="M${sx} ${ty+oy} c 9 2 13 8 9 17 c 3 -8 -1 -12 -9 -13 z" fill="${col}"/>`;
+  return flag(0)+(dbl?flag(7):'');}
+function gRest(x,d,c){const col=c||FILL;
+  if(d>=4) return `<path d="M${x-2} ${NY-15} l5 6 l-5 6 l6 6 q-6 -1 -3 -7" stroke="${col}" stroke-width="2.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if(d>=2) return `<g><circle cx="${x+1}" cy="${NY-9}" r="2.8" fill="${col}"/><path d="M${x+2} ${NY-10} l-4 16" stroke="${col}" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>`+(d===3?gDot(x+1,col):'');
+  return `<g><circle cx="${x+1}" cy="${NY-10}" r="2.5" fill="${col}"/><circle cx="${x-1}" cy="${NY-4}" r="2.5" fill="${col}"/><path d="M${x+2} ${NY-11} l-5 18" stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round"/></g>`;
+}
+function gStaff(light){const lc=light?'#cfc7b4':'#9a917c',tc=light?'#d9d1bd':'#c3b89c';
+  let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="${lc}" stroke-width="1.5"/>`;
+  for(let b=0;b<4;b++){const bx=NX(b);
+    s+=`<line x1="${bx}" y1="${NY-3}" x2="${bx}" y2="${NY+3}" stroke="${tc}" stroke-width="1"/>`;
+    if(!light) s+=`<text x="${bx}" y="${NY+28}" fill="#9a917c" font-size="12" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
+  s+=`<line x1="675" y1="${NY-26}" x2="675" y2="${NY+10}" stroke="${lc}" stroke-width="2"/>`;
+  return s;
+}
+const gPlayhead=`<line id="playhead" x1="${NX0}" y1="${NY-44}" x2="${NX0}" y2="${NY+16}" stroke="#ffb020" stroke-width="2" opacity="0"/>`;
+
+// shared cell drawer; withIds=true tags noteheads/stems for live highlighting + tracks noteFills
+function drawCells(cells,color,withIds){
+  let s='',idx=0;
+  for(let b=0;b<4;b++){
+    const cell=cells[b], beam=[];
+    cell.notes.forEach(n=>{const x=NX(b+n.s/4);
+      s+=gHead(x,color,withIds?'nh-'+idx:''); if(withIds)noteFills.push(color);
+      s+=gStem(x,withIds?'st-'+idx:'',color);
+      if(n.d===3) s+=gDot(x,color);
+      if(n.d>=1&&n.d<=3) beam.push({x,d:n.d});
+      idx++;});
+    cell.rests.forEach(r=>{ s+=gRest(NX(b+(r.s+r.d/2)/4), r.d, color); });
+    if(beam.length>=2){
+      const by=NY-NSTEM, x0=beam[0].x+NHRX-1, x1=beam[beam.length-1].x+NHRX-1;
+      s+=gBeam(x0,x1,by,color);
+      for(let i=0;i<beam.length;i++){ if(beam[i].d!==1)continue;
+        const prev=beam[i-1],next=beam[i+1],sx=beam[i].x+NHRX-1;
+        if(next&&next.d===1) s+=gBeam(sx,next.x+NHRX-1,by+6,color);
+        else if(prev&&prev.d===1){ /* drawn by prev */ }
+        else s+=gBeam(sx, prev?sx-11:sx+11, by+6, color);
+      }
+    } else if(beam.length===1){ s+=gFlag(beam[0].x, beam[0].d===1, color); }
+  }
+  return {body:s,count:idx};
+}
+
+function renderNotation(){ randomMode ? renderRandomMain() : renderUniform(); renderNext(); }
+
+function renderUniform(){
+  const pos=SUBDIV[subdiv],open=(subdiv==='whole'||subdiv==='half'),npb=notesPerBeat();
+  let s=gStaff(); noteFills=[];
+  pos.forEach((p,i)=>{const cx=NX(p),fill=open?PAPER:FILL;
+    s+=gHead(cx,fill,'nh-'+i); noteFills.push(fill);
+    if(subdiv!=='whole') s+=gStem(cx,'st-'+i,FILL);});
+  if(npb>=2){for(let b=0;b<4;b++){const grp=[];pos.forEach((p,i)=>{if(Math.floor(p)===b)grp.push(i);});
+    if(grp.length>=2){const xa=NX(pos[grp[0]])+NHRX-1,xb=NX(pos[grp[grp.length-1]])+NHRX-1,by=NY-NSTEM;
+      s+=gBeam(xa,xb,by); if(npb===4)s+=gBeam(xa,xb,by+6);}}}
+  noteCount=pos.length;
+  $('notation').innerHTML=s+gPlayhead;
+}
+
+function renderRandomMain(){
+  if(!currentBar) generateBar();
+  noteFills=[];
+  const {body,count}=drawCells(currentBar,FILL,true);
+  noteCount=count;
+  $('notation').innerHTML=gStaff()+body+gPlayhead;
+}
+
+function renderNext(){
+  const wrap=$('nextwrap');
+  if(randomMode && autoAdv && nextBar){
+    const {body}=drawCells(nextBar,'#8a8270',false);
+    $('notationNext').innerHTML=gStaff(true)+body;
+    wrap.style.display='block';
+  } else { wrap.style.display='none'; }
+}
+function setNoteColor(i,color){const e=$('nh-'+i);if(e){e.setAttribute('fill',color);e.setAttribute('stroke',color);} const st=$('st-'+i);if(st)st.setAttribute('stroke',color);}
+function clearNoteColors(){for(let i=0;i<noteCount;i++){const e=$('nh-'+i);if(e){e.setAttribute('fill',noteFills[i]||FILL);e.setAttribute('stroke',noteFills[i]===PAPER?FILL:(noteFills[i]||FILL));}const st=$('st-'+i);if(st)st.setAttribute('stroke',FILL);}}
+
+// ---- Timing strip (centered on the beat; time falls down; x = ahead/behind) ----
+let strip=null,sctx=null,DPR=1,striphits=[];
+function sizeStrip(){ strip=$('strip'); if(!strip)return; sctx=strip.getContext('2d');
+  DPR=Math.min(window.devicePixelRatio||1,2); const r=strip.getBoundingClientRect();
+  strip.width=Math.max(1,Math.round(r.width*DPR)); strip.height=Math.max(1,Math.round(r.height*DPR)); }
+window.addEventListener('resize',()=>{if(running)sizeStrip();});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{if(running)sizeStrip();},250));
+function drawStrip(){
+  if(strip&&sctx){
+    const W=strip.width,H=strip.height,cx=W/2,range=120;
+    sctx.clearRect(0,0,W,H);
+    sctx.strokeStyle='#1a1d24';sctx.lineWidth=1;
+    for(const ms of [-100,-50,50,100]){const x=cx+(ms/range)*(W/2);sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();}
+    // pocket band around the beat
+    sctx.fillStyle='rgba(70,211,154,.06)';const pb=(35/range)*(W/2);sctx.fillRect(cx-pb,0,pb*2,H);
+    // beat line (green)
+    sctx.strokeStyle='#46d39a';sctx.lineWidth=2*DPR;sctx.beginPath();sctx.moveTo(cx,0);sctx.lineTo(cx,H);sctx.stroke();
+    // feel target (amber dashed) when not "on the beat"
+    if(feelMs!==0){const fx=cx+(Math.max(-range,Math.min(range,feelMs))/range)*(W/2);
+      sctx.strokeStyle='#ffb020';sctx.lineWidth=1.5*DPR;sctx.setLineDash([5,5]);
+      sctx.beginPath();sctx.moveTo(fx,0);sctx.lineTo(fx,H);sctx.stroke();sctx.setLineDash([]);}
+    // labels
+    sctx.fillStyle='#5a5f6b';sctx.font=(10*DPR)+'px ui-monospace,monospace';
+    sctx.textAlign='left';sctx.fillText('ahead',8*DPR,16*DPR);
+    sctx.textAlign='right';sctx.fillText('behind',W-8*DPR,16*DPR);
+    // hits fall down, fade
+    const now=performance.now();
+    striphits=striphits.filter(h=>now-h.t<3500);
+    for(const h of striphits){const age=(now-h.t)/3500;const y=age*H;
+      const x=cx+(Math.max(-range,Math.min(range,h.dev))/range)*(W/2);
+      sctx.globalAlpha=1-age;sctx.fillStyle=h.col;
+      sctx.beginPath();sctx.arc(x,y,5*DPR,0,7);sctx.fill();}
+    sctx.globalAlpha=1;
+  }
+  requestAnimationFrame(drawStrip);
+}
+
+// ---- Transport ----
+function startTransport(forCalib){
+  if(!running)return;
+  stopTransport(true);
+  beatDur=60/bpm; barDur=4*beatDur;
+  mode=forCalib?'calibrate':'play';
+  expected=[]; beatIndex=0; repCount=0;
+  if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
+  nextBeatTime=ac.currentTime+0.25;
+  $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
+  $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
+  schedId=setInterval(scheduler,25);
+  requestAnimationFrame(drawPlayhead);
+}
+function stopTransport(silent){
+  if(mode==='calibrate' && calibSamples.length>=8) calibrated=true;
+  if(schedId){clearInterval(schedId);schedId=null;}
+  $('playhead') && $('playhead').setAttribute('opacity','0');
+  $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
+  $('stopBtn').textContent='■ Stop';
+  if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent=''; }
+  if(!silent) mode='idle';
+}
+function scheduler(){
+  if(!running||!schedId)return;
+  while(nextBeatTime < ac.currentTime+0.12){
+    const realBeat = beatIndex - countInBeats;       // <0 during count-in
+    scheduleClick(nextBeatTime, realBeat>=0 && realBeat%4===0);
+    // count-in display
+    if(realBeat<0){ const n=countInBeats+realBeat+1; flashCountIn(n); }
+    else { $('countin').textContent=''; }
+    if(mode==='play' && realBeat>=0 && realBeat%4===0){
+      const barStart=nextBeatTime;
+      registerBar(barStart);
+      repCount++;
+      if(repCount>maxBars){ setTimeout(()=>stopTransport(false),50); }
+    }
+    if(mode==='calibrate' && realBeat>=0){ registerCalibBeat(nextBeatTime); }
+    beatIndex++; nextBeatTime+=beatDur;
+  }
+  // prune old expected
+  const cutoff=ac.currentTime-0.5;
+  expected=expected.filter(e=>e.time>cutoff);
+}
+function scheduleClick(t,accent){
+  if(clickVol>0){
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.frequency.value=accent?1400:1000;o.type='square';
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.5,t+0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.04);
+    o.connect(g).connect(ac.destination);o.start(t);o.stop(t+0.05);
+  }
+}
+let curBarStart=0;
+function registerBar(barStart){
+  if(randomMode && autoAdv){
+    if(nextBar){ currentBar=nextBar; genOnsets=onsetsOf(currentBar); nextBar=makeBar().cells; }
+    else { const c=makeBar(); currentBar=c.cells; genOnsets=c.onsets; nextBar=makeBar().cells; }
+    renderNotation();
+  }
+  clearNoteColors();
+  curBarStart=barStart;
+  const pos=positions();
+  pos.forEach((p,i)=>{
+    const t=expectedAbsTime(barStart,p);
+    expected.push({time:t,hit:false,idx:i});
+    if(guide && (p%1!==0)){ // soft tick on the subdivisions between beats
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.frequency.value=2200;o.type='sine';
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.22,t+0.001);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
+      o.connect(g).connect(ac.destination);o.start(t);o.stop(t+0.04);
+    }
+  });
+}
+function registerCalibBeat(t){ expected.push({time:t,hit:false,idx:-1}); }
+
+// ---- Onset handling ----
+function handleOnset(t){
+  if(mode==='idle') return;
+  if(mode==='calibrate'){
+    // match on raw time to measure latency
+    let best=null,bd=Infinity;
+    for(const e of expected){ if(e.hit)continue; const d=Math.abs(t-e.time); if(d<bd){bd=d;best=e;} }
+    if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw); calibOffset=median(calibSamples);
+      $('countin').textContent='calibrating… '+calibSamples.length+' / 16 taps';
+      if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+calibOffset.toFixed(0)+'ms'; setTimeout(()=>stopTransport(false),50); } }
+    return;
+  }
+  // play: remove measured latency BEFORE matching so the right slot is chosen
+  const tc = t - calibOffset/1000;
+  let best=null,bd=Infinity;
+  for(const e of expected){ if(e.hit)continue; const d=Math.abs(tc-e.time); if(d<bd){bd=d;best=e;} }
+  const pos=positions();
+  let minGap=4; for(let i=1;i<pos.length;i++){const g=pos[i]-pos[i-1];if(g<minGap)minGap=g;}
+  if(pos.length<2)minGap=4;
+  const win=Math.min(0.18, minGap*beatDur*0.5);
+  if(best && bd<win){
+    best.hit=true;
+    const delta=(tc-best.time)*1000;   // latency already removed via tc; this is vs the feel target
+    deltas.push(delta); hits++;
+    const r=rating(Math.abs(delta));
+    setNoteColor(best.idx, r.c);
+    striphits.push({dev: delta+feelMs, col:r.c, t:performance.now()}); // delta+feelMs = distance from the actual beat
+    renderScore();
+  } else {
+    extra++; renderScore();
+  }
+}
+function finalizeMissed(){ for(const e of expected){ if(!e.hit && e.idx>=0) missed++; } }
+
+// ---- Stats & scoring ----
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
+function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
+function rating(absd){if(absd<=15)return{w:'Perfect',c:'#46d39a'};if(absd<=35)return{w:'Great',c:'#7ad39a'};if(absd<=60)return{w:'Good',c:'#ffb020'};if(absd<=100)return{w:'Loose',c:'#ff8a3d'};return{w:'Miss',c:'#ff5a52'};}
+function centerScore(bias){return Math.max(0,Math.min(100,100-Math.abs(bias)*1.4));}
+function evennessScore(s){return Math.max(0,Math.min(100,100-s*0.9));}
+function centerGrade(sc,bias){const dir=Math.abs(bias)<6?'':bias>0?' · behind':' · ahead';
+  const w=sc>=90?'Dead on':sc>=75?'Centered':sc>=60?'Slightly off':sc>=40?'Off':'Drifting';
+  const c=sc>=75?'#46d39a':sc>=60?'#ffb020':sc>=40?'#ff8a3d':'#ff5a52';return{w:w+dir,c};}
+function evennessGrade(sc){if(sc>=90)return{w:'Locked',c:'#46d39a'};if(sc>=75)return{w:'Tight',c:'#7ad39a'};if(sc>=60)return{w:'Steady',c:'#ffb020'};if(sc>=40)return{w:'Loose',c:'#ff8a3d'};return{w:'Scattered',c:'#ff5a52'};}
+function rhythmGrade(sc){if(sc>=95)return{w:'All there',c:'#46d39a'};if(sc>=85)return{w:'Solid',c:'#7ad39a'};if(sc>=70)return{w:'Some slips',c:'#ffb020'};if(sc>=50)return{w:'Patchy',c:'#ff8a3d'};return{w:'Lost',c:'#ff5a52'};}
+function renderScore(){
+  const total=hits+missed+extra;
+  const rhy = total>0 ? Math.round(hits/total*100) : null;
+  if(deltas.length>=3){
+    const bias=mean(deltas), s=std(deltas);
+    const cs=centerScore(bias), es=evennessScore(s), cg=centerGrade(cs,bias), eg=evennessGrade(es);
+    $('cenNum').textContent=Math.round(cs);$('cenNum').style.color=cg.c;$('cenGrade').textContent=cg.w;$('cenGrade').style.color=cg.c;$('cenBar').style.width=cs+'%';$('cenBar').style.background=cg.c;
+    $('evnNum').textContent=Math.round(es);$('evnNum').style.color=eg.c;$('evnGrade').textContent=eg.w;$('evnGrade').style.color=eg.c;$('evnBar').style.width=es+'%';$('evnBar').style.background=eg.c;
+  }
+  if(rhy!==null){const rg=rhythmGrade(rhy);
+    $('rhyNum').textContent=rhy+'%';$('rhyNum').style.color=rg.c;
+    $('rhyGrade').textContent=rg.w+(missed||extra?' · '+missed+' miss / '+extra+' extra':'');$('rhyGrade').style.color=rg.c;
+    $('rhyBar').style.width=rhy+'%';$('rhyBar').style.background=rg.c;}
+  // coaching
+  if(deltas.length>=6){
+    const bias=mean(deltas), s=std(deltas);
+    const tgt = feelMs<0?'pushing ahead':feelMs>0?'laying back':'on the beat';
+    const cen = Math.abs(bias)<6 ? 'You\u2019re nailing the <b>'+tgt+'</b> feel.'
+      : bias>0 ? 'You sit ~'+Math.abs(bias).toFixed(0)+'ms behind your target.'
+      : 'You sit ~'+Math.abs(bias).toFixed(0)+'ms ahead of your target.';
+    const evn = s>50?' Evenness is the work \u2014 notes scatter \u00b1'+s.toFixed(0)+'ms.':s>25?' Spread \u00b1'+s.toFixed(0)+'ms; keep tightening.':' Spread is tight \u2014 real pocket.';
+    $('coach').innerHTML=cen+evn;
+  }
+}
+
+// ---- Playhead ----
+function drawPlayhead(){
+  if(!schedId){const ph=$('playhead');if(ph)ph.setAttribute('opacity','0');return;}
+  const ph=$('playhead');
+  if(ph && mode==='play' && curBarStart>0){
+    let phase=(ac.currentTime-curBarStart)/barDur;
+    phase=Math.max(0,Math.min(1,phase));
+    const x0=60,x1=660,x=x0+phase*(x1-x0);
+    ph.setAttribute('opacity','0.9');ph.setAttribute('x1',x);ph.setAttribute('x2',x);
+  } else if(ph){ ph.setAttribute('opacity','0'); }
+  requestAnimationFrame(drawPlayhead);
+}
+
+// ---- Controls ----
+$('subdivSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  [...$('subdivSeg').children].forEach(x=>x.classList.toggle('active',x===b));
+  if(b.dataset.s==='random'){ randomMode=true; $('randomRow').style.display='block'; $('swing').disabled=true; generateBar(); }
+  else { randomMode=false; subdiv=b.dataset.s; $('randomRow').style.display='none'; $('swing').disabled=(subdiv!=='eighth'); }
+  renderNotation();});
+$('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  genDiff=+b.dataset.d;[...$('diffSeg').children].forEach(x=>x.classList.toggle('active',x===b));
+  generateBar(); renderNotation();});
+$('newRhythmBtn').onclick=()=>{ generateBar(); renderNotation(); };
+$('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; if(randomMode){ if(autoAdv&&!nextBar) nextBar=makeBar().cells; renderNotation(); } };
+$('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  feelMs=+b.dataset.f;[...$('feelSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
+$('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;};
+$('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
+$('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
+$('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
+$('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
+$('guideChk').onchange=e=>{guide=e.target.checked;};
+function pushParams(){const s=+$('sens').value;params.threshFactor=8.0-(s-1)*0.7;params.refractory=(+$('ref').value)/1000;
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});}
+$('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
+$('playBtn').onclick=()=>{
+  if(!calibrated && !calibPromptDismissed){ $('calibPrompt').style.display='block'; return; }
+  startTransport(false);
+};
+$('calibNowBtn').onclick=()=>{ $('calibPrompt').style.display='none'; calibSamples=[];calibOffset=0; startTransport(true); };
+$('playAnywayBtn').onclick=()=>{ calibPromptDismissed=true; $('calibPrompt').style.display='none'; startTransport(false); };
+$('stopBtn').onclick=()=>{stopTransport(false);};
+$('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;
+  ['cen','evn'].forEach(k=>{$(k+'Num').textContent='—';$(k+'Num').style.color='';$(k+'Grade').textContent='play to score';$(k+'Grade').style.color='';$(k+'Bar').style.width='0';});
+  $('rhyNum').textContent='—';$('rhyNum').style.color='';$('rhyGrade').textContent='hit / miss / extra';$('rhyGrade').style.color='';$('rhyBar').style.width='0';
+  $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';clearNoteColors();striphits=[];};
+
+function flashCountIn(n){$('countin').textContent='count-in… '+n;}
+</script>
+</body>
+</html>
