@@ -97,7 +97,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px">Read the rhythm, play it to the click. Every note is scored against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 24 · retrigger-fix</div>
+  <div class="badge" id="statusBadge">audio off · build 27 · noise-gate</div>
 </header>
 
 <div class="panel">
@@ -206,11 +206,11 @@
     <summary>Detection tuning</summary>
     <div class="row" style="margin-top:12px">
       <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
-      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">7</span></label><input type="range" id="sens" min="1" max="10" value="7"></div>
+      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">6</span></label><input type="range" id="sens" min="1" max="10" value="6"></div>
       <div class="ctrl"><label>Min gap <span class="val" id="refVal">90</span> ms</label><input type="range" id="ref" min="40" max="200" value="90"></div>
     </div>
     <div style="margin-top:12px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level — play a note; the green bar must cross the amber line to register a hit</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level. When you're NOT playing, the green bar should sit BELOW the amber line — if it crosses on its own, that's room noise: lower Sensitivity until it stays below. Then your notes should clear the line easily.</div>
       <canvas id="levelMeter" height="40" style="width:100%;background:#08090c;border:1px solid var(--line);border-radius:8px"></canvas>
     </div>
     <div style="margin-top:16px">
@@ -271,18 +271,17 @@ const $=id=>document.getElementById(id);
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
   constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
-    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.peakE=0;
+    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.lowCnt=0;
     this.port.onmessage=(e)=>{const d=e.data;
       if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
       if(d.refractory!==undefined)this.refractory=d.refractory;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
-    const thresh=Math.max(7e-6,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
+    const thresh=Math.max(1.3e-5,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
     if(e<thresh) this.baseline=0.99*this.baseline+0.01*e;   // track the quiet floor, not the note attacks
-    if(!this.armed && e>this.peakE) this.peakE=e;           // remember how loud THIS note got
     if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
-      this.lastOnset=now;this.armed=false;this.peakE=e;this.port.postMessage({type:'onset',time:currentTime});}
-    if(!this.armed && e < Math.max(thresh*0.4, this.peakE*0.30)) this.armed=true;  // re-arm only after real decay
+      this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime});}
+    if(!this.armed&&e<thresh*0.4)this.armed=true;
     this.prevEnergy=e;
     if((this.fc++ %4)===0)this.port.postMessage({type:'level',e:e,thresh:thresh});
     return true;}
@@ -323,7 +322,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 24 · retrigger-fix'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 27 · noise-gate'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -352,16 +351,15 @@ function onWorklet(ev){ const d=ev.data; if(d.type==='level'){ lastLevel=d; retu
 function setupFallback(){
   showInfo("Opened as a local file — using an older audio path. Serve over https for full timing accuracy.");
   const bufSize=512; spNode=ac.createScriptProcessor(bufSize,1,1);
-  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0,peakE:0};
+  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0,lowCnt:0};
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
       for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
-      const thresh=Math.max(7e-6,fb.baseline*params.threshFactor);
+      const thresh=Math.max(1.3e-5,fb.baseline*params.threshFactor);
       if(en<thresh) fb.baseline=0.99*fb.baseline+0.01*en;
       const tNow=bufStart+(off+B)/sr,rising=en>fb.prevEnergy;
-      if(!fb.armed && en>fb.peakE) fb.peakE=en;
-      if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;fb.peakE=en;handleOnset(bufStart+off/sr);}
-      if(!fb.armed && en<Math.max(thresh*0.4, fb.peakE*0.30)) fb.armed=true;
+      if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
+      if(!fb.armed&&en<thresh*0.4)fb.armed=true;
       fb.prevEnergy=en;
       if((fb.fc++ %4)===0)lastLevel={e:en,thresh:thresh};}};
   const mute=ac.createGain();mute.gain.value=0;(detTap||src).connect(spNode);spNode.connect(mute).connect(ac.destination);
@@ -943,6 +941,7 @@ function loadLevel(id){
   const L=LEVELS.find(x=>x.id===id); if(!L||id>prog.unlocked) return;
   applyConfig(L.cfg);
   pendingLevel=id;
+  renderClimbNow();
   const b=$('levelBanner');
   b.textContent='Level '+id+' \u00b7 '+L.name+'  loaded \u2014 '+(calibrated?'':'calibrate first, then ')+'press \u25B6 Play rhythm';
   b.style.display='block';
@@ -987,6 +986,7 @@ function evaluateLevel(id){
   el.style.color = cleared ? '#46d39a' : '#ffb020';
   $('levelBanner').style.display='none';
   pendingLevel=null;
+  selectedLevel=null;
   renderLadder();
 }
 
@@ -1000,7 +1000,7 @@ function renderLadder(){
     btn.className='lvl'+(locked?' locked':'')+(rec.cleared?' cleared':'');
     const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
     btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+'</span><span class="lstars">'+starCell+'</span>';
-    if(!locked) btn.onclick=()=>loadLevel(L.id);
+    if(!locked) btn.onclick=()=>{ selectedLevel=L.id; const fl=$('climbFull'); if(fl){fl.style.display='none'; $('progressToggle').textContent='View progress \u25BE';} loadLevel(L.id); };
     wrap.appendChild(btn);
   });
   const cleared=LEVELS.filter(L=>(prog.levels[L.id]||{}).cleared).length;
@@ -1034,7 +1034,7 @@ function currentLevelId(){
 }
 function renderClimbNow(){
   if(!$('climbNow')) return;
-  const id=currentLevelId(), L=LEVELS.find(x=>x.id===id)||LEVELS[0], r=prog.levels[id]||{}, st=r.stars||0;
+  const id=selectedLevel||currentLevelId(), L=LEVELS.find(x=>x.id===id)||LEVELS[0], r=prog.levels[id]||{}, st=r.stars||0;
   const stars='★'.repeat(st)+'☆'.repeat(3-st);
   const cleared=LEVELS.filter(x=>(prog.levels[x.id]||{}).cleared).length;
   const done=cleared>=LEVELS.length;
@@ -1042,7 +1042,7 @@ function renderClimbNow(){
   $('climbNow').innerHTML='<div class="cn-tag">'+tag+'</div><div class="cn-main"><span class="cn-lvl">Lv '+id+'</span><span class="cn-name">'+L.name+'</span></div><div class="cn-meta"><span class="cn-stars">'+stars+'</span> &middot; '+cleared+'/'+LEVELS.length+' levels cleared</div>';
   $('continueBtn').textContent=(cleared>0||st>0||prog.unlocked>1)?'▶ Continue climb':'▶ Start the climb';
 }
-let climbMode=true;
+let climbMode=true, selectedLevel=null;
 function applyMode(m){
   climbMode=(m==='climb'); segActivate('modeSeg','m',m);
   $('climbCompact').style.display=climbMode?'block':'none';
@@ -1051,7 +1051,7 @@ function applyMode(m){
   prog.mode=m; saveProg();
 }
 $('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;applyMode(b.dataset.m);});
-$('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(currentLevelId()));
+$('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||currentLevelId()));
 $('progressToggle') && ($('progressToggle').onclick=()=>{ const fl=$('climbFull'),open=fl.style.display!=='none';
   fl.style.display=open?'none':'block'; $('progressToggle').textContent=open?'View progress ▾':'Hide progress ▴'; if(!open) renderLadder(); });
 renderLadder();
