@@ -97,7 +97,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px">Read the rhythm, play it to the click. Every note is scored against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 29 · deadtime2</div>
+  <div class="badge" id="statusBadge">audio off · build 30 · measure-room</div>
 </header>
 
 <div class="panel">
@@ -213,6 +213,11 @@
       <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level. When you're NOT playing, the green bar should sit BELOW the amber line — if it crosses on its own, that's room noise: lower Sensitivity until it stays below. Then your notes should clear the line easily.</div>
       <canvas id="levelMeter" height="40" style="width:100%;background:#08090c;border:1px solid var(--line);border-radius:8px"></canvas>
     </div>
+    <div style="margin-top:14px">
+      <button id="measureBtn" style="padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-family:inherit;font-size:13px">\u25CF Measure my room</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Tap, then stay silent for ~2 seconds. Sets the detection floor just above your background noise so it stops counting room sound as notes.</div>
+      <div id="roomStatus" style="display:none;font-size:12px;color:var(--green);margin-top:6px;font-family:var(--mono)"></div>
+    </div>
     <div style="margin-top:16px">
       <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Highway sync <span class="val" id="hwnudgeVal">0</span> ms</label>
       <input type="range" id="hwnudge" min="-150" max="150" value="0" style="width:100%;accent-color:var(--amber);margin-top:4px">
@@ -271,13 +276,14 @@ const $=id=>document.getElementById(id);
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
   constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
-    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.lowCnt=0;
+    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;
     this.port.onmessage=(e)=>{const d=e.data;
       if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
-      if(d.refractory!==undefined)this.refractory=d.refractory;};}
+      if(d.refractory!==undefined)this.refractory=d.refractory;
+      if(d.floor!==undefined)this.floor=d.floor;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
-    const thresh=Math.max(1.3e-5,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
+    const thresh=Math.max(this.floor,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
     if(e<thresh) this.baseline=0.99*this.baseline+0.01*e;   // track the quiet floor, not the note attacks
     if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
       this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime});}
@@ -291,7 +297,7 @@ registerProcessor('onset-processor',OnsetProcessor);`;
 // ---- State ----
 let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
 let running=false;
-let params={threshFactor:5.2,refractory:0.09};
+let params={threshFactor:5.2,refractory:0.09,floor:1.3e-5};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], detTap=null, filterClick=false; const CLICK_FREQS=[1100,1600,3300,4800];
@@ -322,7 +328,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 29 · deadtime2'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 30 · measure-room'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -355,7 +361,7 @@ function setupFallback(){
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
       for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
-      const thresh=Math.max(1.3e-5,fb.baseline*params.threshFactor);
+      const thresh=Math.max(params.floor||1.3e-5,fb.baseline*params.threshFactor);
       if(en<thresh) fb.baseline=0.99*fb.baseline+0.01*en;
       const tNow=bufStart+(off+B)/sr,rising=en>fb.prevEnergy;
       if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
@@ -888,7 +894,7 @@ $('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.chec
 $('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
-  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});}
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor});}
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
 $('playBtn').onclick=()=>{
   if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; try{$('calibPrompt').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return; }
@@ -1064,6 +1070,30 @@ $('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.close
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||currentLevelId()));
 $('progressToggle') && ($('progressToggle').onclick=()=>{ const fl=$('climbFull'),open=fl.style.display!=='none';
   fl.style.display=open?'none':'block'; $('progressToggle').textContent=open?'View progress ▾':'Hide progress ▴'; if(!open) renderLadder(); });
+
+let measureBuf=[];
+function setRoomStatus(t,col){ const el=$('roomStatus'); if(el){ el.textContent=t; el.style.color=col||'var(--green)'; el.style.display='block'; } }
+function measureRoom(){
+  if(!running||!ac){ setRoomStatus('Start audio first (Step 1), then measure.', 'var(--amber)'); return; }
+  measureBuf=[]; const btn=$('measureBtn');
+  if(btn){ btn.disabled=true; btn.textContent='\u25CF Listening\u2026 stay silent'; }
+  setRoomStatus('Listening\u2026 stay silent.', 'var(--muted)');
+  const sampler=setInterval(()=>{ measureBuf.push((lastLevel&&lastLevel.e)||0); }, 25);
+  setTimeout(()=>{
+    clearInterval(sampler);
+    if(btn){ btn.disabled=false; btn.textContent='\u25CF Measure my room'; }
+    if(measureBuf.length<8){ setRoomStatus("Didn't get a clean read \u2014 try again, staying silent.", 'var(--amber)'); return; }
+    measureBuf.sort((a,b)=>a-b);
+    const p95=measureBuf[Math.min(measureBuf.length-1, Math.floor(measureBuf.length*0.95))];
+    const floor=Math.min(3e-3, Math.max(1.3e-5, p95*1.8));
+    params.floor=floor; if(node) node.port.postMessage({floor:floor});
+    prog.roomFloor=floor; saveProg();
+    setRoomStatus('\u2713 Room measured \u2014 background is now gated out.');
+  }, 1700);
+}
+$('measureBtn') && ($('measureBtn').onclick=measureRoom);
+if(prog.roomFloor){ params.floor=prog.roomFloor; }
+
 renderLadder();
 renderClimbNow();
 applyMode(prog.mode||'climb');
