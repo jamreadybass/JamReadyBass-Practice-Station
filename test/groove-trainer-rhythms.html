@@ -147,6 +147,10 @@
   <h2>The rhythm</h2>
   <div id="notewrap"><svg id="notation" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg"></svg></div>
   <div class="countin" id="countin"></div>
+  <div id="nextwrap" style="display:none;margin-top:10px">
+    <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Coming up next ↓</div>
+    <div style="background:#ece8db;border:1px solid var(--line);border-radius:9px;padding:4px"><svg id="notationNext" viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto"></svg></div>
+  </div>
   <canvas id="strip" height="150" style="width:100%;margin-top:12px;background:#08090c;border:1px solid var(--line);border-radius:9px"></canvas>
   <div class="legend" style="display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap">
     <span style="color:var(--green)">│ beat (0&nbsp;ms)</span>
@@ -268,7 +272,7 @@ function setupFallback(){
 const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
   eighth:[0,.5,1,1.5,2,2.5,3,3.5],
   sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
-let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, genOnsets=[];
+let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
 function swungBeats(posBeats){
@@ -296,84 +300,108 @@ const CELLS=[
   {dif:3,notes:[{s:1,d:1},{s:2,d:2}],rests:[{s:0,d:1}]},                // 16-rest, e, +8th
   {dif:3,notes:[{s:0,d:2},{s:2,d:1}],rests:[{s:3,d:1}]},                // 8th + 16th + 16-rest
 ];
-function generateBar(){
+function makeBar(){
   const pool=CELLS.filter(c=>c.dif<=genDiff);
-  let bar,onsets,tries=0;
+  let cells,onsets,tries=0;
   do{
-    bar=[0,1,2,3].map(()=>pool[Math.floor(Math.random()*pool.length)]);
-    onsets=[]; bar.forEach((c,b)=>c.notes.forEach(n=>onsets.push(b+n.s/4)));
+    cells=[0,1,2,3].map(()=>pool[Math.floor(Math.random()*pool.length)]);
+    onsets=[]; cells.forEach((c,b)=>c.notes.forEach(n=>onsets.push(b+n.s/4)));
     tries++;
   }while(onsets.length<3 && tries<25);
   onsets.sort((a,b)=>a-b);
-  currentBar=bar; genOnsets=onsets;
+  return {cells,onsets};
+}
+function onsetsOf(cells){const o=[];cells.forEach((c,b)=>c.notes.forEach(n=>o.push(b+n.s/4)));o.sort((a,b)=>a-b);return o;}
+function generateBar(){
+  const c=makeBar(); currentBar=c.cells; genOnsets=c.onsets;
+  nextBar=(randomMode&&autoAdv)?makeBar().cells:null;
 }
 
 // ---- Notation primitives (shared) ----
 const NX0=60,NX1=660,NY=80,NSTEM=30,NHRX=8,NHRY=5.5,FILL='#23201a',PAPER='#f5f1e6';
 const NX=p=>NX0+(p/4)*(NX1-NX0);
 let noteCount=0, noteFills=[];
-function gHead(x,fill,id){return `<ellipse id="${id}" cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${FILL}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
-function gStem(x,id){return `<line id="${id}" x1="${x+NHRX-1}" y1="${NY-2}" x2="${x+NHRX-1}" y2="${NY-NSTEM}" stroke="${FILL}" stroke-width="1.6"/>`;}
-function gDot(x){return `<circle cx="${x+NHRX+5}" cy="${NY-3}" r="2.1" fill="${FILL}"/>`;}
-function gBeam(x1,x2,yy){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${FILL}" stroke-width="4"/>`;}
-function gFlag(x,dbl){const sx=x+NHRX-1,ty=NY-NSTEM;let s=`<path d="M${sx} ${ty} q11 5 8 17" stroke="${FILL}" stroke-width="2.4" fill="none"/>`;if(dbl)s+=`<path d="M${sx} ${ty+7} q11 5 8 17" stroke="${FILL}" stroke-width="2.4" fill="none"/>`;return s;}
-function gRest(x,d){
-  if(d>=4) return `<path d="M${x-3} ${NY-16} l6 7 l-6 7 l7 6" stroke="${FILL}" stroke-width="2.4" fill="none" stroke-linejoin="round"/>`;
-  if(d>=2) return `<g><circle cx="${x-1}" cy="${NY-8}" r="2.7" fill="${FILL}"/><path d="M${x+1} ${NY-10} l-3 15" stroke="${FILL}" stroke-width="2.2" fill="none"/></g>`+(d===3?gDot(x+2):'');
-  return `<g><circle cx="${x-1}" cy="${NY-9}" r="2.3" fill="${FILL}"/><circle cx="${x+2}" cy="${NY-3}" r="2.3" fill="${FILL}"/><path d="M${x+3} ${NY-11} l-5 16" stroke="${FILL}" stroke-width="2" fill="none"/></g>`;
+function gHead(x,fill,id){return `<ellipse ${id?`id="${id}" `:''}cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${fill===PAPER?FILL:fill}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
+function gStem(x,id,c){return `<line ${id?`id="${id}" `:''}x1="${x+NHRX-1}" y1="${NY-2}" x2="${x+NHRX-1}" y2="${NY-NSTEM}" stroke="${c||FILL}" stroke-width="1.6"/>`;}
+function gDot(x,c){return `<circle cx="${x+NHRX+5}" cy="${NY-3}" r="2.1" fill="${c||FILL}"/>`;}
+function gBeam(x1,x2,yy,c){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${c||FILL}" stroke-width="4" stroke-linecap="butt"/>`;}
+function gFlag(x,dbl,c){const col=c||FILL,sx=x+NHRX-1,ty=NY-NSTEM;
+  const flag=oy=>`<path d="M${sx} ${ty+oy} c 9 2 13 8 9 17 c 3 -8 -1 -12 -9 -13 z" fill="${col}"/>`;
+  return flag(0)+(dbl?flag(7):'');}
+function gRest(x,d,c){const col=c||FILL;
+  if(d>=4) return `<path d="M${x-2} ${NY-15} l5 6 l-5 6 l6 6 q-6 -1 -3 -7" stroke="${col}" stroke-width="2.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if(d>=2) return `<g><circle cx="${x+1}" cy="${NY-9}" r="2.8" fill="${col}"/><path d="M${x+2} ${NY-10} l-4 16" stroke="${col}" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>`+(d===3?gDot(x+1,col):'');
+  return `<g><circle cx="${x+1}" cy="${NY-10}" r="2.5" fill="${col}"/><circle cx="${x-1}" cy="${NY-4}" r="2.5" fill="${col}"/><path d="M${x+2} ${NY-11} l-5 18" stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round"/></g>`;
 }
-function gStaff(){
-  let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="#9a917c" stroke-width="1.5"/>`;
+function gStaff(light){const lc=light?'#cfc7b4':'#9a917c',tc=light?'#d9d1bd':'#c3b89c';
+  let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="${lc}" stroke-width="1.5"/>`;
   for(let b=0;b<4;b++){const bx=NX(b);
-    s+=`<line x1="${bx}" y1="${NY-3}" x2="${bx}" y2="${NY+3}" stroke="#c3b89c" stroke-width="1"/>`;
-    s+=`<text x="${bx}" y="${NY+28}" fill="#9a917c" font-size="12" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
-  s+=`<line x1="675" y1="${NY-26}" x2="675" y2="${NY+10}" stroke="#9a917c" stroke-width="2"/>`;
+    s+=`<line x1="${bx}" y1="${NY-3}" x2="${bx}" y2="${NY+3}" stroke="${tc}" stroke-width="1"/>`;
+    if(!light) s+=`<text x="${bx}" y="${NY+28}" fill="#9a917c" font-size="12" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
+  s+=`<line x1="675" y1="${NY-26}" x2="675" y2="${NY+10}" stroke="${lc}" stroke-width="2"/>`;
   return s;
 }
 const gPlayhead=`<line id="playhead" x1="${NX0}" y1="${NY-44}" x2="${NX0}" y2="${NY+16}" stroke="#ffb020" stroke-width="2" opacity="0"/>`;
 
-function renderNotation(){ randomMode ? renderRandom() : renderUniform(); }
+// shared cell drawer; withIds=true tags noteheads/stems for live highlighting + tracks noteFills
+function drawCells(cells,color,withIds){
+  let s='',idx=0;
+  for(let b=0;b<4;b++){
+    const cell=cells[b], beam=[];
+    cell.notes.forEach(n=>{const x=NX(b+n.s/4);
+      s+=gHead(x,color,withIds?'nh-'+idx:''); if(withIds)noteFills.push(color);
+      s+=gStem(x,withIds?'st-'+idx:'',color);
+      if(n.d===3) s+=gDot(x,color);
+      if(n.d>=1&&n.d<=3) beam.push({x,d:n.d});
+      idx++;});
+    cell.rests.forEach(r=>{ s+=gRest(NX(b+(r.s+r.d/2)/4), r.d, color); });
+    if(beam.length>=2){
+      const by=NY-NSTEM, x0=beam[0].x+NHRX-1, x1=beam[beam.length-1].x+NHRX-1;
+      s+=gBeam(x0,x1,by,color);
+      for(let i=0;i<beam.length;i++){ if(beam[i].d!==1)continue;
+        const prev=beam[i-1],next=beam[i+1],sx=beam[i].x+NHRX-1;
+        if(next&&next.d===1) s+=gBeam(sx,next.x+NHRX-1,by+6,color);
+        else if(prev&&prev.d===1){ /* drawn by prev */ }
+        else s+=gBeam(sx, prev?sx-11:sx+11, by+6, color);
+      }
+    } else if(beam.length===1){ s+=gFlag(beam[0].x, beam[0].d===1, color); }
+  }
+  return {body:s,count:idx};
+}
+
+function renderNotation(){ randomMode ? renderRandomMain() : renderUniform(); renderNext(); }
 
 function renderUniform(){
-  const svg=$('notation'),pos=SUBDIV[subdiv],open=(subdiv==='whole'||subdiv==='half'),npb=notesPerBeat();
+  const pos=SUBDIV[subdiv],open=(subdiv==='whole'||subdiv==='half'),npb=notesPerBeat();
   let s=gStaff(); noteFills=[];
   pos.forEach((p,i)=>{const cx=NX(p),fill=open?PAPER:FILL;
     s+=gHead(cx,fill,'nh-'+i); noteFills.push(fill);
-    if(subdiv!=='whole') s+=gStem(cx,'st-'+i);});
+    if(subdiv!=='whole') s+=gStem(cx,'st-'+i,FILL);});
   if(npb>=2){for(let b=0;b<4;b++){const grp=[];pos.forEach((p,i)=>{if(Math.floor(p)===b)grp.push(i);});
     if(grp.length>=2){const xa=NX(pos[grp[0]])+NHRX-1,xb=NX(pos[grp[grp.length-1]])+NHRX-1,by=NY-NSTEM;
       s+=gBeam(xa,xb,by); if(npb===4)s+=gBeam(xa,xb,by+6);}}}
   noteCount=pos.length;
-  svg.innerHTML=s+gPlayhead;
+  $('notation').innerHTML=s+gPlayhead;
 }
 
-function renderRandom(){
+function renderRandomMain(){
   if(!currentBar) generateBar();
-  const svg=$('notation'); let s=gStaff(); noteFills=[]; let idx=0;
-  for(let b=0;b<4;b++){
-    const cell=currentBar[b], beamable=[];
-    cell.notes.forEach(n=>{const x=NX(b+n.s/4);
-      s+=gHead(x,FILL,'nh-'+idx); noteFills.push(FILL); s+=gStem(x,'st-'+idx);
-      if(n.d===3) s+=gDot(x);
-      n._x=x; if(n.d>=1&&n.d<=3) beamable.push(n);
-      idx++;});
-    cell.rests.forEach(r=>{ const cx=NX(b+(r.s+r.d/2)/4); s+=gRest(cx,r.d); });
-    if(beamable.length>=2){
-      const by=NY-NSTEM, x0=beamable[0]._x+NHRX-1, x1=beamable[beamable.length-1]._x+NHRX-1;
-      s+=gBeam(x0,x1,by);
-      for(let i=0;i<beamable.length;i++){const n=beamable[i]; if(n.d!==1)continue;
-        const prev=beamable[i-1],next=beamable[i+1],sx=n._x+NHRX-1;
-        if(next&&next.d===1){ s+=gBeam(sx,next._x+NHRX-1,by+6); }
-        else if(prev&&prev.d===1){ /* already drawn as prev's next */ }
-        else { const left=!!prev; s+=gBeam(sx, left?sx-11:sx+11, by+6); }
-      }
-    } else if(beamable.length===1){ const n=beamable[0]; s+=gFlag(n._x, n.d===1); }
-  }
-  noteCount=idx;
-  svg.innerHTML=s+gPlayhead;
+  noteFills=[];
+  const {body,count}=drawCells(currentBar,FILL,true);
+  noteCount=count;
+  $('notation').innerHTML=gStaff()+body+gPlayhead;
+}
+
+function renderNext(){
+  const wrap=$('nextwrap');
+  if(randomMode && autoAdv && nextBar){
+    const {body}=drawCells(nextBar,'#8a8270',false);
+    $('notationNext').innerHTML=gStaff(true)+body;
+    wrap.style.display='block';
+  } else { wrap.style.display='none'; }
 }
 function setNoteColor(i,color){const e=$('nh-'+i);if(e){e.setAttribute('fill',color);e.setAttribute('stroke',color);} const st=$('st-'+i);if(st)st.setAttribute('stroke',color);}
-function clearNoteColors(){for(let i=0;i<noteCount;i++){const e=$('nh-'+i);if(e){e.setAttribute('fill',noteFills[i]||FILL);e.setAttribute('stroke',FILL);}const st=$('st-'+i);if(st)st.setAttribute('stroke',FILL);}}
+function clearNoteColors(){for(let i=0;i<noteCount;i++){const e=$('nh-'+i);if(e){e.setAttribute('fill',noteFills[i]||FILL);e.setAttribute('stroke',noteFills[i]===PAPER?FILL:(noteFills[i]||FILL));}const st=$('st-'+i);if(st)st.setAttribute('stroke',FILL);}}
 
 // ---- Timing strip (centered on the beat; time falls down; x = ahead/behind) ----
 let strip=null,sctx=null,DPR=1,striphits=[];
@@ -467,7 +495,11 @@ function scheduleClick(t,accent){
 }
 let curBarStart=0;
 function registerBar(barStart){
-  if(randomMode && autoAdv){ generateBar(); renderNotation(); }
+  if(randomMode && autoAdv){
+    if(nextBar){ currentBar=nextBar; genOnsets=onsetsOf(currentBar); nextBar=makeBar().cells; }
+    else { const c=makeBar(); currentBar=c.cells; genOnsets=c.onsets; nextBar=makeBar().cells; }
+    renderNotation();
+  }
   clearNoteColors();
   curBarStart=barStart;
   const pos=positions();
@@ -579,7 +611,7 @@ $('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(
   genDiff=+b.dataset.d;[...$('diffSeg').children].forEach(x=>x.classList.toggle('active',x===b));
   generateBar(); renderNotation();});
 $('newRhythmBtn').onclick=()=>{ generateBar(); renderNotation(); };
-$('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; };
+$('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; if(randomMode){ if(autoAdv&&!nextBar) nextBar=makeBar().cells; renderNotation(); } };
 $('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   feelMs=+b.dataset.f;[...$('feelSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
 $('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;};
