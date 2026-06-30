@@ -60,6 +60,23 @@
   .coach b{color:var(--amber)}
   .help{font-size:13px;color:var(--muted);line-height:1.6}
   .help b{color:var(--ink)}
+
+  .climb-summary{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:12px}
+  .climb-summary b{color:var(--amber)}
+  #ladder{display:flex;flex-direction:column;gap:7px}
+  .tier{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:12px 0 2px;opacity:.7}
+  .tier:first-child{margin-top:0}
+  .lvl{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:14px;font-family:inherit;transition:border-color .15s,background .15s}
+  .lvl:hover:not(.locked){border-color:var(--amber);background:#20232c}
+  .lvl.locked{opacity:.4;cursor:not-allowed}
+  .lvl.cleared{border-color:rgba(70,211,154,0.45)}
+  .lvl .ln{font-family:var(--mono);font-weight:800;color:var(--amber);min-width:20px}
+  .lvl.locked .ln{color:var(--muted)}
+  .lvl .lname{flex:1}
+  .lvl .lstars{font-size:13px;letter-spacing:1px;color:#46d39a}
+  .lvl.locked .lstars,.lvl:not(.cleared) .lstars{color:var(--muted)}
+  #levelBanner{display:none;margin-top:14px;font-family:var(--mono);font-size:13px;color:var(--amber);background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.3);border-radius:9px;padding:10px 12px}
+  #levelResult{display:none;margin-top:10px;font-family:var(--mono);font-size:13px;font-weight:700;line-height:1.5}
 </style>
 </head>
 <body>
@@ -68,7 +85,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 13 · highway</div>
+  <div class="badge" id="statusBadge">audio off · build 14 · climb</div>
 </header>
 
 <div class="panel">
@@ -79,6 +96,17 @@
   </div>
   <div class="err" id="errBox" style="display:none"></div>
   <div class="warn" id="infoBox" style="display:none"></div>
+</div>
+
+<div class="panel" id="climbPanel" style="opacity:.4;pointer-events:none">
+  <h2>The Climb</h2>
+  <div class="climb-summary" id="climbSummary">Clear a level to climb. Each unlocks the next.</div>
+  <div id="ladder"></div>
+  <div id="levelBanner"></div>
+  <div id="levelResult"></div>
+  <div class="transport" style="margin-top:16px">
+    <button id="resetProgBtn" class="danger" style="margin-left:auto">Reset progress</button>
+  </div>
 </div>
 
 <div class="panel" id="setupPanel" style="opacity:.4;pointer-events:none">
@@ -252,9 +280,9 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 13 · highway'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 14 · climb'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
-    ['setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
+    ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
     sizeStrip(); requestAnimationFrame(drawStrip);
   }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
@@ -283,6 +311,7 @@ const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
   eighth:[0,.5,1,1.5,2,2.5,3,3.5],
   sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
 let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
+let sessionCompleted=false, pendingLevel=null, applyingCfg=false;
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
 function swungBeats(posBeats){
@@ -567,6 +596,7 @@ function startTransport(forCalib){
   stopTransport(true);
   beatDur=60/bpm; barDur=4*beatDur;
   mode=forCalib?'calibrate':'play';
+  sessionCompleted=false;
   expected=[]; beatIndex=0; repCount=0;
   if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
   nextBeatTime=ac.currentTime+0.25;
@@ -578,12 +608,13 @@ function startTransport(forCalib){
   requestAnimationFrame(drawPlayhead);
 }
 function stopTransport(silent){
-  if(mode==='calibrate' && calibSamples.length>=8) calibrated=true;
+  if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; prog.calib=Math.round(calibOffset); saveProg(); }
   if(schedId){clearInterval(schedId);schedId=null;}
   $('playhead') && $('playhead').setAttribute('opacity','0');
   $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
   $('stopBtn').textContent='■ Stop';
-  if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent=''; }
+  if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent='';
+    if(sessionCompleted && pendingLevel!=null) evaluateLevel(pendingLevel); }
   if(!silent) mode='idle';
 }
 function scheduler(){
@@ -593,6 +624,7 @@ function scheduler(){
     if(mode==='play' && maxBars!==Infinity && realBeat>=maxBars*4){
       const endTime=nextBeatTime+beatDur;            // let the final beat ring out
       clearInterval(schedId); schedId=null;
+      sessionCompleted=true;
       setTimeout(()=>stopTransport(false), Math.max(250,(endTime-ac.currentTime)*1000+150));
       return;
     }
@@ -665,7 +697,7 @@ function handleOnset(t){
     for(const e of expected){ if(e.hit)continue; const d=Math.abs(t-e.time); if(d<bd){bd=d;best=e;} }
     if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw); calibOffset=median(calibSamples);
       $('countin').textContent='calibrating… '+calibSamples.length+' / 16 taps';
-      if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+calibOffset.toFixed(0)+'ms'; setTimeout(()=>stopTransport(false),50); } }
+      if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+calibOffset.toFixed(0)+'ms'; prog.calib=Math.round(calibOffset); saveProg(); setTimeout(()=>stopTransport(false),50); } }
     return;
   }
   // play: remove measured latency BEFORE matching so the right slot is chosen
@@ -766,6 +798,137 @@ $('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;
   $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';clearNoteColors();striphits=[];};
 
 function flashCountIn(n){$('countin').textContent='count-in… '+n;}
+// ===================== THE CLIMB · progression + progress =====================
+const PKEY='pocketlocker.progress.v1';
+function defaultProg(){ return {levels:{}, unlocked:1, calib:null, sessions:0}; }
+let prog=(function(){ try{const p=JSON.parse(localStorage.getItem(PKEY)); return (p&&p.levels)?p:defaultProg();}catch(e){return defaultProg();} })();
+function saveProg(){ try{localStorage.setItem(PKEY,JSON.stringify(prog));}catch(e){} }
+
+const LEVELS=[
+  {id:1, tier:'Foundation', name:'Steady Quarters',   cfg:{mode:'quarter',bpm:70, swing:0, feel:0, bars:8}},
+  {id:2, tier:'Foundation', name:'Quarters Up-Tempo', cfg:{mode:'quarter',bpm:96, swing:0, feel:0, bars:8}},
+  {id:3, tier:'Foundation', name:'Into Eighths',      cfg:{mode:'eighth', bpm:76, swing:0, feel:0, bars:8}},
+  {id:4, tier:'Eighths',    name:'Eighths Up-Tempo',  cfg:{mode:'eighth', bpm:100,swing:0, feel:0, bars:8}},
+  {id:5, tier:'Eighths',    name:'Mixed Rhythms',     cfg:{mode:'random', diff:1, auto:true, bpm:84, swing:0, feel:0, bars:8}},
+  {id:6, tier:'Eighths',    name:'Mixed Up-Tempo',    cfg:{mode:'random', diff:1, auto:true, bpm:104,swing:0, feel:0, bars:8}},
+  {id:7, tier:'Sixteenths', name:'Sixteenth Runs',    cfg:{mode:'sixteenth',bpm:68,swing:0, feel:0, bars:8}},
+  {id:8, tier:'Sixteenths', name:'Mixed Sixteenths',  cfg:{mode:'random', diff:2, auto:true, bpm:84, swing:0, feel:0, bars:8}},
+  {id:9, tier:'Syncopation',name:'First Syncopation', cfg:{mode:'random', diff:3, auto:true, bpm:80, swing:0, feel:0, bars:8}},
+  {id:10,tier:'Syncopation',name:'Syncopated Swing',  cfg:{mode:'random', diff:3, auto:true, bpm:92, swing:55,feel:0, bars:8}},
+  {id:11,tier:'Syncopation',name:'Fast Syncopation',  cfg:{mode:'random', diff:3, auto:true, bpm:110,swing:0, feel:0, bars:8}},
+  {id:12,tier:'Mastery',    name:'In the Pocket',     cfg:{mode:'random', diff:3, auto:true, bpm:104,swing:0, feel:25,bars:8}},
+];
+const STAR_TOTAL=LEVELS.length*3;
+
+function segActivate(segId,attr,val){ const seg=$(segId); if(!seg)return;
+  [...seg.children].forEach(b=>b.classList.toggle('active', b.dataset[attr]===val)); }
+
+function applyConfig(cfg){
+  applyingCfg=true;
+  if(cfg.mode==='random'){
+    randomMode=true; $('randomRow').style.display='block'; segActivate('subdivSeg','s','random');
+    genDiff=cfg.diff||2; segActivate('diffSeg','d',String(genDiff));
+    autoAdv=!!cfg.auto; $('autoAdvChk').checked=autoAdv;
+    if(autoAdv&&!nextBar) nextBar=makeBar().cells;
+    generateBar();
+  } else {
+    randomMode=false; subdiv=cfg.mode; $('randomRow').style.display='none'; segActivate('subdivSeg','s',cfg.mode);
+  }
+  bpm=cfg.bpm; $('bpm').value=bpm; $('bpmVal').textContent=bpm; beatDur=60/bpm; barDur=4*beatDur;
+  swing=cfg.swing||0; $('swing').value=swing; $('swingVal').textContent=swing;
+  feelMs=cfg.feel||0; segActivate('feelSeg','f',String(feelMs));
+  maxBars=cfg.bars; segActivate('lenSeg','n',String(cfg.bars));
+  renderNotation();
+  applyingCfg=false;
+}
+
+function loadLevel(id){
+  const L=LEVELS.find(x=>x.id===id); if(!L||id>prog.unlocked) return;
+  applyConfig(L.cfg);
+  pendingLevel=id;
+  const b=$('levelBanner');
+  b.textContent='Level '+id+' \u00b7 '+L.name+'  loaded \u2014 '+(calibrated?'':'calibrate first, then ')+'press \u25B6 Play rhythm';
+  b.style.display='block';
+  $('levelResult').style.display='none';
+  $('playBtn').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function clearPending(){ if(pendingLevel!=null){ pendingLevel=null; $('levelBanner').style.display='none'; } }
+
+function finalScores(){
+  const total=hits+missed+extra; if(total===0||deltas.length<3) return null;
+  const bias=mean(deltas), sd=std(deltas);
+  return { cen:Math.round(centerScore(bias)), evn:Math.round(evennessScore(sd)), rhy:Math.round(hits/total*100) };
+}
+function starsFor(f){
+  if(f.rhy>=95 && f.cen>=88 && f.evn>=82) return 3;
+  if(f.rhy>=88 && f.cen>=75 && f.evn>=70) return 2;
+  if(f.rhy>=75 && f.cen>=60) return 1;
+  return 0;
+}
+function bestOf(a,b){ if(!a) return b; return {cen:Math.max(a.cen,b.cen),evn:Math.max(a.evn,b.evn),rhy:Math.max(a.rhy,b.rhy)}; }
+
+function evaluateLevel(id){
+  const L=LEVELS.find(x=>x.id===id); if(!L) return;
+  const f=finalScores();
+  if(!f){ const el=$('levelResult'); el.style.display='block'; el.style.color='var(--muted)';
+    el.textContent='Not enough notes landed to score that run \u2014 give it another go.'; pendingLevel=null; return; }
+  const stars=starsFor(f), cleared=stars>=1;
+  const rec=prog.levels[id]||{stars:0,best:null,cleared:false};
+  rec.best=bestOf(rec.best,f); rec.stars=Math.max(rec.stars,stars); rec.cleared=rec.cleared||cleared;
+  prog.levels[id]=rec; prog.sessions=(prog.sessions||0)+1;
+  let newlyUnlocked=false;
+  if(cleared && id<LEVELS.length && prog.unlocked<id+1){ prog.unlocked=id+1; newlyUnlocked=true; }
+  saveProg();
+  const starStr='\u2605'.repeat(stars)+'\u2606'.repeat(3-stars);
+  let msg = cleared ? ('Level '+id+' cleared  '+starStr) : ('Not yet  '+starStr+' \u2014 clear needs Rhythm 75+ and Center 60+');
+  msg += '\n   Rhythm '+f.rhy+'  \u00b7  Center '+f.cen+'  \u00b7  Evenness '+f.evn;
+  if(newlyUnlocked) msg += '\n   \u2192 Level '+(id+1)+' unlocked: '+LEVELS.find(x=>x.id===id+1).name;
+  else if(cleared && id<LEVELS.length) msg += '\n   Level '+(id+1)+' already open \u2014 keep climbing.';
+  else if(cleared && id===LEVELS.length) msg += '\n   You topped the climb. That is a real pocket.';
+  const el=$('levelResult'); el.textContent=msg; el.style.display='block'; el.style.whiteSpace='pre-line';
+  el.style.color = cleared ? '#46d39a' : '#ffb020';
+  $('levelBanner').style.display='none';
+  pendingLevel=null;
+  renderLadder();
+}
+
+function renderLadder(){
+  const wrap=$('ladder'); if(!wrap) return; wrap.innerHTML='';
+  let tier='';
+  LEVELS.forEach(L=>{
+    if(L.tier!==tier){ tier=L.tier; const h=document.createElement('div'); h.className='tier'; h.textContent=tier; wrap.appendChild(h); }
+    const rec=prog.levels[L.id]||{}, locked=L.id>prog.unlocked, stars=rec.stars||0;
+    const btn=document.createElement('button');
+    btn.className='lvl'+(locked?' locked':'')+(rec.cleared?' cleared':'');
+    const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
+    btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+'</span><span class="lstars">'+starCell+'</span>';
+    if(!locked) btn.onclick=()=>loadLevel(L.id);
+    wrap.appendChild(btn);
+  });
+  const cleared=LEVELS.filter(L=>(prog.levels[L.id]||{}).cleared).length;
+  const stars=LEVELS.reduce((a,L)=>a+((prog.levels[L.id]||{}).stars||0),0);
+  let sum='<b>'+cleared+'</b> / '+LEVELS.length+' levels cleared &middot; <b>'+stars+'</b> / '+STAR_TOTAL+' stars';
+  if(prog.calib!=null) sum+=' &middot; calibration saved ('+prog.calib+'ms)';
+  $('climbSummary').innerHTML=sum;
+}
+
+if(prog.calib!=null){ calibOffset=prog.calib; calibrated=true; }
+
+['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
+['bpm','swing'].forEach(id=>$(id) && $(id).addEventListener('input',()=>{ if(!applyingCfg) clearPending(); }));
+$('autoAdvChk') && $('autoAdvChk').addEventListener('change',()=>{ if(!applyingCfg) clearPending(); });
+$('newRhythmBtn') && $('newRhythmBtn').addEventListener('click',()=>{ if(!applyingCfg) clearPending(); });
+
+$('resetProgBtn') && ($('resetProgBtn').onclick=()=>{
+  if(confirm('Reset all climb progress and saved calibration? This cannot be undone.')){
+    prog=defaultProg(); saveProg(); calibrated=false; calibOffset=0;
+    $('levelResult').style.display='none'; $('levelBanner').style.display='none'; renderLadder();
+  }
+});
+
+renderLadder();
+// ============================================================================
 </script>
 </body>
 </html>
