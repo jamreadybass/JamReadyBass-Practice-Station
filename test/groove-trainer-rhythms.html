@@ -93,7 +93,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 15 · climb</div>
+  <div class="badge" id="statusBadge">audio off · build 17 · notch</div>
 </header>
 
 <div class="panel">
@@ -192,6 +192,15 @@
   <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)">
     <input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)
   </label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)">
+    <input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)
+  </label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)">
+    <input type="checkbox" id="hapticChk" style="accent-color:var(--amber)"> Buzz on the beat (Android phones — iPhone browsers can't vibrate)
+  </label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)">
+    <input type="checkbox" id="filterClickChk" style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones (experimental)
+  </label>
   <details>
     <summary>Detection tuning</summary>
     <div class="row" style="margin-top:12px">
@@ -202,6 +211,11 @@
     <div style="margin-top:12px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level — play a note; the green bar must cross the amber line to register a hit</div>
       <canvas id="levelMeter" height="40" style="width:100%;background:#08090c;border:1px solid var(--line);border-radius:8px"></canvas>
+    </div>
+    <div style="margin-top:16px">
+      <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Highway sync <span class="val" id="hwnudgeVal">0</span> ms</label>
+      <input type="range" id="hwnudge" min="-150" max="150" value="0" style="width:100%;accent-color:var(--amber);margin-top:4px">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Bluetooth delays the sound. If gems cross the pocket <i>before</i> you hear the click, slide right until they meet what your ears hear.</div>
     </div>
   </details>
 </div>
@@ -277,6 +291,8 @@ let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
 let running=false;
 let params={threshFactor:5.2,refractory:0.09};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
+let hwNudgeMs=0, visualBeat=false, haptic=false, hwLastBeat=null, beatPulses=[];
+let notchFilters=[], detTap=null, filterClick=false; const CLICK_FREQS=[1100,1600,3300,4800];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false;
@@ -295,14 +311,15 @@ $('startBtn').onclick=async()=>{
     await ac.resume();
     micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     src=ac.createMediaStreamSource(micStream);
+    detTap=buildNotchChain(src);
     try{
       const blob=new Blob([workletSrc],{type:'application/javascript'});
       await ac.audioWorklet.addModule(URL.createObjectURL(blob));
-      node=new AudioWorkletNode(ac,'onset-processor'); node.port.onmessage=onWorklet; src.connect(node);
+      node=new AudioWorkletNode(ac,'onset-processor'); node.port.onmessage=onWorklet; detTap.connect(node);
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 15 · climb'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 17 · notch'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -311,6 +328,22 @@ $('startBtn').onclick=async()=>{
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
 function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<b>Compatibility mode.</b> '+m;}
+function buildNotchChain(input){
+  // narrow notches at the click's tones (and odd harmonics) — kills the metronome
+  // in the mic without touching the instrument, whose energy sits elsewhere.
+  let prev=input; notchFilters=[];
+  for(const fhz of CLICK_FREQS){
+    const bq=ac.createBiquadFilter(); bq.type='notch'; bq.Q.value=10;
+    bq.frequency.value = filterClick ? fhz : 19000;   // parked harmlessly high when off
+    bq._target=fhz; prev.connect(bq); prev=bq; notchFilters.push(bq);
+  }
+  const tap=ac.createGain(); tap.gain.value=1; prev.connect(tap); return tap;
+}
+function setFilterClick(on){
+  filterClick=on;
+  notchFilters.forEach(bq=>{ try{ bq.frequency.setTargetAtTime(on?bq._target:19000, ac?ac.currentTime:0, 0.02); }catch(e){ bq.frequency.value=on?bq._target:19000; } });
+  prog.filterClick=on; saveProg();
+}
 function onWorklet(ev){ const d=ev.data; if(d.type==='level'){ lastLevel=d; return; } if(d.type==='onset') handleOnset(d.time); }
 function setupFallback(){
   showInfo("Opened as a local file — using an older audio path. Serve over https for full timing accuracy.");
@@ -325,7 +358,7 @@ function setupFallback(){
       if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
       if(!fb.armed&&en<thresh*0.4)fb.armed=true;fb.prevEnergy=en;
       if((fb.fc++ %4)===0)lastLevel={e:en,thresh:thresh};}};
-  const mute=ac.createGain();mute.gain.value=0;src.connect(spNode);spNode.connect(mute).connect(ac.destination);
+  const mute=ac.createGain();mute.gain.value=0;(detTap||src).connect(spNode);spNode.connect(mute).connect(ac.destination);
 }
 
 // ---- Rhythm model ----
@@ -496,7 +529,13 @@ function drawHighway(){
   ctx.fillStyle='rgba(10,8,4,0.22)';ctx.fillRect(0,notBot-1.5*DPR,W,1.5*DPR);
 
   const playing = !!schedId && !!ac && firstBarTime>0;
-  const now = ac ? ac.currentTime : 0;
+  const hwLat = ac ? ((ac.outputLatency||ac.baseLatency||0)+hwNudgeMs/1000) : 0;
+  const now = ac ? (ac.currentTime - hwLat) : 0;   // shift visuals to when you HEAR the beat
+  if(playing){ const bi=Math.floor((now-firstBarTime)/beatDur);
+    if(hwLastBeat===null){ hwLastBeat=bi; }
+    else if(bi>hwLastBeat){ for(let k=hwLastBeat+1;k<=bi;k++){ const dn=(((k%4)+4)%4)===0; beatPulses.push({t:nowMs,down:dn});
+        if(haptic && navigator.vibrate){ try{navigator.vibrate(dn?30:12);}catch(e){} } } hwLastBeat=bi; }
+  } else { hwLastBeat=null; }
   const LOOK=2.0, pad=16*DPR, SPEED=(W-pocketX-pad)/LOOK, X=t=>pocketX+(t-now)*SPEED;
   const nhrx=6.5*DPR,nhry=5*DPR,stem=20*DPR;
   const pxPerBeat = playing ? beatDur*SPEED : (W-pocketX-30*DPR)/4;
@@ -573,7 +612,9 @@ function drawHighway(){
   }
 
   // ---- the pocket ----
-  const phase=playing?(((now-firstBarTime)/beatDur)%1+1)%1:0, pulse=0.6+0.4*Math.max(0,1-phase*3);
+  let beatGlow=0; for(const p of beatPulses){ const aa=(nowMs-p.t)/(visualBeat?280:210); if(aa>=0&&aa<1) beatGlow=Math.max(beatGlow,(1-aa)*(p.down?1:0.78)); }
+  const phase=playing?(((now-firstBarTime)/beatDur)%1+1)%1:0, basePulse=0.6+0.4*Math.max(0,1-phase*3);
+  const pulse=Math.min(1, basePulse + beatGlow*(visualBeat?0.9:0.4));
   ctx.fillStyle='rgba(255,176,32,0.06)';ctx.fillRect(pocketX-12*DPR,notTop,24*DPR,hwBot-notTop);
   ctx.save();ctx.shadowColor='#ffb020';ctx.shadowBlur=20*DPR*pulse;ctx.strokeStyle=`rgba(255,176,32,${0.5+0.45*pulse})`;ctx.lineWidth=3*DPR;
   ctx.beginPath();ctx.moveTo(pocketX,notTop);ctx.lineTo(pocketX,hwBot);ctx.stroke();ctx.restore();
@@ -581,6 +622,12 @@ function drawHighway(){
   ctx.fillStyle='rgba(255,176,32,0.45)';ctx.font=`700 ${9*DPR}px ui-monospace,monospace`;ctx.textAlign='center';
   ctx.fillText('THE POCKET',pocketX,hwBot-5*DPR);
 
+  // ---- beat pulses (visual metronome) ----
+  beatPulses=beatPulses.filter(p=>nowMs-p.t<(visualBeat?280:210));
+  for(const p of beatPulses){ const dur=visualBeat?280:210, a=(nowMs-p.t)/dur;
+    const rr=((p.down?16:10)+a*(visualBeat?66:42))*DPR, col=p.down?'255,90,61':'255,176,32', base=(visualBeat?0.95:0.55)*(p.down?1:0.8);
+    ctx.strokeStyle='rgba('+col+','+(base*(1-a))+')';ctx.lineWidth=(p.down?3:2)*DPR*(1-a);
+    ctx.beginPath();ctx.arc(pocketX,hwMid,rr,0,7);ctx.stroke(); }
   // ---- flashes + popup ----
   hwFlashes=hwFlashes.filter(fl=>nowMs-fl.t<520);
   for(const fl of hwFlashes){ if(nowMs-fl.t<360){ const a=(nowMs-fl.t)/360, rr=(8+a*44)*DPR;
@@ -623,7 +670,7 @@ function startTransport(forCalib){
   if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
   nextBeatTime=ac.currentTime+0.25;
   firstBarTime=nextBeatTime+countInBeats*beatDur;
-  hwBarMap.clear(); hwFlashes=[]; hwHits.clear();
+  hwBarMap.clear(); hwFlashes=[]; hwHits.clear(); hwLastBeat=null; beatPulses=[];
   $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
   $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
   schedId=setInterval(scheduler,25);
@@ -661,7 +708,7 @@ function scheduler(){
   expected=expected.filter(e=>e.time>cutoff);
 }
 function scheduleClick(t,accent){
-  if(clickVol>0){
+  if(clickVol>0 && (!visualBeat || mode==='calibrate')){
     const o=ac.createOscillator(),g=ac.createGain();
     o.frequency.value=accent?1600:1100;o.type='square';
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*(accent?0.5:0.36),t+0.001);
@@ -697,7 +744,7 @@ function registerBar(barStart){
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
     const win=Math.min(0.18, Math.max(0.05, gapBeats*beatDur*0.5));
     expected.push({time:t,hit:false,idx:i,win});
-    if(guide && (p%1!==0)){ // soft tick on the subdivisions between beats
+    if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
       o.frequency.value=2200;o.type='sine';
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.22,t+0.001);
@@ -803,6 +850,10 @@ $('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
+$('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); });
+$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); });
+$('hapticChk') && ($('hapticChk').onchange=e=>{ haptic=e.target.checked; prog.haptic=haptic; if(haptic&&navigator.vibrate){try{navigator.vibrate(20);}catch(e2){}} saveProg(); });
+$('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});}
@@ -937,6 +988,10 @@ function renderLadder(){
 }
 
 if(prog.calib!=null){ calibOffset=prog.calib; calibrated=true; }
+if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').value=hwNudgeMs;$('hwnudgeVal').textContent=hwNudgeMs;} }
+if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
+if(prog.haptic){ haptic=true; if($('hapticChk'))$('hapticChk').checked=true; }
+if(prog.filterClick){ filterClick=true; if($('filterClickChk'))$('filterClickChk').checked=true; }
 
 ['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
 ['bpm','swing'].forEach(id=>$(id) && $(id).addEventListener('input',()=>{ if(!applyingCfg) clearPending(); }));
