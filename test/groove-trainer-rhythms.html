@@ -68,7 +68,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 7</div>
+  <div class="badge" id="statusBadge">audio off · build 9</div>
 </header>
 
 <div class="panel">
@@ -244,7 +244,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 7'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 9'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -337,7 +337,7 @@ function gStaff(light){const lc=light?'#cfc7b4':'#9a917c',tc=light?'#d9d1bd':'#c
   let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="${lc}" stroke-width="1.5"/>`;
   for(let b=0;b<4;b++){const bx=NX(b);
     s+=`<line x1="${bx}" y1="${NY-3}" x2="${bx}" y2="${NY+3}" stroke="${tc}" stroke-width="1"/>`;
-    if(!light) s+=`<text x="${bx}" y="${NY+28}" fill="#9a917c" font-size="12" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
+    if(!light) s+=`<text id="bn-${b}" x="${bx}" y="${NY+28}" fill="#9a917c" font-size="13" font-weight="600" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
   s+=`<line x1="675" y1="${NY-26}" x2="675" y2="${NY+10}" stroke="${lc}" stroke-width="2"/>`;
   return s;
 }
@@ -487,9 +487,9 @@ function scheduler(){
 function scheduleClick(t,accent){
   if(clickVol>0){
     const o=ac.createOscillator(),g=ac.createGain();
-    o.frequency.value=accent?1400:1000;o.type='square';
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.5,t+0.001);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+0.04);
+    o.frequency.value=accent?1600:1100;o.type='square';
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*(accent?0.5:0.36),t+0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.035);
     o.connect(g).connect(ac.destination);o.start(t);o.stop(t+0.05);
   }
 }
@@ -590,16 +590,19 @@ function renderScore(){
 
 // ---- Playhead ----
 function drawPlayhead(){
-  if(!schedId){const ph=$('playhead');if(ph)ph.setAttribute('opacity','0');return;}
+  if(!schedId){const ph=$('playhead');if(ph)ph.setAttribute('opacity','0');resetBeatNums();return;}
   const ph=$('playhead');
   if(ph && mode==='play' && curBarStart>0){
     let phase=(ac.currentTime-curBarStart)/barDur;
     phase=Math.max(0,Math.min(1,phase));
     const x0=60,x1=660,x=x0+phase*(x1-x0);
     ph.setAttribute('opacity','0.9');ph.setAttribute('x1',x);ph.setAttribute('x2',x);
-  } else if(ph){ ph.setAttribute('opacity','0'); }
+    const beat=Math.min(3,Math.floor(phase*4));
+    for(let b=0;b<4;b++){const tn=$('bn-'+b);if(tn){const on=(b===beat);tn.setAttribute('fill',on?'#ffb020':'#9a917c');tn.setAttribute('font-size',on?'17':'13');}}
+  } else if(ph){ ph.setAttribute('opacity','0'); resetBeatNums(); }
   requestAnimationFrame(drawPlayhead);
 }
+function resetBeatNums(){for(let b=0;b<4;b++){const tn=$('bn-'+b);if(tn){tn.setAttribute('fill','#9a917c');tn.setAttribute('font-size','13');}}}
 
 // ---- Controls ----
 $('subdivSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
