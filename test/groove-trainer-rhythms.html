@@ -97,7 +97,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px">Read the rhythm, play it to the click. Every note is scored against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 27 · noise-gate</div>
+  <div class="badge" id="statusBadge">audio off · build 28 · adaptive-deadtime</div>
 </header>
 
 <div class="panel">
@@ -322,7 +322,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 27 · noise-gate'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 28 · adaptive-deadtime'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -675,6 +675,16 @@ function startTransport(forCalib){
   beatDur=60/bpm; barDur=4*beatDur;
   mode=forCalib?'calibrate':'play';
   sessionCompleted=false;
+  if(!forCalib){
+    // dead-time after each note adapts to the rhythm: long for slow notes (kills double-triggers),
+    // short for fast ones (so real sixteenths aren't swallowed).
+    const gapB = randomMode ? (genDiff>=2?0.25:0.5)
+               : ({whole:4,half:2,quarter:1,eighth:0.5,sixteenth:0.25}[subdiv]||1);
+    const refMs = Math.round(Math.min(300, Math.max(60, gapB*beatDur*500)));
+    if($('ref')){ $('ref').value=refMs; $('refVal').textContent=refMs; }
+    params.refractory=refMs/1000;
+    if(node) node.port.postMessage({threshFactor:params.threshFactor, refractory:params.refractory});
+  }
   expected=[]; beatIndex=0; repCount=0;
   if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
   nextBeatTime=ac.currentTime+0.25;
