@@ -97,7 +97,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px">Read the rhythm, play it to the click. Every note is scored against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 23 · rhythm-fix</div>
+  <div class="badge" id="statusBadge">audio off · build 24 · retrigger-fix</div>
 </header>
 
 <div class="panel">
@@ -271,7 +271,7 @@ const $=id=>document.getElementById(id);
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
   constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
-    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;
+    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.peakE=0;
     this.port.onmessage=(e)=>{const d=e.data;
       if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
       if(d.refractory!==undefined)this.refractory=d.refractory;};}
@@ -279,9 +279,11 @@ class OnsetProcessor extends AudioWorkletProcessor {
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
     const thresh=Math.max(7e-6,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
     if(e<thresh) this.baseline=0.99*this.baseline+0.01*e;   // track the quiet floor, not the note attacks
+    if(!this.armed && e>this.peakE) this.peakE=e;           // remember how loud THIS note got
     if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
-      this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime});}
-    if(!this.armed&&e<thresh*0.4)this.armed=true;this.prevEnergy=e;
+      this.lastOnset=now;this.armed=false;this.peakE=e;this.port.postMessage({type:'onset',time:currentTime});}
+    if(!this.armed && e < Math.max(thresh*0.4, this.peakE*0.30)) this.armed=true;  // re-arm only after real decay
+    this.prevEnergy=e;
     if((this.fc++ %4)===0)this.port.postMessage({type:'level',e:e,thresh:thresh});
     return true;}
 }
@@ -321,7 +323,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 23 · rhythm-fix'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 24 · retrigger-fix'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -335,7 +337,7 @@ function buildNotchChain(input){
   // in the mic without touching the instrument, whose energy sits elsewhere.
   let prev=input; notchFilters=[];
   for(const fhz of CLICK_FREQS){
-    const bq=ac.createBiquadFilter(); bq.type='notch'; bq.Q.value=10;
+    const bq=ac.createBiquadFilter(); bq.type='notch'; bq.Q.value=5;
     bq.frequency.value = filterClick ? fhz : 19000;   // parked harmlessly high when off
     bq._target=fhz; prev.connect(bq); prev=bq; notchFilters.push(bq);
   }
@@ -350,15 +352,17 @@ function onWorklet(ev){ const d=ev.data; if(d.type==='level'){ lastLevel=d; retu
 function setupFallback(){
   showInfo("Opened as a local file — using an older audio path. Serve over https for full timing accuracy.");
   const bufSize=512; spNode=ac.createScriptProcessor(bufSize,1,1);
-  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0};
+  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0,peakE:0};
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
       for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
       const thresh=Math.max(7e-6,fb.baseline*params.threshFactor);
       if(en<thresh) fb.baseline=0.99*fb.baseline+0.01*en;
       const tNow=bufStart+(off+B)/sr,rising=en>fb.prevEnergy;
-      if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
-      if(!fb.armed&&en<thresh*0.4)fb.armed=true;fb.prevEnergy=en;
+      if(!fb.armed && en>fb.peakE) fb.peakE=en;
+      if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;fb.peakE=en;handleOnset(bufStart+off/sr);}
+      if(!fb.armed && en<Math.max(thresh*0.4, fb.peakE*0.30)) fb.armed=true;
+      fb.prevEnergy=en;
       if((fb.fc++ %4)===0)lastLevel={e:en,thresh:thresh};}};
   const mute=ac.createGain();mute.gain.value=0;(detTap||src).connect(spNode);spNode.connect(mute).connect(ac.destination);
 }
