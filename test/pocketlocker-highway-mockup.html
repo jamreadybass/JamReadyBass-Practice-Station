@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PocketLocker — Highway (visual mockup)</title>
+<style>
+  :root{
+    --void:#0a0b0f; --void2:#12141b; --amber:#ffb020; --ember:#ff5a3d;
+    --lock:#46d39a; --bone:#ece6d6; --ash:#5b6270; --line:#23262f;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--void);color:var(--bone);font-family:var(--sans);overflow:hidden;height:100%}
+  #wrap{max-width:520px;margin:0 auto;height:100vh;display:flex;flex-direction:column}
+  header{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  h1{font-size:13px;letter-spacing:.34em;text-transform:uppercase;font-weight:800;margin:0;color:var(--amber)}
+  .tag{font-family:var(--mono);font-size:10px;color:var(--ash);letter-spacing:.12em;text-transform:uppercase}
+  #stage{position:relative;flex:1;min-height:0}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .hud{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:space-between;padding:0 20px;pointer-events:none;font-family:var(--mono)}
+  .combo{font-size:13px;color:var(--ash);letter-spacing:.08em}
+  .combo b{font-size:30px;color:var(--bone);font-weight:800;display:block;line-height:1;letter-spacing:0}
+  .combo.hot b{color:var(--amber)}
+  .acc{font-size:13px;color:var(--ash);text-align:right;letter-spacing:.08em}
+  .acc b{font-size:30px;font-weight:800;display:block;line-height:1}
+  footer{padding:10px 18px 16px;display:flex;align-items:center;gap:14px}
+  .ctrl{display:flex;flex-direction:column;gap:4px;flex:1}
+  .ctrl label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ash);font-family:var(--mono)}
+  .ctrl .v{font-family:var(--mono);color:var(--amber);font-size:12px}
+  input[type=range]{width:100%;accent-color:var(--amber)}
+  .note{font-family:var(--mono);font-size:11px;color:var(--ash);line-height:1.5;padding:0 18px 14px}
+  .note b{color:var(--bone)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>PocketLocker</h1>
+    <span class="tag">highway · visual mockup</span>
+  </header>
+  <div id="stage">
+    <canvas id="hw"></canvas>
+    <div class="hud">
+      <div class="combo" id="comboWrap"><span>streak</span><b id="combo">0</b></div>
+      <div class="acc" id="accWrap"><span>last</span><b id="last" style="color:var(--ash)">—</b></div>
+    </div>
+  </div>
+  <footer>
+    <div class="ctrl"><label>Tempo <span class="v" id="bpmV">96</span> bpm</label><input type="range" id="bpm" min="60" max="160" value="96"></div>
+  </footer>
+  <div class="note">Notes fall into <b>the pocket</b> — the amber lock-bar. They auto-play so you can watch the feel; <b>tap the highway</b> on the beat to lock notes yourself and see real timing. Not wired to the mic yet — this is the look to react to.</div>
+</div>
+
+<script>
+"use strict";
+const cv=document.getElementById('hw'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1,hitY=0;
+function size(){DPR=Math.min(window.devicePixelRatio||1,2);const r=cv.getBoundingClientRect();
+  W=Math.round(r.width*DPR);H=Math.round(r.height*DPR);cv.width=W;cv.height=H;hitY=H*0.80;}
+window.addEventListener('resize',size);
+
+let bpm=96;
+document.getElementById('bpm').oninput=e=>{bpm=+e.target.value;document.getElementById('bpmV').textContent=bpm;};
+
+// 2-bar looping sample: {beat, dur(beats)} — singles, a 16th run, and a held half note
+const PATTERN=[
+  {b:0,d:1},{b:1,d:.5},{b:1.5,d:.5},{b:2,d:2},
+  {b:4,d:.25},{b:4.25,d:.25},{b:4.5,d:.25},{b:4.75,d:.25},{b:5,d:1},{b:6,d:.5},{b:6.5,d:.5},{b:7,d:1}
+];
+const LOOP_BEATS=8;
+const LOOKAHEAD=2.1;                 // seconds of runway above the pocket
+const hits=new Map();                // id -> {err, t}
+let combo=0, lastRating={txt:'—',col:'#5b6270',t:0};
+let bursts=[];                       // {x,y,t,col}
+let t0=performance.now()/1000;
+
+function rng(seed){let x=Math.sin(seed*99.13)*43758.5;return x-Math.floor(x);}
+function ratingFor(absErr){
+  if(absErr<=0.028) return {txt:'LOCKED',col:'#46d39a'};
+  if(absErr<=0.055) return {txt:'TIGHT', col:'#7ad39a'};
+  if(absErr<=0.090) return {txt:'GOOD',  col:'#ffb020'};
+  if(absErr<=0.140) return {txt:'LOOSE', col:'#ff8a3d'};
+  return {txt:'OFF', col:'#ff5a3d'};
+}
+function laneHalf(y){const top=W*0.10, bot=W*0.34; return top+(bot-top)*(y/H);}  // perspective width
+function scaleAt(y){return 0.55+0.45*(y/H);}
+
+function notesIn(now,beatDur){
+  const loopDur=LOOP_BEATS*beatDur, k=Math.floor(now/loopDur), out=[];
+  for(let loop=k-1; loop<=k+1; loop++){
+    for(const p of PATTERN){
+      const time=loop*loopDur + p.b*beatDur;
+      out.push({time, dur:p.d*beatDur, id:loop*100+p.b, beat:p.b});
+    }
+  }
+  return out;
+}
+
+function tapHit(now,beatDur){
+  const ns=notesIn(now,beatDur); let best=null,bd=1e9;
+  for(const n of ns){ if(hits.has(n.id))continue; const d=Math.abs(n.time-now); if(d<bd){bd=d;best=n;} }
+  if(best && bd<0.3){
+    const err=now-best.time, r=ratingFor(Math.abs(err));
+    hits.set(best.id,{err,t:performance.now()});
+    combo = Math.abs(err)<0.14 ? combo+1 : 0;
+    lastRating={txt:r.txt,col:r.col,t:performance.now()};
+    const cx=W/2; bursts.push({x:cx,y:hitY,t:performance.now(),col:r.col});
+  }
+}
+cv.addEventListener('pointerdown',()=>{const now=performance.now()/1000 - t0; const beatDur=60/bpm; tapHit(now,beatDur);});
+
+function frame(){
+  const now=performance.now()/1000 - t0, nowMs=performance.now();
+  const beatDur=60/bpm, SPEED=(hitY-H*0.04)/LOOKAHEAD;
+  const cx=W/2;
+  ctx.clearRect(0,0,W,H);
+
+  // background wash + pocket pool
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0a0b0f'); bg.addColorStop(.7,'#0c0e14'); bg.addColorStop(1,'#15110c');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  const pool=ctx.createRadialGradient(cx,hitY,0,cx,hitY,W*0.6);
+  pool.addColorStop(0,'rgba(255,176,32,0.10)'); pool.addColorStop(1,'rgba(255,176,32,0)');
+  ctx.fillStyle=pool; ctx.fillRect(0,0,W,H);
+
+  // rails (perspective)
+  ctx.strokeStyle='rgba(120,130,150,0.22)'; ctx.lineWidth=1.4*DPR;
+  ctx.beginPath(); ctx.moveTo(cx-laneHalf(H),H); ctx.lineTo(cx-laneHalf(0),0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+laneHalf(H),H); ctx.lineTo(cx+laneHalf(0),0); ctx.stroke();
+
+  // beat lines sweeping down
+  const startBeat=Math.floor((now)/beatDur)-1, endBeat=Math.ceil((now+LOOKAHEAD)/beatDur)+1;
+  for(let b=startBeat;b<=endBeat;b++){
+    const bt=b*beatDur, y=hitY-(bt-now)*SPEED;
+    if(y<-4||y>H+4) continue;
+    const half=laneHalf(y), down=(((b%4)+4)%4===0);
+    ctx.strokeStyle = down ? 'rgba(255,90,61,0.5)' : 'rgba(120,130,150,0.16)';
+    ctx.lineWidth=(down?2:1)*DPR;
+    ctx.beginPath(); ctx.moveTo(cx-half,y); ctx.lineTo(cx+half,y); ctx.stroke();
+    if(down){ ctx.fillStyle='rgba(255,90,61,0.55)'; ctx.font=`${11*DPR}px ${'ui-monospace,monospace'}`; ctx.textAlign='left';
+      ctx.fillText(((((b/4)%4)+4)%4+1).toString(), cx-half-16*DPR, y+4*DPR); }
+  }
+
+  // notes (auto-lock when they reach the pocket)
+  const ns=notesIn(now,beatDur);
+  for(const n of ns){
+    if(!hits.has(n.id) && n.time<=now){                 // auto demo hit
+      const err=(rng(n.id)-0.5)*0.06, r=ratingFor(Math.abs(err));
+      hits.set(n.id,{err,t:nowMs,auto:true});
+      if(!lastRating || nowMs-lastRating.t>120){ lastRating={txt:r.txt,col:r.col,t:nowMs}; }
+      combo = Math.abs(err)<0.14 ? combo+1 : 0;
+      bursts.push({x:cx,y:hitY,t:nowMs,col:r.col});
+    }
+  }
+  for(const n of ns){
+    const y=hitY-(n.time-now)*SPEED;
+    if(y<-30||y>H+40) continue;
+    const sc=scaleAt(y), half=laneHalf(y), gw=half*1.25, gh=15*DPR*sc;
+    const hit=hits.get(n.id);
+    const isHold=n.dur>beatDur*0.9;
+    // hold tail (extends up from gem by its duration)
+    if(isHold){
+      const tailLen=n.dur*SPEED, ty=y-tailLen, tw=gw*0.5;
+      const tg=ctx.createLinearGradient(0,ty,0,y);
+      tg.addColorStop(0,'rgba(255,176,32,0.05)'); tg.addColorStop(1,'rgba(255,176,32,0.30)');
+      ctx.fillStyle=tg; rrect(cx-tw/2,ty,tw,tailLen,6*DPR); ctx.fill();
+    }
+    // gem
+    const down=(Math.round(n.beat)%4===0 && Math.abs(n.beat-Math.round(n.beat))<0.01);
+    let base = down ? '#ff7a4d' : '#ffd07a', edge = down ? '#ff5a3d' : '#ffb020';
+    if(hit){ const r=ratingFor(Math.abs(hit.err)); base=r.col; edge=r.col; }
+    ctx.save();
+    ctx.shadowColor=edge; ctx.shadowBlur=(hit?22:12)*DPR;
+    const gg=ctx.createLinearGradient(0,y-gh,0,y+gh);
+    gg.addColorStop(0,'#fff7e6'); gg.addColorStop(0.5,base); gg.addColorStop(1,edge);
+    ctx.fillStyle=gg; rrect(cx-gw/2,y-gh/2,gw,gh,gh/2); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle='rgba(20,16,10,0.5)'; ctx.lineWidth=1*DPR; rrect(cx-gw/2,y-gh/2,gw,gh,gh/2); ctx.stroke();
+  }
+
+  // strike zone + pocket bar (the signature)
+  const beatPhase=(now/beatDur)%1, pulse=0.6+0.4*Math.max(0,1-beatPhase*3);
+  const zoneH=26*DPR, zHalf=laneHalf(hitY)*1.3;
+  ctx.fillStyle='rgba(255,176,32,0.06)'; ctx.fillRect(cx-zHalf,hitY-zoneH,zHalf*2,zoneH*2);
+  ctx.save();
+  ctx.shadowColor='#ffb020'; ctx.shadowBlur=24*DPR*pulse;
+  ctx.strokeStyle=`rgba(255,176,32,${0.55+0.45*pulse})`; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.moveTo(cx-zHalf,hitY); ctx.lineTo(cx+zHalf,hitY); ctx.stroke();
+  ctx.restore();
+  // pocket caps
+  ctx.fillStyle='#ffb020';
+  [cx-zHalf,cx+zHalf].forEach(x=>{ctx.beginPath();ctx.arc(x,hitY,3.5*DPR,0,7);ctx.fill();});
+  ctx.fillStyle='rgba(255,176,32,0.4)'; ctx.font=`700 ${10*DPR}px ${'ui-monospace,monospace'}`; ctx.textAlign='center';
+  ctx.fillText('THE POCKET', cx, hitY+zoneH+14*DPR);
+
+  // bursts
+  bursts=bursts.filter(b=>nowMs-b.t<360);
+  for(const b of bursts){ const a=(nowMs-b.t)/360, rad=(8+a*46)*DPR;
+    ctx.strokeStyle=`rgba(${hex2rgb(b.col)},${(1-a)*0.8})`; ctx.lineWidth=2.5*DPR*(1-a);
+    ctx.beginPath(); ctx.arc(b.x,b.y,rad,0,7); ctx.stroke(); }
+
+  // rating popup near the pocket
+  if(lastRating && nowMs-lastRating.t<500){ const a=1-(nowMs-lastRating.t)/500;
+    ctx.fillStyle=`rgba(${hex2rgb(lastRating.col)},${a})`;
+    ctx.font=`800 ${20*DPR}px ${'ui-monospace,monospace'}`; ctx.textAlign='center';
+    ctx.fillText(lastRating.txt, cx, hitY-zoneH-14*DPR-(1-a)*10*DPR); }
+
+  // HUD
+  document.getElementById('combo').textContent=combo;
+  document.getElementById('comboWrap').className = 'combo'+(combo>=8?' hot':'');
+  const lb=document.getElementById('last'); lb.textContent=lastRating?lastRating.txt:'—'; lb.style.color=lastRating?lastRating.col:'var(--ash)';
+
+  // prune old hits
+  if(hits.size>300){ const cut=now-3; for(const [id,v] of hits){ /* ids encode loop*100+beat; coarse prune by count */ } if(hits.size>400)hits.clear(); }
+  requestAnimationFrame(frame);
+}
+function rrect(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function hex2rgb(h){h=h.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);return `${(n>>16)&255},${(n>>8)&255},${n&255}`;}
+
+size(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
