@@ -93,7 +93,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 19 · big-pulse</div>
+  <div class="badge" id="statusBadge">audio off · build 20 · fixes</div>
 </header>
 
 <div class="panel">
@@ -276,7 +276,7 @@ class OnsetProcessor extends AudioWorkletProcessor {
       if(d.refractory!==undefined)this.refractory=d.refractory;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
-    const thresh=Math.max(2e-6,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
+    const thresh=Math.max(7e-6,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
     if(e<thresh) this.baseline=0.99*this.baseline+0.01*e;   // track the quiet floor, not the note attacks
     if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
       this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime});}
@@ -295,7 +295,7 @@ let hwNudgeMs=0, visualBeat=false, haptic=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], detTap=null, filterClick=false; const CLICK_FREQS=[1100,1600,3300,4800];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
-let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false;
+let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false;
 let deltas=[], hits=0, missed=0, extra=0;
 // transport
 let beatDur=60/90, barDur=4*beatDur;
@@ -319,7 +319,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 19 · big-pulse'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 20 · fixes'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -352,7 +352,7 @@ function setupFallback(){
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
       for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
-      const thresh=Math.max(2e-6,fb.baseline*params.threshFactor);
+      const thresh=Math.max(7e-6,fb.baseline*params.threshFactor);
       if(en<thresh) fb.baseline=0.99*fb.baseline+0.01*en;
       const tNow=bufStart+(off+B)/sr,rising=en>fb.prevEnergy;
       if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
@@ -569,7 +569,7 @@ function drawHighway(){
   if(playing && mode!=='calibrate'){
     const ci=Math.floor((now-firstBarTime)/barDur);
     for(let k=ci-1;k<=ci+1;k++){ const pat=hwBarMap.get(k)||staticNotes(), start=firstBarTime+k*barDur;
-      for(const nt of pat){ notes.push({time:expectedAbsTime(start,nt.pos), durB:nt.dur, beat:nt.pos}); } }
+      for(const nt of pat){ const tt=expectedAbsTime(start,nt.pos); if(tt>=firstBarTime-0.001) notes.push({time:tt, durB:nt.dur, beat:nt.pos}); } }
   } else if(!playing){
     for(const nt of staticNotes()){ notes.push({time:null, ix:idleX(nt.pos), durB:nt.dur, beat:nt.pos}); }
   }
@@ -679,11 +679,12 @@ function startTransport(forCalib){
   hwBarMap.clear(); hwFlashes=[]; hwHits.clear(); hwLastBeat=null; beatPulses=[];
   $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
   $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
+  const _np=document.getElementById('notePanel'); if(_np) try{ _np.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
   schedId=setInterval(scheduler,25);
   requestAnimationFrame(drawPlayhead);
 }
 function stopTransport(silent){
-  if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; prog.calib=Math.round(calibOffset); saveProg(); }
+  if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; calibratedThisSession=true; prog.calib=Math.round(calibOffset); saveProg(); }
   if(schedId){clearInterval(schedId);schedId=null;}
   $('playhead') && $('playhead').setAttribute('opacity','0');
   $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
@@ -861,15 +862,18 @@ $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.targe
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); });
-$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); });
-$('hapticChk') && ($('hapticChk').onchange=e=>{ haptic=e.target.checked; prog.haptic=haptic; if(haptic&&navigator.vibrate){try{navigator.vibrate([45,35,45]);}catch(e2){}} saveProg(); });
+$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } });
+$('hapticChk') && ($('hapticChk').onchange=e=>{ haptic=e.target.checked; prog.haptic=haptic; saveProg();
+  if(haptic){ if(!navigator.vibrate){ $('hapticChk').nextSibling && (e.target.parentNode.style.opacity=0.5); }
+    else { let ok=true; try{ ok=navigator.vibrate([45,35,45]); }catch(e2){ ok=false; }
+      if(ok===false){ const lbl=e.target.parentNode; if(lbl && !lbl.dataset.warned){ lbl.dataset.warned=1; lbl.insertAdjacentHTML('beforeend',' <span style=\"color:#ff5a3d\">\u2014 blocked by your phone settings</span>'); } } } } });
 $('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});}
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
 $('playBtn').onclick=()=>{
-  if(!calibrated && !calibPromptDismissed){ $('calibPrompt').style.display='block'; return; }
+  if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; return; }
   startTransport(false);
 };
 $('calibNowBtn').onclick=()=>{ $('calibPrompt').style.display='none'; calibSamples=[];calibOffset=0; startTransport(true); };
