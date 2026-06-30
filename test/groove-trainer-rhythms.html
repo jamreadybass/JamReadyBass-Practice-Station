@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GrooveChallenge — Rhythm Reader</title>
+<title>PocketLocker · JamReadyBass.com</title>
 <style>
   :root{
     --bg:#0c0d10; --panel:#14161b; --panel2:#1b1e25; --line:#2a2e38;
@@ -65,8 +65,8 @@
 <body>
 <header>
   <div>
-    <h1>Groove&nbsp;Challenge · Rhythm Reader</h1>
-    <p class="sub">Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
+    <h1>PocketLocker</h1>
+    <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
   <div class="badge" id="statusBadge">audio off</div>
 </header>
@@ -122,6 +122,13 @@
     <button class="primary" id="playBtn">▶ Play rhythm</button>
     <button id="stopBtn" disabled>■ Stop</button>
     <button id="resetBtn" class="danger" style="margin-left:auto">Reset score</button>
+  </div>
+  <div id="calibPrompt" class="warn" style="display:none">
+    <b>Calibrate first?</b> Your device's audio delay shifts every note late — without calibrating, fast notes (eighths &amp; sixteenths) land in the wrong slot. Takes ~16 taps.
+    <div class="transport" style="margin-top:8px">
+      <button class="primary" id="calibNowBtn">Calibrate now</button>
+      <button id="playAnywayBtn">Play anyway</button>
+    </div>
   </div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)">
     <input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)
@@ -210,7 +217,7 @@ let running=false;
 let params={threshFactor:5.2,refractory:0.09};
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
-let calibSamples=[], calibOffset=0;
+let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false;
 let deltas=[], hits=0, missed=0, extra=0;
 // transport
 let beatDur=60/90, barDur=4*beatDur;
@@ -302,7 +309,7 @@ function generateBar(){
 }
 
 // ---- Notation primitives (shared) ----
-const NX0=60,NX1=660,NY=80,NSTEM=36,NHRX=8,NHRY=5.5,FILL='#23201a',PAPER='#f5f1e6';
+const NX0=60,NX1=660,NY=80,NSTEM=30,NHRX=8,NHRY=5.5,FILL='#23201a',PAPER='#f5f1e6';
 const NX=p=>NX0+(p/4)*(NX1-NX0);
 let noteCount=0, noteFills=[];
 function gHead(x,fill,id){return `<ellipse id="${id}" cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${FILL}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
@@ -420,6 +427,7 @@ function startTransport(forCalib){
   requestAnimationFrame(drawPlayhead);
 }
 function stopTransport(silent){
+  if(mode==='calibrate' && calibSamples.length>=8) calibrated=true;
   if(schedId){clearInterval(schedId);schedId=null;}
   $('playhead') && $('playhead').setAttribute('opacity','0');
   $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
@@ -582,8 +590,13 @@ $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=8.0-(s-1)*0.7;params.refractory=(+$('ref').value)/1000;
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});}
-$('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;startTransport(true);};
-$('playBtn').onclick=()=>{startTransport(false);};
+$('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
+$('playBtn').onclick=()=>{
+  if(!calibrated && !calibPromptDismissed){ $('calibPrompt').style.display='block'; return; }
+  startTransport(false);
+};
+$('calibNowBtn').onclick=()=>{ $('calibPrompt').style.display='none'; calibSamples=[];calibOffset=0; startTransport(true); };
+$('playAnywayBtn').onclick=()=>{ calibPromptDismissed=true; $('calibPrompt').style.display='none'; startTransport(false); };
 $('stopBtn').onclick=()=>{stopTransport(false);};
 $('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;
   ['cen','evn'].forEach(k=>{$(k+'Num').textContent='—';$(k+'Num').style.color='';$(k+'Grade').textContent='play to score';$(k+'Grade').style.color='';$(k+'Bar').style.width='0';});
