@@ -68,7 +68,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 11</div>
+  <div class="badge" id="statusBadge">audio off · build 13 · highway</div>
 </header>
 
 <div class="panel">
@@ -108,13 +108,22 @@
   </div>
   <div class="row" style="margin-bottom:14px">
     <div class="ctrl"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="170" value="90"></div>
-    <div class="ctrl"><label>Swing <span class="val" id="swingVal">0</span><span class="muted" style="font-size:11px"> (eighths)</span></label><input type="range" id="swing" min="0" max="100" value="0"></div>
+    <div class="ctrl"><label>Swing <span class="val" id="swingVal">0</span><span class="muted" style="font-size:11px"> (off-beats)</span></label><input type="range" id="swing" min="0" max="100" value="0"></div>
   </div>
   <div class="ctrl" style="margin-bottom:14px"><label>Feel — where you aim relative to the beat</label>
     <div class="seg" id="feelSeg">
       <button data-f="-25">Push ahead</button>
       <button data-f="0" class="active">On the beat</button>
       <button data-f="25">Lay back</button>
+    </div>
+  </div>
+  <div class="ctrl" style="margin-bottom:14px"><label>Session length (measures)</label>
+    <div class="seg" id="lenSeg">
+      <button data-n="4">4</button>
+      <button data-n="8" class="active">8</button>
+      <button data-n="16">16</button>
+      <button data-n="30">30</button>
+      <button data-n="0">∞ forever</button>
     </div>
   </div>
   <div class="transport">
@@ -148,19 +157,11 @@
 </div>
 
 <div class="panel" id="notePanel" style="opacity:.4;pointer-events:none">
-  <h2>The rhythm</h2>
-  <div id="notewrap"><svg id="notation" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <h2>The highway</h2>
+  <canvas id="hw" height="320" style="width:100%;height:320px;display:block;background:#0a0b0f;border:1px solid var(--line);border-radius:11px"></canvas>
   <div class="countin" id="countin"></div>
-  <div id="nextwrap" style="display:none;margin-top:10px">
-    <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Coming up next ↓</div>
-    <div style="background:#ece8db;border:1px solid var(--line);border-radius:9px;padding:4px"><svg id="notationNext" viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto"></svg></div>
-  </div>
-  <canvas id="strip" height="150" style="width:100%;margin-top:12px;background:#08090c;border:1px solid var(--line);border-radius:9px"></canvas>
-  <div class="legend" style="display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap">
-    <span style="color:var(--green)">│ beat (0&nbsp;ms)</span>
-    <span style="color:var(--amber)">┊ your feel target</span>
-    <span>← ahead&nbsp;·&nbsp;behind →</span>
-    <span>time scrolls down</span>
+  <div class="legend" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px">
+    Read the staff up top &middot; gems lock into <b style="color:var(--amber)">the pocket</b> &middot; tight = green &middot; loose = amber &middot; off = red
   </div>
 </div>
 
@@ -232,7 +233,7 @@ let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false
 let deltas=[], hits=0, missed=0, extra=0;
 // transport
 let beatDur=60/90, barDur=4*beatDur;
-let schedId=null, nextBeatTime=0, beatIndex=0, countInBeats=4, maxBars=16;
+let schedId=null, nextBeatTime=0, beatIndex=0, countInBeats=4, maxBars=8;
 let expected=[];            // {time, hit, idx}
 let playStartBar=0, repCount=0;
 
@@ -251,7 +252,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 11'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 13 · highway'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -285,7 +286,7 @@ let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, nextBar=null, g
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
 function swungBeats(posBeats){
-  if(!randomMode && swing>0 && subdiv==='eighth'){
+  if(swing>0){                                    // delay the off-beats in any mode / subdivision
     const base=Math.floor(posBeats), frac=posBeats-base;
     if(Math.abs(frac-0.5)<1e-6) return base+(0.5+(swing/100)*0.18);
   }
@@ -333,6 +334,11 @@ let noteCount=0, noteFills=[];
 function gHead(x,fill,id){return `<ellipse ${id?`id="${id}" `:''}cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${fill===PAPER?FILL:fill}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
 function gStem(x,id,c){return `<line ${id?`id="${id}" `:''}x1="${x+NHRX-1}" y1="${NY-2}" x2="${x+NHRX-1}" y2="${NY-NSTEM}" stroke="${c||FILL}" stroke-width="1.6"/>`;}
 function gDot(x,c){return `<circle cx="${x+NHRX+5}" cy="${NY-3}" r="2.1" fill="${c||FILL}"/>`;}
+function gSustain(x,durBeats,c){           // hold bar showing how long to sustain the note
+  const beatW=(NX1-NX0)/4, w=durBeats*beatW-8;
+  if(durBeats<1.5 || w<12) return '';      // only for genuinely held notes (half, whole, long)
+  return `<rect x="${x+NHRX-1}" y="${NY-3.5}" width="${w}" height="7" rx="3.5" fill="${c||FILL}" opacity="0.22"/>`;
+}
 function gBeam(x1,x2,yy,c){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${c||FILL}" stroke-width="4" stroke-linecap="butt"/>`;}
 function gFlag(x,dbl,c){const col=c||FILL,sx=x+NHRX-1,ty=NY-NSTEM;
   const flag=oy=>`<path d="M${sx} ${ty+oy} c 9 2 13 8 9 17 c 3 -8 -1 -12 -9 -13 z" fill="${col}"/>`;
@@ -358,6 +364,7 @@ function drawCells(cells,color,withIds){
   for(let b=0;b<4;b++){
     const cell=cells[b], beam=[];
     cell.notes.forEach(n=>{const x=NX(b+n.s/4);
+      s+=gSustain(x,n.d/4,color);
       s+=gHead(x,color,withIds?'nh-'+idx:''); if(withIds)noteFills.push(color);
       s+=gStem(x,withIds?'st-'+idx:'',color);
       if(n.d===3) s+=gDot(x,color);
@@ -378,12 +385,14 @@ function drawCells(cells,color,withIds){
   return {body:s,count:idx};
 }
 
-function renderNotation(){ randomMode ? renderRandomMain() : renderUniform(); renderNext(); }
+function renderNotation(){ if(!document.getElementById('notation'))return; randomMode ? renderRandomMain() : renderUniform(); renderNext(); }
 
 function renderUniform(){
   const pos=SUBDIV[subdiv],open=(subdiv==='whole'||subdiv==='half'),npb=notesPerBeat();
   let s=gStaff(); noteFills=[];
+  const DUR={whole:4,half:2,quarter:1,eighth:0.5,sixteenth:0.25}[subdiv];
   pos.forEach((p,i)=>{const cx=NX(p),fill=open?PAPER:FILL;
+    s+=gSustain(cx,DUR,FILL);
     s+=gHead(cx,fill,'nh-'+i); noteFills.push(fill);
     if(subdiv!=='whole') s+=gStem(cx,'st-'+i,FILL);});
   if(npb>=2){for(let b=0;b<4;b++){const grp=[];pos.forEach((p,i)=>{if(Math.floor(p)===b)grp.push(i);});
@@ -414,38 +423,127 @@ function clearNoteColors(){for(let i=0;i<noteCount;i++){const e=$('nh-'+i);if(e)
 
 // ---- Timing strip (centered on the beat; time falls down; x = ahead/behind) ----
 let strip=null,sctx=null,DPR=1,striphits=[];
-function sizeStrip(){ strip=$('strip'); if(!strip)return; sctx=strip.getContext('2d');
-  DPR=Math.min(window.devicePixelRatio||1,2); const r=strip.getBoundingClientRect();
-  strip.width=Math.max(1,Math.round(r.width*DPR)); strip.height=Math.max(1,Math.round(r.height*DPR)); }
+function sizeStrip(){ DPR=Math.min(window.devicePixelRatio||1,2); const cv=$('hw'); if(!cv)return;
+  const r=cv.getBoundingClientRect(); if(r.width>0){ cv.width=Math.max(1,Math.round(r.width*DPR)); cv.height=Math.max(1,Math.round(r.height*DPR)); } }
 window.addEventListener('resize',()=>{if(running)sizeStrip();});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{if(running)sizeStrip();},250));
-function drawStrip(){
-  if(strip&&sctx){
-    const W=strip.width,H=strip.height,cx=W/2,range=120;
-    sctx.clearRect(0,0,W,H);
-    sctx.strokeStyle='#1a1d24';sctx.lineWidth=1;
-    for(const ms of [-100,-50,50,100]){const x=cx+(ms/range)*(W/2);sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();}
-    // pocket band around the beat
-    sctx.fillStyle='rgba(70,211,154,.06)';const pb=(35/range)*(W/2);sctx.fillRect(cx-pb,0,pb*2,H);
-    // beat line (green)
-    sctx.strokeStyle='#46d39a';sctx.lineWidth=2*DPR;sctx.beginPath();sctx.moveTo(cx,0);sctx.lineTo(cx,H);sctx.stroke();
-    // feel target (amber dashed) when not "on the beat"
-    if(feelMs!==0){const fx=cx+(Math.max(-range,Math.min(range,feelMs))/range)*(W/2);
-      sctx.strokeStyle='#ffb020';sctx.lineWidth=1.5*DPR;sctx.setLineDash([5,5]);
-      sctx.beginPath();sctx.moveTo(fx,0);sctx.lineTo(fx,H);sctx.stroke();sctx.setLineDash([]);}
-    // labels
-    sctx.fillStyle='#5a5f6b';sctx.font=(10*DPR)+'px ui-monospace,monospace';
-    sctx.textAlign='left';sctx.fillText('ahead',8*DPR,16*DPR);
-    sctx.textAlign='right';sctx.fillText('behind',W-8*DPR,16*DPR);
-    // hits fall down, fade
-    const now=performance.now();
-    striphits=striphits.filter(h=>now-h.t<3500);
-    for(const h of striphits){const age=(now-h.t)/3500;const y=age*H;
-      const x=cx+(Math.max(-range,Math.min(range,h.dev))/range)*(W/2);
-      sctx.globalAlpha=1-age;sctx.fillStyle=h.col;
-      sctx.beginPath();sctx.arc(x,y,5*DPR,0,7);sctx.fill();}
-    sctx.globalAlpha=1;
+function drawHighway(){
+  const cv=$('hw'); if(!cv) return;
+  const r=cv.getBoundingClientRect();
+  if(r.width>0){ const w=Math.round(r.width*DPR),h=Math.round(r.height*DPR); if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;} }
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  const pocketX=W*0.30, notTop=H*0.05, staffY=H*0.20, notBot=H*0.36, hwTop=H*0.42, hwMid=H*0.68, hwBot=H*0.97;
+  const nowMs=performance.now();
+  ctx.clearRect(0,0,W,H);
+  // background + pocket pool
+  const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0a0b0f');bg.addColorStop(1,'#100d0a');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const pool=ctx.createLinearGradient(pocketX-W*0.18,0,pocketX+W*0.18,0);
+  pool.addColorStop(0,'rgba(255,176,32,0)');pool.addColorStop(.5,'rgba(255,176,32,0.08)');pool.addColorStop(1,'rgba(255,176,32,0)');
+  ctx.fillStyle=pool;ctx.fillRect(0,hwTop,W,hwBot-hwTop);
+  // paper rail
+  ctx.fillStyle='#f5f2ea';ctx.fillRect(0,0,W,notBot);
+  ctx.fillStyle='rgba(10,8,4,0.22)';ctx.fillRect(0,notBot-1.5*DPR,W,1.5*DPR);
+
+  const playing = !!schedId && !!ac && firstBarTime>0;
+  const now = ac ? ac.currentTime : 0;
+  const LOOK=2.0, pad=16*DPR, SPEED=(W-pocketX-pad)/LOOK, X=t=>pocketX+(t-now)*SPEED;
+  const nhrx=6.5*DPR,nhry=5*DPR,stem=20*DPR;
+  const pxPerBeat = playing ? beatDur*SPEED : (W-pocketX-30*DPR)/4;
+  const idleX = p => pocketX + (p/4)*(W-pocketX-30*DPR) + 14*DPR;
+
+  // ---- beat lines ----
+  if(playing){
+    const sB=Math.floor((now-firstBarTime)/beatDur)-1, eB=Math.ceil((now-firstBarTime+LOOK)/beatDur)+1;
+    for(let b=sB;b<=eB;b++){ const bt=firstBarTime+b*beatDur, x=X(bt); if(x<-4||x>W+4)continue; const down=(((b%4)+4)%4===0);
+      ctx.lineWidth=(down?2:1)*DPR;
+      ctx.strokeStyle=down?'rgba(220,60,40,0.45)':'rgba(20,18,12,0.10)';
+      ctx.beginPath();ctx.moveTo(x,13*DPR);ctx.lineTo(x,notBot);ctx.stroke();
+      ctx.strokeStyle=down?'rgba(255,90,61,0.45)':'rgba(120,130,150,0.14)';
+      ctx.beginPath();ctx.moveTo(x,hwTop);ctx.lineTo(x,hwBot);ctx.stroke();
+      ctx.fillStyle=down?'rgba(200,55,35,0.9)':'rgba(20,18,12,0.3)';ctx.font=`700 ${10*DPR}px ui-monospace,monospace`;ctx.textAlign='center';
+      ctx.fillText(((((b%4)+4)%4)+1)+'',x,11*DPR);
+    }
+  } else {
+    for(let b=0;b<4;b++){ const x=idleX(b), down=(b===0);
+      ctx.lineWidth=(down?2:1)*DPR;
+      ctx.strokeStyle=down?'rgba(220,60,40,0.4)':'rgba(20,18,12,0.1)';ctx.beginPath();ctx.moveTo(x,13*DPR);ctx.lineTo(x,notBot);ctx.stroke();
+      ctx.strokeStyle=down?'rgba(255,90,61,0.4)':'rgba(120,130,150,0.12)';ctx.beginPath();ctx.moveTo(x,hwTop);ctx.lineTo(x,hwBot);ctx.stroke();
+    }
   }
+
+  // staff line
+  ctx.strokeStyle='rgba(20,18,12,0.4)';ctx.lineWidth=1.4*DPR;ctx.beginPath();ctx.moveTo(0,staffY);ctx.lineTo(W,staffY);ctx.stroke();
+
+  // ---- collect notes ----
+  let notes=[];
+  if(playing && mode!=='calibrate'){
+    const ci=Math.floor((now-firstBarTime)/barDur);
+    for(let k=ci-1;k<=ci+1;k++){ const pat=hwBarMap.get(k)||staticNotes(), start=firstBarTime+k*barDur;
+      for(const nt of pat){ notes.push({time:expectedAbsTime(start,nt.pos), durB:nt.dur, beat:nt.pos}); } }
+  } else if(!playing){
+    for(const nt of staticNotes()){ notes.push({time:null, ix:idleX(nt.pos), durB:nt.dur, beat:nt.pos}); }
+  }
+  for(const n of notes){ n._x = (n.time!=null)?X(n.time):n.ix; }
+  const vis=notes.filter(n=>n._x>-40&&n._x<W+40).sort((a,b)=>a._x-b._x);
+
+  // ---- notation (black on paper) ----
+  for(let i=0;i<vis.length-1;i++){ const a=vis[i],b2=vis[i+1];
+    if(a.durB<=0.6&&b2.durB<=0.6 && Math.floor(a.beat)===Math.floor(b2.beat) && (b2.beat-a.beat)<=0.6){
+      ctx.strokeStyle='rgba(20,18,12,0.85)';ctx.lineWidth=3*DPR;
+      ctx.beginPath();ctx.moveTo(a._x+nhrx,staffY-stem);ctx.lineTo(b2._x+nhrx,staffY-stem);ctx.stroke();
+      if(a.durB<=0.3&&b2.durB<=0.3){ctx.beginPath();ctx.moveTo(a._x+nhrx,staffY-stem+5*DPR);ctx.lineTo(b2._x+nhrx,staffY-stem+5*DPR);ctx.stroke();}
+    }
+  }
+  for(const n of vis){ const x=n._x, held=n.durB>=1.5;
+    if(held){ const tw=n.durB*pxPerBeat-nhrx; ctx.strokeStyle='rgba(20,18,12,0.4)';ctx.lineWidth=2*DPR;
+      ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx+Math.max(0,tw),staffY);ctx.stroke(); }
+    ctx.save();ctx.translate(x,staffY);ctx.rotate(-0.3);
+    ctx.fillStyle=held?'#f5f2ea':'#16130d';ctx.strokeStyle='#16130d';ctx.lineWidth=1.8*DPR;
+    ctx.beginPath();ctx.ellipse(0,0,nhrx,nhry,0,0,7);ctx.fill();if(held)ctx.stroke();ctx.restore();
+    ctx.strokeStyle='rgba(20,18,12,0.85)';ctx.lineWidth=1.6*DPR;ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx,staffY-stem);ctx.stroke();
+    if(Math.abs(n.durB-0.75)<0.02){ ctx.fillStyle='#16130d';ctx.beginPath();ctx.arc(x+nhrx+5*DPR,staffY-2*DPR,1.8*DPR,0,7);ctx.fill(); }
+  }
+
+  // ---- highway gems ----
+  for(const n of vis){ const x=n._x, rad=13*DPR, isHold=n.durB>=0.9, down=(n.beat<0.05);
+    if(isHold){ const tw=n.durB*pxPerBeat; const tg=ctx.createLinearGradient(x,0,x+tw,0);
+      tg.addColorStop(0,'rgba(255,176,32,0.34)');tg.addColorStop(1,'rgba(255,176,32,0.05)');
+      ctx.fillStyle=tg;rrectC(ctx,x,hwMid-7*DPR,tw,14*DPR,7*DPR);ctx.fill(); }
+    let hitCol=null;
+    if(playing && n.time!=null){ const k=Math.round(n.time*1000); hitCol=hwHits.get(k)||hwHits.get(k-1)||hwHits.get(k+1)||null; }
+    const missed = playing && n.time!=null && !hitCol && n.time < now-0.16;
+    let base=down?'#ff7a4d':'#ffd07a', edge=down?'#ff5a3d':'#ffb020';
+    if(hitCol){base=hitCol;edge=hitCol;} else if(missed){base='#4a3a3a';edge='#5a4040';}
+    ctx.save();ctx.shadowColor=edge;ctx.shadowBlur=(hitCol?22:(playing?13:6))*DPR;
+    const gg=ctx.createRadialGradient(x-rad*0.3,hwMid-rad*0.3,1,x,hwMid,rad);
+    gg.addColorStop(0,missed?'#666':'#fff7e6');gg.addColorStop(0.55,base);gg.addColorStop(1,edge);
+    ctx.fillStyle=gg;ctx.globalAlpha=missed?0.5:(playing?1:0.82);ctx.beginPath();ctx.arc(x,hwMid,rad,0,7);ctx.fill();ctx.restore();
+    ctx.globalAlpha=1;ctx.strokeStyle='rgba(20,16,10,0.5)';ctx.lineWidth=1*DPR;ctx.beginPath();ctx.arc(x,hwMid,rad,0,7);ctx.stroke();
+  }
+
+  // ---- the pocket ----
+  const phase=playing?(((now-firstBarTime)/beatDur)%1+1)%1:0, pulse=0.6+0.4*Math.max(0,1-phase*3);
+  ctx.fillStyle='rgba(255,176,32,0.06)';ctx.fillRect(pocketX-12*DPR,notTop,24*DPR,hwBot-notTop);
+  ctx.save();ctx.shadowColor='#ffb020';ctx.shadowBlur=20*DPR*pulse;ctx.strokeStyle=`rgba(255,176,32,${0.5+0.45*pulse})`;ctx.lineWidth=3*DPR;
+  ctx.beginPath();ctx.moveTo(pocketX,notTop);ctx.lineTo(pocketX,hwBot);ctx.stroke();ctx.restore();
+  ctx.fillStyle='#ffb020';[notTop,hwBot].forEach(y=>{ctx.beginPath();ctx.arc(pocketX,y,3.5*DPR,0,7);ctx.fill();});
+  ctx.fillStyle='rgba(255,176,32,0.45)';ctx.font=`700 ${9*DPR}px ui-monospace,monospace`;ctx.textAlign='center';
+  ctx.fillText('THE POCKET',pocketX,hwBot-5*DPR);
+
+  // ---- flashes + popup ----
+  hwFlashes=hwFlashes.filter(fl=>nowMs-fl.t<520);
+  for(const fl of hwFlashes){ if(nowMs-fl.t<360){ const a=(nowMs-fl.t)/360, rr=(8+a*44)*DPR;
+    ctx.strokeStyle=`rgba(${hex2rgb(fl.col)},${(1-a)*0.8})`;ctx.lineWidth=2.5*DPR*(1-a);ctx.beginPath();ctx.arc(pocketX,hwMid,rr,0,7);ctx.stroke(); } }
+  const lf=hwFlashes[hwFlashes.length-1];
+  if(lf && nowMs-lf.t<480){ const a=1-(nowMs-lf.t)/480; ctx.fillStyle=`rgba(${hex2rgb(lf.col)},${a})`;
+    ctx.font=`800 ${15*DPR}px ui-monospace,monospace`;ctx.textAlign='center';ctx.fillText(lf.word||'',pocketX,hwTop-5*DPR); }
+
+  if(!playing){ ctx.fillStyle='rgba(180,175,160,0.5)';ctx.font=`${11*DPR}px ui-monospace,monospace`;ctx.textAlign='center';
+    ctx.fillText('press play \u2014 read the staff, lock the gems', W/2, hwBot-20*DPR); }
+}
+
+function drawStrip(){
+  drawHighway();
   // live input meter (in the detection-tuning panel)
   const lm=$('levelMeter');
   if(lm){ const r=lm.getBoundingClientRect();
@@ -472,6 +570,8 @@ function startTransport(forCalib){
   expected=[]; beatIndex=0; repCount=0;
   if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
   nextBeatTime=ac.currentTime+0.25;
+  firstBarTime=nextBeatTime+countInBeats*beatDur;
+  hwBarMap.clear(); hwFlashes=[]; hwHits.clear();
   $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
   $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
   schedId=setInterval(scheduler,25);
@@ -490,20 +590,19 @@ function scheduler(){
   if(!running||!schedId)return;
   while(nextBeatTime < ac.currentTime+0.12){
     const realBeat = beatIndex - countInBeats;       // <0 during count-in
+    if(mode==='play' && maxBars!==Infinity && realBeat>=maxBars*4){
+      const endTime=nextBeatTime+beatDur;            // let the final beat ring out
+      clearInterval(schedId); schedId=null;
+      setTimeout(()=>stopTransport(false), Math.max(250,(endTime-ac.currentTime)*1000+150));
+      return;
+    }
     scheduleClick(nextBeatTime, realBeat>=0 && realBeat%4===0);
-    // count-in display
     if(realBeat<0){ const n=countInBeats+realBeat+1; flashCountIn(n); }
     else { $('countin').textContent=''; }
-    if(mode==='play' && realBeat>=0 && realBeat%4===0){
-      const barStart=nextBeatTime;
-      registerBar(barStart);
-      repCount++;
-      if(repCount>maxBars){ setTimeout(()=>stopTransport(false),50); }
-    }
+    if(mode==='play' && realBeat>=0 && realBeat%4===0){ registerBar(nextBeatTime); }
     if(mode==='calibrate' && realBeat>=0){ registerCalibBeat(nextBeatTime); }
     beatIndex++; nextBeatTime+=beatDur;
   }
-  // prune old expected
   const cutoff=ac.currentTime-0.5;
   expected=expected.filter(e=>e.time>cutoff);
 }
@@ -517,14 +616,25 @@ function scheduleClick(t,accent){
   }
 }
 let curBarStart=0;
+let firstBarTime=0, hwBarMap=new Map(), hwFlashes=[], hwHits=new Map();
+function uniformNotes(){ const DUR={whole:4,half:2,quarter:1,eighth:0.5,sixteenth:0.25}[subdiv]; return SUBDIV[subdiv].map(p=>({pos:p,dur:DUR})); }
+function notesOf(cells){ const o=[]; cells.forEach((c,b)=>c.notes.forEach(n=>o.push({pos:b+n.s/4,dur:n.d/4}))); o.sort((a,b)=>a.pos-b.pos); return o; }
+function staticNotes(){ if(randomMode){ if(!currentBar) generateBar(); return notesOf(currentBar); } return uniformNotes(); }
+function rrectC(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function hex2rgb(h){h=h.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255);}
 function registerBar(barStart){
   if(randomMode && autoAdv){
-    if(nextBar){ currentBar=nextBar; genOnsets=onsetsOf(currentBar); nextBar=makeBar().cells; }
+    if(repCount===0){ if(!nextBar) nextBar=makeBar().cells; }           // first bar = the one shown
+    else if(nextBar){ currentBar=nextBar; genOnsets=onsetsOf(currentBar); nextBar=makeBar().cells; }
     else { const c=makeBar(); currentBar=c.cells; genOnsets=c.onsets; nextBar=makeBar().cells; }
     renderNotation();
   }
   clearNoteColors();
   curBarStart=barStart;
+  { const bi=Math.round((barStart-firstBarTime)/barDur);
+    if(randomMode && autoAdv){ hwBarMap.set(bi,notesOf(currentBar)); if(nextBar)hwBarMap.set(bi+1,notesOf(nextBar)); }
+    else { const p=staticNotes(); hwBarMap.set(bi,p); hwBarMap.set(bi+1,p); }
+    for(const k of [...hwBarMap.keys()]){ if(k<bi-2) hwBarMap.delete(k); } }
   const pos=positions();
   pos.forEach((p,i)=>{
     const t=expectedAbsTime(barStart,p);
@@ -541,6 +651,7 @@ function registerBar(barStart){
       o.connect(g).connect(ac.destination);o.start(t);o.stop(t+0.04);
     }
   });
+  repCount++;
 }
 function registerCalibBeat(t){ expected.push({time:t,hit:false,idx:-1,win:Math.min(0.18,beatDur*0.5)}); }
 
@@ -567,7 +678,8 @@ function handleOnset(t){
     deltas.push(delta); hits++;
     const r=rating(Math.abs(delta));
     setNoteColor(best.idx, r.c);
-    striphits.push({dev: delta+feelMs, col:r.c, t:performance.now()}); // delta+feelMs = distance from the actual beat
+    hwHits.set(Math.round(best.time*1000), r.c);
+    hwFlashes.push({time:best.time, col:r.c, word:r.w, t:performance.now()});
     renderScore();
   } else {
     extra++; renderScore();
@@ -613,26 +725,14 @@ function renderScore(){
 }
 
 // ---- Playhead ----
-function drawPlayhead(){
-  if(!schedId){const ph=$('playhead');if(ph)ph.setAttribute('opacity','0');resetBeatNums();return;}
-  const ph=$('playhead');
-  if(ph && mode==='play' && curBarStart>0){
-    let phase=(ac.currentTime-curBarStart)/barDur;
-    phase=Math.max(0,Math.min(1,phase));
-    const x0=60,x1=660,x=x0+phase*(x1-x0);
-    ph.setAttribute('opacity','0.9');ph.setAttribute('x1',x);ph.setAttribute('x2',x);
-    const beat=Math.min(3,Math.floor(phase*4));
-    for(let b=0;b<4;b++){const tn=$('bn-'+b);if(tn){const on=(b===beat);tn.setAttribute('fill',on?'#ffb020':'#9a917c');tn.setAttribute('font-size',on?'17':'13');}}
-  } else if(ph){ ph.setAttribute('opacity','0'); resetBeatNums(); }
-  requestAnimationFrame(drawPlayhead);
-}
+function drawPlayhead(){ return; }   // highway now handles all live visuals
 function resetBeatNums(){for(let b=0;b<4;b++){const tn=$('bn-'+b);if(tn){tn.setAttribute('fill','#9a917c');tn.setAttribute('font-size','13');}}}
 
 // ---- Controls ----
 $('subdivSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   [...$('subdivSeg').children].forEach(x=>x.classList.toggle('active',x===b));
-  if(b.dataset.s==='random'){ randomMode=true; $('randomRow').style.display='block'; $('swing').disabled=true; generateBar(); }
-  else { randomMode=false; subdiv=b.dataset.s; $('randomRow').style.display='none'; $('swing').disabled=(subdiv!=='eighth'); }
+  if(b.dataset.s==='random'){ randomMode=true; $('randomRow').style.display='block'; generateBar(); }
+  else { randomMode=false; subdiv=b.dataset.s; $('randomRow').style.display='none'; }
   renderNotation();});
 $('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   genDiff=+b.dataset.d;[...$('diffSeg').children].forEach(x=>x.classList.toggle('active',x===b));
@@ -641,6 +741,9 @@ $('newRhythmBtn').onclick=()=>{ generateBar(); renderNotation(); };
 $('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; if(randomMode){ if(autoAdv&&!nextBar) nextBar=makeBar().cells; renderNotation(); } };
 $('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   feelMs=+b.dataset.f;[...$('feelSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
+$('lenSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  const n=+b.dataset.n; maxBars=(n===0)?Infinity:n;
+  [...$('lenSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
 $('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;};
 $('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
