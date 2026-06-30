@@ -68,7 +68,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px"><span style="color:var(--amber);font-weight:600">JamReadyBass.com</span> · Read the rhythm, play it to the click. It scores every note against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 10</div>
+  <div class="badge" id="statusBadge">audio off · build 11</div>
 </header>
 
 <div class="panel">
@@ -137,8 +137,12 @@
     <summary>Detection tuning</summary>
     <div class="row" style="margin-top:12px">
       <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
-      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">5</span></label><input type="range" id="sens" min="1" max="10" value="5"></div>
+      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">7</span></label><input type="range" id="sens" min="1" max="10" value="7"></div>
       <div class="ctrl"><label>Min gap <span class="val" id="refVal">90</span> ms</label><input type="range" id="ref" min="40" max="200" value="90"></div>
+    </div>
+    <div style="margin-top:12px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level — play a note; the green bar must cross the amber line to register a hit</div>
+      <canvas id="levelMeter" height="40" style="width:100%;background:#08090c;border:1px solid var(--line);border-radius:8px"></canvas>
     </div>
   </details>
 </div>
@@ -200,18 +204,20 @@ const $=id=>document.getElementById(id);
 // ---- Onset detector worklet (validated) ----
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
-  constructor(){super();this.prev=0;this.baseline=1e-6;this.lastOnset=-1;this.armed=true;
-    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;
+  constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
+    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;
     this.port.onmessage=(e)=>{const d=e.data;
       if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
       if(d.refractory!==undefined)this.refractory=d.refractory;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
-    let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.97*this.prev;this.prev=x;e+=y*y;}e/=N;
-    this.baseline=0.995*this.baseline+0.005*e;
-    const thresh=Math.max(1e-5,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
+    let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
+    const thresh=Math.max(2e-6,this.baseline*this.threshFactor),now=currentTime,rising=e>this.prevEnergy;
+    if(e<thresh) this.baseline=0.99*this.baseline+0.01*e;   // track the quiet floor, not the note attacks
     if(this.armed&&e>thresh&&rising&&(now-this.lastOnset)>this.refractory){
       this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime});}
-    if(!this.armed&&e<thresh*0.5)this.armed=true;this.prevEnergy=e;return true;}
+    if(!this.armed&&e<thresh*0.4)this.armed=true;this.prevEnergy=e;
+    if((this.fc++ %4)===0)this.port.postMessage({type:'level',e:e,thresh:thresh});
+    return true;}
 }
 registerProcessor('onset-processor',OnsetProcessor);`;
 
@@ -219,6 +225,7 @@ registerProcessor('onset-processor',OnsetProcessor);`;
 let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
 let running=false;
 let params={threshFactor:5.2,refractory:0.09};
+let lastLevel={e:0,thresh:1}, lastFlash=0;
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false;
@@ -244,7 +251,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 10'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 11'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -253,18 +260,20 @@ $('startBtn').onclick=async()=>{
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
 function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<b>Compatibility mode.</b> '+m;}
-function onWorklet(ev){ if(ev.data.type==='onset') handleOnset(ev.data.time); }
+function onWorklet(ev){ const d=ev.data; if(d.type==='level'){ lastLevel=d; return; } if(d.type==='onset') handleOnset(d.time); }
 function setupFallback(){
   showInfo("Opened as a local file — using an older audio path. Serve over https for full timing accuracy.");
   const bufSize=512; spNode=ac.createScriptProcessor(bufSize,1,1);
-  fb={prev:0,baseline:1e-6,lastOnset:-1,armed:true,prevEnergy:0};
+  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0};
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
-      for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.97*fb.prev;fb.prev=x;en+=y*y;}en/=B;
-      fb.baseline=0.995*fb.baseline+0.005*en;const thresh=Math.max(1e-5,fb.baseline*params.threshFactor);
+      for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
+      const thresh=Math.max(2e-6,fb.baseline*params.threshFactor);
+      if(en<thresh) fb.baseline=0.99*fb.baseline+0.01*en;
       const tNow=bufStart+(off+B)/sr,rising=en>fb.prevEnergy;
       if(fb.armed&&en>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;handleOnset(bufStart+off/sr);}
-      if(!fb.armed&&en<thresh*0.5)fb.armed=true;fb.prevEnergy=en;}};
+      if(!fb.armed&&en<thresh*0.4)fb.armed=true;fb.prevEnergy=en;
+      if((fb.fc++ %4)===0)lastLevel={e:en,thresh:thresh};}};
   const mute=ac.createGain();mute.gain.value=0;src.connect(spNode);spNode.connect(mute).connect(ac.destination);
 }
 
@@ -437,6 +446,20 @@ function drawStrip(){
       sctx.beginPath();sctx.arc(x,y,5*DPR,0,7);sctx.fill();}
     sctx.globalAlpha=1;
   }
+  // live input meter (in the detection-tuning panel)
+  const lm=$('levelMeter');
+  if(lm){ const r=lm.getBoundingClientRect();
+    if(r.width>0){ const w=Math.round(r.width*DPR),h=Math.round(r.height*DPR);
+      if(lm.width!==w||lm.height!==h){lm.width=w;lm.height=h;}
+      const c=lm.getContext('2d'),W=lm.width,H=lm.height;
+      c.clearRect(0,0,W,H);
+      const lvl=Math.min(1,Math.sqrt(lastLevel.e)*7), th=Math.min(1,Math.sqrt(lastLevel.thresh)*7);
+      c.fillStyle = lvl>=th ? '#46d39a' : '#3a6e58';
+      c.fillRect(0,0,W*lvl,H);
+      c.strokeStyle='#ffb020';c.lineWidth=2*DPR;c.beginPath();c.moveTo(W*th,0);c.lineTo(W*th,H);c.stroke();
+      if(performance.now()-lastFlash<120){ c.fillStyle='rgba(255,176,32,.22)'; c.fillRect(0,0,W,H); }
+    }
+  }
   requestAnimationFrame(drawStrip);
 }
 
@@ -524,6 +547,7 @@ function registerCalibBeat(t){ expected.push({time:t,hit:false,idx:-1,win:Math.m
 // ---- Onset handling ----
 function handleOnset(t){
   if(mode==='idle') return;
+  lastFlash=performance.now();
   if(mode==='calibrate'){
     // match on raw time to measure latency
     let best=null,bd=Infinity;
@@ -623,7 +647,7 @@ $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.targe
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('guideChk').onchange=e=>{guide=e.target.checked;};
-function pushParams(){const s=+$('sens').value;params.threshFactor=8.0-(s-1)*0.7;params.refractory=(+$('ref').value)/1000;
+function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory});}
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
 $('playBtn').onclick=()=>{
