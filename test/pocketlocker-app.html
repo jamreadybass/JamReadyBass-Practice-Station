@@ -134,7 +134,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 40</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 41</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -408,7 +408,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 40 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 41 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -796,7 +796,7 @@ function startTransport(forCalib){
 function stopTransport(silent){
   if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; calibratedThisSession=true; prog.calib=Math.round(calibOffset); saveProg(); }
   if(schedId){clearInterval(schedId);schedId=null;}
-  if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); }
+  if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } killPending();
   $('playhead') && $('playhead').setAttribute('opacity','0');
   $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
   $('stopBtn').textContent='■ Stop';
@@ -828,6 +828,8 @@ function scheduler(){
 }
 let clickBus=null;
 function clickOut(){ if(ac && !clickBus){ clickBus=ac.createGain(); clickBus.gain.value=1; clickBus.connect(ac.destination); } return clickBus||ac.destination; }
+let pending=[];
+function killPending(){ for(const o of pending){ try{o.stop();}catch(e){} } pending=[]; }
 function scheduleClick(t,accent){
   if(clickVol>0 && (!visualBeat || mode==='calibrate')){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
@@ -835,7 +837,7 @@ function scheduleClick(t,accent){
     o.frequency.value=accent?1600:1100;o.type='square';
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*(accent?0.5:0.36),t+0.001);
     g.gain.exponentialRampToValueAtTime(0.0001,t+0.035);
-    o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.05);
+    o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.05);pending.push(o);if(pending.length>256)pending.shift();
   }
 }
 let curBarStart=0;
@@ -876,7 +878,7 @@ function registerBar(barStart){
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.22,t+0.001);
       g.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
       clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
-      o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.04);
+      o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.04);pending.push(o);if(pending.length>256)pending.shift();
     }
   });
   repCount++;
