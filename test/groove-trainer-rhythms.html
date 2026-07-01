@@ -91,16 +91,24 @@
 </style>
 </head>
 <body>
+<div id="roomOverlay" style="position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(8,9,12,.94);backdrop-filter:blur(5px);text-align:center">
+  <div style="max-width:340px;padding:0 24px">
+    <div id="roomOverlayRing" style="width:64px;height:64px;margin:0 auto 20px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--amber);animation:rspin 0.9s linear infinite"></div>
+    <div style="font-size:24px;font-weight:700;color:var(--amber);letter-spacing:.01em">Calibrating to room\u2026</div>
+    <div style="margin-top:12px;color:var(--ink);font-size:15px;line-height:1.5">Stay quiet for a moment while PocketLocker learns your background so it won't mistake room noise for notes.</div>
+  </div>
+</div>
+<style>@keyframes rspin{to{transform:rotate(360deg)}}</style>
 <header>
   <div>
     <a href="https://jamreadybass.com" target="_blank" rel="noopener noreferrer" class="brand">JamReady<span>Bass</span></a>
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px">Read the rhythm, play it to the click. Every note is scored against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 33 · advanced-drawer</div>
+  <div class="badge" id="statusBadge">audio off · build 35 · calibrating-copy</div>
 </header>
 
-<div class="panel">
+<div class="panel" id="startPanel">
   <h2>Step 1 · Start audio</h2>
   <div class="row">
     <button class="primary" id="startBtn">Enable mic &amp; click</button>
@@ -337,7 +345,7 @@ let notchFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600
 let clickTimes=[];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
-let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false;
+let calibSamples=[], calibOffset=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false, roomCheckedThisSession=false;
 let deltas=[], hits=0, missed=0, extra=0;
 // transport
 let beatDur=60/90, barDur=4*beatDur;
@@ -361,11 +369,13 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 33 · advanced-drawer'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 35 · calibrating-copy'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
+    if($('startPanel')) $('startPanel').style.display='none';
     renderNotation();
     sizeStrip(); requestAnimationFrame(drawStrip);
+    if(!roomCheckedThisSession){ roomCheckedThisSession=true; setTimeout(()=>measureRoom(true), 500); }
   }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
@@ -1108,23 +1118,24 @@ $('progressToggle') && ($('progressToggle').onclick=()=>{ const fl=$('climbFull'
 
 let measureBuf=[];
 function setRoomStatus(t,col){ const el=$('roomStatus'); if(el){ el.textContent=t; el.style.color=col||'var(--green)'; el.style.display='block'; } }
-function measureRoom(){
-  if(!running||!ac){ setRoomStatus('Start audio first (Step 1), then measure.', 'var(--amber)'); return; }
-  measureBuf=[]; const btn=$('measureBtn');
-  if(btn){ btn.disabled=true; btn.textContent='\u25CF Listening\u2026 stay silent'; }
-  setRoomStatus('Listening\u2026 stay silent.', 'var(--muted)');
+function measureRoom(auto){
+  if(!running||!ac){ if(!auto) setRoomStatus('Start audio first (Step 1), then measure.', 'var(--amber)'); return; }
+  measureBuf=[]; const btn=$('measureBtn'); const ov=$('roomOverlay');
+  if(auto){ if(ov) ov.style.display='flex'; }
+  else { if(btn){ btn.disabled=true; btn.textContent='\u25CF Listening\u2026 stay silent'; } setRoomStatus('Listening\u2026 stay silent.', 'var(--muted)'); }
   const sampler=setInterval(()=>{ measureBuf.push((lastLevel&&lastLevel.e)||0); }, 25);
   setTimeout(()=>{
     clearInterval(sampler);
+    if(ov) ov.style.display='none';
     if(btn){ btn.disabled=false; btn.textContent='\u25CF Measure my room'; }
-    if(measureBuf.length<8){ setRoomStatus("Didn't get a clean read \u2014 try again, staying silent.", 'var(--amber)'); return; }
+    if(measureBuf.length<8){ if(!auto) setRoomStatus("Didn't get a clean read \u2014 try again, staying silent.", 'var(--amber)'); return; }
     measureBuf.sort((a,b)=>a-b);
     const p95=measureBuf[Math.min(measureBuf.length-1, Math.floor(measureBuf.length*0.95))];
     const floor=Math.min(3e-3, Math.max(1.3e-5, p95*1.8));
     params.floor=floor; if(node) node.port.postMessage({floor:floor});
     prog.roomFloor=floor; saveProg();
-    setRoomStatus('\u2713 Room measured \u2014 background is now gated out.');
-  }, 1700);
+    if(!auto) setRoomStatus('\u2713 Room measured \u2014 background is now gated out.');
+  }, auto?2100:1700);
 }
 $('measureBtn') && ($('measureBtn').onclick=measureRoom);
 if(prog.roomFloor){ params.floor=prog.roomFloor; }
