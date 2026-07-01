@@ -129,37 +129,17 @@
   </div>
 </div>
 
-<div class="appbar">
-  <a class="brand" href="https://jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass home">JamReady<span>Bass</span></a>
-  <div class="wordmark">POCKET<span>LOCKER</span></div>
-  <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
-</div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 41</span></div>
-
-<main>
-  <section id="screenHome" class="screen active">
-    <div id="climbPanel">
+<div id="rhythmSheet" style="position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;background:rgba(8,9,12,.72);backdrop-filter:blur(4px)">
+  <div style="max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;padding:18px 18px 26px;max-height:88vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700">Practice setup</div>
+      <button id="rhythmSheetClose" class="primary" style="padding:9px 18px">Done</button>
+    </div>
       <div class="seg" id="modeSeg" style="margin-bottom:16px">
         <button data-m="climb">Challenge</button>
-        <button data-m="free" class="active">Free</button>
+        <button data-m="free" class="active">Freeplay</button>
       </div>
-      <div id="climbCompact">
-        <div id="climbNow" class="climb-now"></div>
-        <div class="transport" style="margin-top:14px">
-          <button class="primary big" id="continueBtn" style="flex:1">▶ Continue climb</button>
-        </div>
-        <div class="transport" style="margin-top:10px">
-          <button id="progressToggle" style="margin-left:auto">View progress ▾</button>
-        </div>
-        <div id="climbFull" style="display:none;margin-top:16px">
-          <div class="climb-summary" id="climbSummary"></div>
-          <div id="ladder"></div>
-          <div class="transport" style="margin-top:14px">
-            <button id="resetProgBtn" class="danger" style="margin-left:auto">Reset progress</button>
-          </div>
-        </div>
-      </div>
-      <div id="freeHint" class="climb-summary" style="display:none">Free practice — build a rhythm below and hit Play. Nothing is scored against the climb.</div>
+      <div id="freeHint" class="climb-summary" style="display:none">Freeplay — build a rhythm below and hit Play. Nothing is scored against the challenge.</div>
       <div id="freeControls" style="display:none;margin-top:14px">
         <div class="panel" style="margin-bottom:0">
           <h2>Set your rhythm</h2>
@@ -214,7 +194,34 @@
               <button data-dm="pro">Pro</button>
             </div>
           </div>
-          <div class="transport" style="margin-top:6px"><button class="primary big" id="freePlayBtn" style="flex:1">▶ Play in the highway</button></div>
+        </div>
+      </div>
+  </div>
+</div>
+<div class="appbar">
+  <a class="brand" href="https://jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass home">JamReady<span>Bass</span></a>
+  <div class="wordmark">POCKET<span>LOCKER</span></div>
+  <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
+</div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 44</span></div>
+
+<main>
+  <section id="screenHome" class="screen active">
+    <div id="climbPanel">
+      <div id="climbCompact">
+        <div id="climbNow" class="climb-now"></div>
+        <div class="transport" style="margin-top:14px">
+          <button class="primary big" id="continueBtn" style="flex:1">▶ Continue climb</button>
+        </div>
+        <div class="transport" style="margin-top:10px">
+          <button id="progressToggle" style="margin-left:auto">View progress ▾</button>
+        </div>
+        <div id="climbFull" style="display:none;margin-top:16px">
+          <div class="climb-summary" id="climbSummary"></div>
+          <div id="ladder"></div>
+          <div class="transport" style="margin-top:14px">
+            <button id="resetProgBtn" class="danger" style="margin-left:auto">Reset progress</button>
+          </div>
         </div>
       </div>
       <div id="levelBanner"></div>
@@ -223,6 +230,7 @@
   </section>
 
   <section id="screenPlay" class="screen">
+    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" style="flex:1">⚙ Practice setup</button></div>
     <div class="panel" id="startPanel">
       <h2>Start audio</h2>
       <button class="primary big" id="startBtn" style="width:100%">Enable mic &amp; click</button>
@@ -320,7 +328,7 @@
         <p class="help" style="margin-top:10px">
           <b>1 · Start audio.</b> On the Play tab, tap <b>Enable mic &amp; click</b> and allow the microphone. Headphones are best. PocketLocker calibrates to your room automatically.<br><br>
           <b>2 · Calibrate timing.</b> When prompted, play steady quarter notes on the click (~15 hits) so your scores read true. Re-calibrate if you switch headphones.<br><br>
-          <b>3 · Pick a level.</b> On the Levels tab, use <b>The Challenge</b> to work through levels in order, or switch to <b>Free</b> to build your own rhythm.<br><br>
+          <b>3 · Pick a level.</b> On the Levels tab, use <b>The Challenge</b> to work through levels in order, or switch to <b>Freeplay</b> to build your own rhythm.<br><br>
           <b>4 · Play to the pocket.</b> Notes roll along the highway. Play each note the instant its gem center crosses the amber <b>pocket</b> line.<br><br>
           <b>5 · Read your scores.</b> <b>Center</b> = on your chosen feel. <b>Evenness</b> = consistency. <b>Rhythm</b> = right notes. Clearing a Challenge level earns up to three stars and unlocks the next.
         </p>
@@ -380,7 +388,7 @@ let running=false;
 let params={threshFactor:5.2,refractory:0.09,floor:1.3e-5};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
-let notchFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,3300,4800];
+let notchFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
 let clickTimes=[];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
@@ -408,7 +416,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 41 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 44 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -802,7 +810,7 @@ function stopTransport(silent){
   $('stopBtn').textContent='■ Stop';
   if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent='';
     if(sessionCompleted && pendingLevel!=null) evaluateLevel(pendingLevel);
-    else if(sessionCompleted){ const _f=finalScores(); if(_f) showScorePop(_f,0,{free:true,title:'Nice run!',msg:'Free practice — not scored against the challenge.',nextLabel:'Done'}); } }
+    else if(sessionCompleted){ const _f=finalScores(); if(_f) showScorePop(_f,0,{free:true,title:'Nice run!',msg:'Freeplay — not scored against the challenge.',nextLabel:'Done'}); } }
   if(!silent) mode='idle';
 }
 function scheduler(){
@@ -834,9 +842,9 @@ function scheduleClick(t,accent){
   if(clickVol>0 && (!visualBeat || mode==='calibrate')){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
     const o=ac.createOscillator(),g=ac.createGain();
-    o.frequency.value=accent?1600:1100;o.type='square';
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*(accent?0.5:0.36),t+0.001);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+0.035);
+    o.frequency.value=accent?1600:1100;o.type='triangle';
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*(accent?0.5:0.36),t+0.0025);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.045);
     o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.05);pending.push(o);if(pending.length>256)pending.shift();
   }
 }
@@ -913,7 +921,7 @@ function handleOnset(t){
     renderScore();
   } else {
     const tcl = t - calibOffset/1000;
-    const isClickBleed = clickTimes.some(ct=>Math.abs(tcl-ct)<0.032);
+    const isClickBleed = clickTimes.some(ct=>Math.abs(tcl-ct)<0.045);
     if(!isClickBleed){ extra++; renderScore(); }   // ignore the metronome leaking into the mic
   }
 }
@@ -973,7 +981,7 @@ $('subdivSeg').addEventListener('click',e=>{const b=e.target.closest('button');i
   [...$('subdivSeg').children].forEach(x=>x.classList.toggle('active',x===b));
   if(b.dataset.s==='random'){ randomMode=true; $('randomRow').style.display='block'; generateBar(); }
   else { randomMode=false; subdiv=b.dataset.s; $('randomRow').style.display='none'; }
-  renderNotation();});
+  renderNotation();updateSetupBtn();});
 $('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   genDiff=+b.dataset.d;[...$('diffSeg').children].forEach(x=>x.classList.toggle('active',x===b));
   generateBar(); renderNotation();});
@@ -985,7 +993,7 @@ $('lenSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!
   const n=+b.dataset.n; maxBars=(n===0)?Infinity:n;
   [...$('lenSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
 $('diffModeSeg') && $('diffModeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; diffMode=b.dataset.dm; [...$('diffModeSeg').children].forEach(x=>x.classList.toggle('active',x===b)); prog.diffMode=diffMode; saveProg(); renderScore();});
-$('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;};
+$('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;updateSetupBtn();};
 $('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
@@ -1182,13 +1190,17 @@ function renderClimbNow(){
   $('continueBtn').textContent=(cleared>0||st>0||prog.unlocked>1)?'▶ Continue challenge':'▶ Start the challenge';
 }
 let climbMode=true, selectedLevel=null;
+function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
+  if(climbMode){ b.textContent='⚙ Challenge · tap to change'; }
+  else { const nv={whole:'Whole',half:'Half',quarter:'Quarter',eighth:'Eighth',sixteenth:'16th'}[subdiv]; b.textContent='⚙ Freeplay · '+bpm+' bpm · '+(randomMode?'Random':(nv||'')); }
+}
 function applyMode(m){
   climbMode=(m==='climb'); segActivate('modeSeg','m',m);
-  $('climbCompact').style.display=climbMode?'block':'none';
-  $('freeHint').style.display=climbMode?'none':'block';
-  { const fc=$('freeControls'); if(fc) fc.style.display=climbMode?'none':'block'; }
-  if(!climbMode){ $('climbFull').style.display='none'; $('progressToggle').textContent='View progress ▾'; clearPending(); }
+  const fh=$('freeHint'); if(fh) fh.style.display=climbMode?'none':'block';
+  const fc=$('freeControls'); if(fc) fc.style.display=climbMode?'none':'block';
+  if(!climbMode){ clearPending(); }
   prog.mode=m; saveProg();
+  if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
 $('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;applyMode(b.dataset.m);});
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||currentLevelId()));
@@ -1247,7 +1259,15 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
   function syncFree(){ var fb=document.querySelector('#modeSeg button[data-m="free"]'); var fc=document.getElementById('freeControls'); if(fc&&fb) fc.style.display=fb.classList.contains('active')?'block':'none'; }
   if(mseg) mseg.addEventListener('click',function(){ setTimeout(syncFree,0); });
   syncFree();
-  var fpb=document.getElementById('freePlayBtn'); if(fpb) fpb.addEventListener('click',function(){ showScreen('play'); var pb=document.getElementById('playBtn'); if(pb) pb.click(); });
+  var sheet=document.getElementById('rhythmSheet');
+  var openBtn=document.getElementById('openRhythm');
+  var closeBtn=document.getElementById('rhythmSheetClose');
+  if(openBtn&&sheet) openBtn.addEventListener('click',function(){ sheet.style.display='flex'; });
+  function closeSheet(){ if(sheet) sheet.style.display='none'; if(typeof updateSetupBtn==='function') updateSetupBtn(); }
+  if(closeBtn) closeBtn.addEventListener('click',closeSheet);
+  if(sheet) sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); });
+  if(typeof updateSetupBtn==='function') updateSetupBtn();
+  showScreen('play');
 })();
 </script>
 </body>
