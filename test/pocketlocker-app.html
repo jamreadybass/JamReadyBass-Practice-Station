@@ -22,6 +22,10 @@
     padding:14px 18px;background:linear-gradient(180deg, rgba(10,11,14,.96), rgba(10,11,14,.82));
     backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
   .wordmark{flex:1;font-weight:800;letter-spacing:.28em;font-size:14px;color:var(--ink);text-align:center}
+  .brand{font-weight:800;font-size:13px;letter-spacing:.10em;text-decoration:none;color:var(--ink);white-space:nowrap}
+  .brand span{color:var(--amber)}
+  .brand:hover{color:var(--ink)}.brand:hover span{filter:brightness(1.12)}
+  .badgebar{display:flex;justify-content:center;padding:8px 18px 0}
   .wordmark span{color:var(--amber)}
   .iconbtn{width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;
     font-size:19px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}
@@ -116,11 +120,11 @@
 </div>
 
 <div class="appbar">
-  <button id="navBack" class="iconbtn" style="visibility:hidden" aria-label="Back">‹</button>
+  <a class="brand" href="https://jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass home">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
-  <div class="badge" id="statusBadge">audio off · build 37</div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 38</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -380,7 +384,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 37 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 38 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
