@@ -97,7 +97,7 @@
     <h1>PocketLocker</h1>
     <p class="sub" style="margin-top:8px">Read the rhythm, play it to the click. Every note is scored against the written value — with subdivisions, swing, and push/lay-back feel.</p>
   </div>
-  <div class="badge" id="statusBadge">audio off · build 30 · measure-room</div>
+  <div class="badge" id="statusBadge">audio off · build 33 · advanced-drawer</div>
 </header>
 
 <div class="panel">
@@ -200,29 +200,43 @@
     <input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)
   </label>
   <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)">
-    <input type="checkbox" id="filterClickChk" style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones (experimental)
+    <input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones (experimental)
   </label>
   <details>
-    <summary>Detection tuning</summary>
-    <div class="row" style="margin-top:12px">
-      <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
-      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">6</span></label><input type="range" id="sens" min="1" max="10" value="6"></div>
-      <div class="ctrl"><label>Min gap <span class="val" id="refVal">90</span> ms</label><input type="range" id="ref" min="40" max="200" value="90"></div>
-    </div>
-    <div style="margin-top:12px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level. When you're NOT playing, the green bar should sit BELOW the amber line — if it crosses on its own, that's room noise: lower Sensitivity until it stays below. Then your notes should clear the line easily.</div>
-      <canvas id="levelMeter" height="40" style="width:100%;background:#08090c;border:1px solid var(--line);border-radius:8px"></canvas>
-    </div>
+    <summary>Sound &amp; timing setup</summary>
+
     <div style="margin-top:14px">
-      <button id="measureBtn" style="padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-family:inherit;font-size:13px">\u25CF Measure my room</button>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">Tap, then stay silent for ~2 seconds. Sets the detection floor just above your background noise so it stops counting room sound as notes.</div>
+      <button id="measureBtn" style="padding:10px 18px;border-radius:8px;border:1px solid var(--amber);background:rgba(255,176,32,.12);color:var(--ink);cursor:pointer;font-family:inherit;font-size:14px">● Measure my room</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Tap, then stay silent for ~2 seconds. Sets the detector just above your background noise so it stops counting room sound as notes. <b>Do this first.</b></div>
       <div id="roomStatus" style="display:none;font-size:12px;color:var(--green);margin-top:6px;font-family:var(--mono)"></div>
     </div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Input level. When you're NOT playing, the green bar should sit BELOW the amber line. If it crosses on its own, Measure my room again (or lower Sensitivity). Your notes should clear the line easily.</div>
+      <canvas id="levelMeter" height="40" style="width:100%;background:#08090c;border:1px solid var(--line);border-radius:8px"></canvas>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">6</span></label><input type="range" id="sens" min="1" max="10" value="6"></div>
+      <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+    </div>
+
     <div style="margin-top:16px">
       <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Highway sync <span class="val" id="hwnudgeVal">0</span> ms</label>
-      <input type="range" id="hwnudge" min="-150" max="150" value="0" style="width:100%;accent-color:var(--amber);margin-top:4px">
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Bluetooth delays the sound. If gems cross the pocket <i>before</i> you hear the click, slide right until they meet what your ears hear.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <button id="hwNudgeMinus" style="min-width:54px;padding:11px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer">−5</button>
+        <input type="range" id="hwnudge" min="-150" max="150" value="0" style="flex:1;accent-color:var(--amber)">
+        <button id="hwNudgePlus" style="min-width:54px;padding:11px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer">+5</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Only needed with Bluetooth (it delays the sound). If gems cross the pocket <i>before</i> you hear the click, nudge right until they line up. Never affects your score.</div>
     </div>
+
+    <details style="margin-top:18px">
+      <summary style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Advanced</summary>
+      <div class="ctrl" style="margin-top:12px"><label>Min gap <span class="val" id="refVal">90</span> ms</label><input type="range" id="ref" min="40" max="200" value="90"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Dead-time after each detected note. The tool sets this automatically from the rhythm you're playing — you shouldn't need to touch it. Only override if fast notes get missed (lower it) or single notes double-count (raise it).</div>
+    </details>
+
   </details>
 </div>
 
@@ -261,11 +275,30 @@
 </div>
 
 <div class="panel">
-  <h2>How it works</h2>
-  <p class="help">
-    The bar fills with the note value you pick. Hit <b>Play</b> — you get a one-bar count-in, then the bar loops. Read the notation and play each note to the click.<br><br>
-    <b>Center</b> is whether your average lands on your chosen feel (on / ahead / behind). <b>Evenness</b> is how repeatable you are, regardless of center. <b>Rhythm</b> is whether you played the right notes — missed notes and extra notes pull it down. Calibrate first (play steady on the beat ~15 hits) so Center reads true; Evenness is latency-proof either way.
-  </p>
+  <details open>
+    <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">How to use PocketLocker</summary>
+    <p class="help" style="margin-top:10px">
+      <b>1 · Turn on the mic.</b> Tap <b>Enable audio</b> and allow microphone access. Headphones are best — they stop the click from bleeding into the mic.<br><br>
+      <b>2 · Measure your room.</b> Open <b>Sound &amp; timing setup</b>, tap <b>Measure my room</b>, and stay silent for two seconds. This sets the detector just above your background noise so the room doesn't count as notes.<br><br>
+      <b>3 · Calibrate.</b> When prompted, play steady quarter notes on the click (~15 hits). This measures your input+output delay so your timing scores read true. Re-calibrate if you switch headphones or speakers.<br><br>
+      <b>4 · Pick a level.</b> Use <b>The Climb</b> to work through the levels in order, or switch to <b>Free practice</b> to set your own rhythm. Hit <b>Play</b> — you get a one-bar count-in, then it loops.<br><br>
+      <b>5 · Play to the pocket.</b> Notes roll in along the highway. Play each note the instant its gem center crosses the amber <b>pocket</b> line. Read the notation strip up top if you like.<br><br>
+      <b>6 · Read your scores.</b> <b>Center</b> = are you on your chosen feel (on / ahead / behind). <b>Evenness</b> = how consistent you are, regardless of center. <b>Rhythm</b> = did you play the written notes (missed and extra notes pull it down). In the Climb, clearing a level earns up to three stars and unlocks the next.
+    </p>
+  </details>
+</div>
+
+<div class="panel">
+  <details>
+    <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Troubleshooting</summary>
+    <p class="help" style="margin-top:10px">
+      <b>My notes aren't registering / I have to play hard.</b> Open <b>Sound &amp; timing setup</b> and watch the input level meter as you play. Raise <b>Sensitivity</b> until your notes clear the amber line. Check that the right mic is selected in your device settings.<br><br>
+      <b>I'm getting phantom / extra notes.</b> Tap <b>Measure my room</b> (stay silent) to gate out background noise. Keep <b>Speaker mode</b> on so the click doesn't count as a note. Headphones help most. Fast sixteenths are the hardest case — a few extras there won't sink your score.<br><br>
+      <b>The gems don't line up with the click (Bluetooth lag).</b> Adjust <b>Highway sync</b> until a gem crosses the pocket exactly when you hear the click. Use the <b>\u22125 / +5</b> buttons for fine control. This only moves the visuals — it never changes your score.<br><br>
+      <b>I'm on my phone with no headphones.</b> Turn on <b>Visual-only beat</b>. The click goes silent (so it can't bleed into the mic) and the pocket line pulses on every beat — play to the pulse.<br><br>
+      <b>My score feels unfair.</b> Make sure you <b>calibrated</b> this session, and re-calibrate if you changed your headphones or speakers. Without calibration, Center can read early or late even when your playing is dead-on.
+    </p>
+  </details>
 </div>
 
 <script>
@@ -300,7 +333,7 @@ let running=false;
 let params={threshFactor:5.2,refractory:0.09,floor:1.3e-5};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
-let notchFilters=[], detTap=null, filterClick=false; const CLICK_FREQS=[1100,1600,3300,4800];
+let notchFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,3300,4800];
 let clickTimes=[];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
@@ -328,7 +361,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 30 · measure-room'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 33 · advanced-drawer'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     renderNotation();
@@ -890,6 +923,9 @@ $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.targe
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); });
+function nudgeHw(d){ hwNudgeMs=Math.max(-150,Math.min(150,hwNudgeMs+d)); if($('hwnudge'))$('hwnudge').value=hwNudgeMs; if($('hwnudgeVal'))$('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); }
+$('hwNudgeMinus') && ($('hwNudgeMinus').onclick=()=>nudgeHw(-5));
+$('hwNudgePlus') && ($('hwNudgePlus').onclick=()=>nudgeHw(5));
 $('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } });
 $('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
@@ -1001,8 +1037,7 @@ function evaluateLevel(id){
   const el=$('levelResult'); el.textContent=msg; el.style.display='block'; el.style.whiteSpace='pre-line';
   el.style.color = cleared ? '#46d39a' : '#ffb020';
   $('levelBanner').style.display='none';
-  pendingLevel=null;
-  selectedLevel=null;
+  selectedLevel=null;   // keep pendingLevel so replaying the same level still records
   renderLadder();
 }
 
@@ -1030,7 +1065,7 @@ function renderLadder(){
 if(prog.calib!=null){ calibOffset=prog.calib; calibrated=true; }
 if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').value=hwNudgeMs;$('hwnudgeVal').textContent=hwNudgeMs;} }
 if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
-if(prog.filterClick){ filterClick=true; if($('filterClickChk'))$('filterClickChk').checked=true; }
+if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filterClickChk').checked=false; }
 
 ['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
 ['bpm','swing'].forEach(id=>$(id) && $(id).addEventListener('input',()=>{ if(!applyingCfg) clearPending(); }));
