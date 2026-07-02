@@ -203,7 +203,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 53</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 54</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -432,7 +432,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 53 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 54 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1195,6 +1195,9 @@ function evaluateLevel(id){
   const stars=starsFor(f), cleared=stars>=3;   // all three stars required to unlock the next level
   const rec=prog.levels[id]||{stars:0,best:null,cleared:false};
   rec.best=bestOf(rec.best,f); rec.stars=Math.max(rec.stars,stars); rec.cleared=rec.cleared||cleared;
+  rec.byDiff=rec.byDiff||{}; rec.byDiff[diffMode]=Math.max(rec.byDiff[diffMode]||0,stars);
+  const DRANK={easy:1,medium:2,hard:3,pro:4};
+  if(cleared && (!rec.clearedDiff || DRANK[diffMode]>DRANK[rec.clearedDiff])) rec.clearedDiff=diffMode;
   prog.levels[id]=rec; prog.sessions=(prog.sessions||0)+1;
   if(cleared && id<LEVELS.length && prog.unlocked<id+1){ prog.unlocked=id+1; }
   saveProg();
@@ -1202,8 +1205,8 @@ function evaluateLevel(id){
   const nextName = hasNext ? LEVELS.find(x=>x.id===id+1).name : '';
   showScorePop(f, stars, {
     title: cleared ? ('Perfect run! Level '+id+' cleared') : (stars+' of 3 stars \u2014 not yet'),
-    msg: hasNext ? ('Next up — Level '+(id+1)+': '+nextName)
-         : (cleared && id===LEVELS.length) ? 'You topped the challenge. Real pocket.'
+    msg: hasNext ? ('Cleared on '+({easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'}[diffMode])+'. Next up — Level '+(id+1)+': '+nextName + (diffMode!=='pro'?'   ·   replay on '+({easy:'Medium',medium:'Hard',hard:'Pro'}[diffMode])+' for a tougher star':''))
+         : (cleared && id===LEVELS.length) ? ('You topped the challenge on '+({easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'}[diffMode])+'. Real pocket.')
          : 'You need all 3 stars \u2014 Center, Evenness and Rhythm \u2014 to unlock the next level.',
     nextLabel: hasNext ? 'Next level →' : (cleared ? 'Done' : 'Try again'),
     onNext: function(){ if(hasNext){ loadLevel(id+1); if(window.showScreen) showScreen('play'); } }
@@ -1223,7 +1226,9 @@ function renderLadder(){
     const btn=document.createElement('button');
     btn.className='lvl'+(locked?' locked':'')+(rec.cleared?' cleared':'');
     const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
-    btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+'</span><span class="lstars">'+starCell+'</span>';
+    const DL={easy:'EASY',medium:'MED',hard:'HARD',pro:'PRO'};
+    const dtag = (!locked && rec.clearedDiff) ? ' <span style="color:var(--amber);font-size:9px;letter-spacing:.1em;font-weight:800">'+DL[rec.clearedDiff]+'</span>' : '';
+    btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+dtag+'</span><span class="lstars">'+starCell+'</span>';
     if(!locked) btn.onclick=()=>{ selectedLevel=L.id; const fl=$('climbFull'); if(fl){fl.style.display='none'; $('progressToggle').textContent='View progress \u25BE';} loadLevel(L.id); };
     wrap.appendChild(btn);
   });
