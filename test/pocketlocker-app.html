@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 59</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 60</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -315,6 +315,7 @@
           <option value="">Enable audio first…</option>
         </select>
         <div style="font-size:11px;color:var(--muted);margin-top:5px">On desktop with an audio interface or mixer, pick it here and turn <b>Speaker mode off</b> — a direct line signal is the most accurate (no room noise, no click bleed). Monitor yourself through the interface's own headphone out.</div>
+        <div style="font-size:11px;color:var(--amber);margin-top:6px;line-height:1.5">Using a USB mixer for headphones? Also set your <b>computer's output</b> to that mixer (System Sound settings) so the click is sent back to it — otherwise you'll hear your bass but no click.</div>
       </div>
       <div id="detTestWrap" style="margin-top:14px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -461,7 +462,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 59 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 60 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
