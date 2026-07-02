@@ -199,11 +199,11 @@
   </div>
 </div>
 <div class="appbar">
-  <a class="brand" href="https://jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass home">JamReady<span>Bass</span></a>
+  <a class="brand" href="https://www.jamreadybass.com/practice-station" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass Practice Station">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 54</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 56</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -432,7 +432,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 54 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 56 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1337,13 +1337,24 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
 <script>
 (function(){
   function cap(x){return x.charAt(0).toUpperCase()+x.slice(1);}
-  function showScreen(name){
+  var curScreen='play';
+  function showScreen(name, fromPop){
     document.querySelectorAll('.screen').forEach(function(sec){sec.classList.toggle('active', sec.id==='screen'+cap(name));});
     document.querySelectorAll('.bottomnav button').forEach(function(b){b.classList.toggle('active', b.dataset.screen===name);});
     var back=document.getElementById('navBack'); if(back) back.style.visibility=(name==='home')?'hidden':'visible';
     window.scrollTo(0,0);
+    if(!fromPop && name!==curScreen){ try{ history.pushState({plScreen:name},''); }catch(e){} }
+    curScreen=name;
   }
   window.showScreen=showScreen;
+  try{ history.replaceState({plScreen:'play'},''); }catch(e){}
+  window.addEventListener('popstate',function(e){
+    var sp=document.getElementById('scorePop');
+    if(sp && sp.style.display==='flex'){ sp.style.display='none'; try{history.pushState({plScreen:curScreen},'');}catch(_){ } return; }
+    var sh=document.getElementById('rhythmSheet');
+    if(sh && sh.style.display==='flex'){ sh.style.display='none'; if(typeof updateSetupBtn==='function') updateSetupBtn(); try{history.pushState({plScreen:curScreen},'');}catch(_){ } return; }
+    showScreen((e.state&&e.state.plScreen)||'play', true);
+  });
   document.querySelectorAll('.bottomnav button').forEach(function(b){b.addEventListener('click',function(){showScreen(b.dataset.screen);});});
   var gs=document.getElementById('navSettings'); if(gs) gs.addEventListener('click',function(){showScreen('settings');});
   var bk=document.getElementById('navBack'); if(bk) bk.addEventListener('click',function(){showScreen('home');});
