@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 61</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 63</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -410,21 +410,23 @@ const $=id=>document.getElementById(id);
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
   constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
-    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;this.env=0;
+    this.threshFactor=4.0;this.refractory=0.09;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;this.eF=0;this.eS=0;this.riseK=1.7;this.rearmK=1.3;
     this.port.onmessage=(e)=>{const d=e.data;
       if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;
       if(d.refractory!==undefined)this.refractory=d.refractory;
       if(d.floor!==undefined)this.floor=d.floor;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
-    this.env=this.env+0.12*(e-this.env);const ev=this.env;   // smooth per-cycle ripple: one hump per note, not a ripple train
-    const thresh=Math.max(this.floor,this.baseline*this.threshFactor),now=currentTime,rising=ev>this.prevEnergy;
-    if(ev<thresh) this.baseline=0.99*this.baseline+0.01*ev;   // track the quiet floor, not the note attacks
-    if(this.armed&&ev>thresh&&rising&&(now-this.lastOnset)>this.refractory){
-      this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime,e:ev});}
-    if(!this.armed&&ev<thresh*0.4)this.armed=true;
-    this.prevEnergy=ev;
-    if((this.fc++ %4)===0)this.port.postMessage({type:'level',e:ev,thresh:thresh});
+    this.eF=this.eF+0.25*(e-this.eF);                       // fast env: strips per-cycle ripple, keeps attacks
+    this.eS=this.eS+0.04*(this.eF-this.eS);                 // slow reference the next attack must rise above
+    const thresh=Math.max(this.floor,this.baseline*this.threshFactor),now=currentTime;
+    if(this.eF<thresh) this.baseline=0.99*this.baseline+0.01*this.eF;
+    const rise=this.eF/(this.eS+1e-9);                       // a new note = a sharp rise above the recent level
+    if(this.armed&&this.eF>thresh&&rise>this.riseK&&(now-this.lastOnset)>this.refractory){
+      this.lastOnset=now;this.armed=false;this.eS=this.eF;   // bump the reference up so this same attack can't re-fire
+      this.port.postMessage({type:'onset',time:currentTime,e:this.eF});}
+    if(!this.armed&&rise<this.rearmK)this.armed=true;         // attack subsided -> ready for the next note (works mid-sustain)
+    if((this.fc++ %4)===0)this.port.postMessage({type:'level',e:this.eF,thresh:thresh});
     return true;}
 }
 registerProcessor('onset-processor',OnsetProcessor);`;
@@ -463,14 +465,13 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 61 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 63 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
     renderNotation();
     sizeStrip(); requestAnimationFrame(drawStrip);
-    if(!roomCheckedThisSession){ roomCheckedThisSession=true; setTimeout(()=>measureRoom(true), 500); }
-    initInputs();
+    if(!roomCheckedThisSession){ roomCheckedThisSession=true; initInputs(); }
     if(navigator.mediaDevices) navigator.mediaDevices.ondevicechange=refreshInputs;
   }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
 };
@@ -522,12 +523,15 @@ async function switchInput(deviceId){
 }
 async function initInputs(){
   await refreshInputs();
+  let switched=false;
   if(prog.inputId){ const sel=$('inputPicker');
     if(sel && [...sel.options].some(o=>o.value===prog.inputId)){
       let curId=null; try{ curId=micStream.getAudioTracks()[0].getSettings().deviceId; }catch(e){}
-      if(prog.inputId!==curId){ sel.value=prog.inputId; switchInput(prog.inputId); }
+      if(prog.inputId!==curId){ sel.value=prog.inputId; await switchInput(prog.inputId); switched=true; }
     }
   }
+  // switchInput measures the room on the device it switched to; if we did NOT switch, measure the current device once
+  if(!switched){ setTimeout(()=>measureRoom(true), 400); }
 }
 let detTest=false, detCount=0, detPeak=1e-9, detBars=[], detRAF=0;
 function detHit(e){
@@ -547,18 +551,17 @@ function onWorklet(ev){ const d=ev.data; if(d.type==='level'){ lastLevel=d; retu
 function setupFallback(){
   showInfo("Opened as a local file — using an older audio path. Serve over https for full timing accuracy.");
   const bufSize=512; spNode=ac.createScriptProcessor(bufSize,1,1);
-  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0,lowCnt:0,env:0};
+  fb={prev:0,baseline:1e-7,lastOnset:-1,armed:true,prevEnergy:0,fc:0,lowCnt:0,eF:0,eS:0};
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
       for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
-      fb.env=fb.env+0.12*(en-fb.env);const ev=fb.env;   // smooth per-cycle ripple
+      fb.eF=fb.eF+0.25*(en-fb.eF); fb.eS=fb.eS+0.04*(fb.eF-fb.eS);
       const thresh=Math.max(params.floor||1.3e-5,fb.baseline*params.threshFactor);
-      if(ev<thresh) fb.baseline=0.99*fb.baseline+0.01*ev;
-      const tNow=bufStart+(off+B)/sr,rising=ev>fb.prevEnergy;
-      if(fb.armed&&ev>thresh&&rising&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;if(detTest)detHit(ev);handleOnset(bufStart+off/sr);}
-      if(!fb.armed&&ev<thresh*0.4)fb.armed=true;
-      fb.prevEnergy=ev;
-      if((fb.fc++ %4)===0)lastLevel={e:ev,thresh:thresh};}};
+      if(fb.eF<thresh) fb.baseline=0.99*fb.baseline+0.01*fb.eF;
+      const rise=fb.eF/(fb.eS+1e-9), tNow=bufStart+(off+B)/sr;
+      if(fb.armed&&fb.eF>thresh&&rise>1.7&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;fb.eS=fb.eF;if(detTest)detHit(fb.eF);handleOnset(bufStart+off/sr);}
+      if(!fb.armed&&rise<1.3)fb.armed=true;
+      if((fb.fc++ %4)===0)lastLevel={e:fb.eF,thresh:thresh};}};
   const mute=ac.createGain();mute.gain.value=0;(detTap||src).connect(spNode);spNode.connect(mute).connect(ac.destination);
 }
 
