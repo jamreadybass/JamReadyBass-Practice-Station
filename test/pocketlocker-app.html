@@ -203,7 +203,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 47</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 50</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -230,7 +230,7 @@
   </section>
 
   <section id="screenPlay" class="screen">
-    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" style="flex:1">⚙ Practice setup</button></div>
+    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" class="primary" style="flex:1">⚙ Practice setup</button></div>
     <div class="panel" id="startPanel">
       <h2>Start audio</h2>
       <button class="primary big" id="startBtn" style="width:100%">Enable mic &amp; click</button>
@@ -425,7 +425,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 47 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 50 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -788,7 +788,7 @@ function startTransport(forCalib){
   beatDur=60/bpm; barDur=4*beatDur;
   mode=forCalib?'calibrate':'play';
   sessionCompleted=false;
-  if(clickBus){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); }
+  if(clickBus){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(visualBeat?0:1,ac.currentTime); }
   if(!forCalib){
     // dead-time after each note adapts to the rhythm: long for slow notes (kills double-triggers),
     // short for fast ones (so real sixteenths aren't swallowed).
@@ -1025,8 +1025,8 @@ $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudge
 function nudgeHw(d){ hwNudgeMs=Math.max(-150,Math.min(150,hwNudgeMs+d)); if($('hwnudge'))$('hwnudge').value=hwNudgeMs; if($('hwnudgeVal'))$('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); }
 $('hwNudgeMinus') && ($('hwNudgeMinus').onclick=()=>nudgeHw(-5));
 $('hwNudgePlus') && ($('hwNudgePlus').onclick=()=>nudgeHw(5));
-$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } if(typeof fmtOff==='function') fmtOff(); });
-$('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); });
+$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); if(visualBeat && $('filterClickChk') && $('filterClickChk').checked){ $('filterClickChk').checked=false; setFilterClick(false); } if(visualBeat){ if(typeof killPending==='function') killPending(); if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } } else if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); } const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } if(typeof fmtOff==='function') fmtOff(); });
+$('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); if(e.target.checked && $('visualBeatChk') && $('visualBeatChk').checked){ $('visualBeatChk').checked=false; visualBeat=false; prog.visualBeat=false; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=false; cvs.style.opacity=1; } if(typeof fmtOff==='function') fmtOff(); } });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor});}
