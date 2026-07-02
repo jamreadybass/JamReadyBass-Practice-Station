@@ -138,19 +138,19 @@
       <div class="seg" id="modeSeg" style="margin-bottom:16px">
         <button data-m="climb">Challenge</button>
         <button data-m="free" class="active">Freeplay</button>
+        <button data-m="random">🎲 Random</button>
       </div>
       <div id="freeHint" class="climb-summary" style="display:none">Freeplay — build a rhythm below and hit Play. Nothing is scored against the challenge.</div>
       <div id="freeControls" style="display:none;margin-top:14px">
         <div class="panel" style="margin-bottom:0">
           <h2>Set your rhythm</h2>
-<div class="ctrl" style="margin-bottom:14px"><label>Note value</label>
+<div class="ctrl" id="noteValueRow" style="margin-bottom:14px"><label>Note value</label>
         <div class="seg" id="subdivSeg">
           <button data-s="whole">Whole</button>
           <button data-s="half">Half</button>
           <button data-s="quarter" class="active">Quarter</button>
           <button data-s="eighth">Eighth</button>
           <button data-s="sixteenth">16th</button>
-          <button data-s="random">🎲 Random</button>
         </div>
       </div>
       <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
@@ -203,7 +203,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 50</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 53</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -299,6 +299,13 @@
       <label class="chk"><input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)</label>
       <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
       <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
+      <div style="margin-top:14px">
+        <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Input device</label>
+        <select id="inputPicker" style="width:100%;margin-top:6px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:14px">
+          <option value="">Enable audio first…</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">On desktop with an audio interface or mixer, pick it here and turn <b>Speaker mode off</b> — a direct line signal is the most accurate (no room noise, no click bleed). Monitor yourself through the interface's own headphone out.</div>
+      </div>
       <details>
         <summary>Sound &amp; timing setup</summary>
         <div style="margin-top:14px">
@@ -425,13 +432,15 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 50 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 53 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
     renderNotation();
     sizeStrip(); requestAnimationFrame(drawStrip);
     if(!roomCheckedThisSession){ roomCheckedThisSession=true; setTimeout(()=>measureRoom(true), 500); }
+    initInputs();
+    if(navigator.mediaDevices) navigator.mediaDevices.ondevicechange=refreshInputs;
   }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
@@ -451,6 +460,43 @@ function setFilterClick(on){
   filterClick=on;
   notchFilters.forEach(bq=>{ try{ bq.frequency.setTargetAtTime(on?bq._target:19000, ac?ac.currentTime:0, 0.02); }catch(e){ bq.frequency.value=on?bq._target:19000; } });
   prog.filterClick=on; saveProg();
+}
+let currentInputId=null;
+async function refreshInputs(){
+  const sel=$('inputPicker'); if(!sel || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try{
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    const ins=devs.filter(d=>d.kind==='audioinput'); if(!ins.length) return;
+    let active=currentInputId; try{ if(micStream){ const s=micStream.getAudioTracks()[0].getSettings(); if(s.deviceId) active=s.deviceId; } }catch(e){}
+    sel.innerHTML='';
+    ins.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||('Input '+(i+1)); sel.appendChild(o); });
+    if(active){ sel.value=active; currentInputId=sel.value; }
+  }catch(e){}
+}
+async function switchInput(deviceId){
+  if(!ac || !deviceId) return;
+  try{
+    try{ if(src) src.disconnect(); }catch(e){}
+    try{ notchFilters.forEach(bq=>{ try{bq.disconnect();}catch(_){} }); }catch(e){}
+    try{ if(detTap) detTap.disconnect(); }catch(e){}
+    try{ if(micStream) micStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:deviceId},echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    src=ac.createMediaStreamSource(micStream);
+    detTap=buildNotchChain(src);
+    if(node) detTap.connect(node); else if(spNode) detTap.connect(spNode);
+    currentInputId=deviceId; prog.inputId=deviceId; saveProg();
+    const rs=$('roomStatus'); if(rs){ rs.style.display='block'; rs.textContent='Switched input — measuring room…'; }
+    setTimeout(()=>measureRoom(true), 300);
+  }catch(err){ showErr("Couldn't switch to that input: "+err.message); refreshInputs(); }
+}
+async function initInputs(){
+  await refreshInputs();
+  if(prog.inputId){ const sel=$('inputPicker');
+    if(sel && [...sel.options].some(o=>o.value===prog.inputId)){
+      let curId=null; try{ curId=micStream.getAudioTracks()[0].getSettings().deviceId; }catch(e){}
+      if(prog.inputId!==curId){ sel.value=prog.inputId; switchInput(prog.inputId); }
+    }
+  }
 }
 function onWorklet(ev){ const d=ev.data; if(d.type==='level'){ lastLevel=d; return; } if(d.type==='onset') handleOnset(d.time); }
 function setupFallback(){
@@ -1146,7 +1192,7 @@ function evaluateLevel(id){
   const f=finalScores();
   if(!f){ const el=$('levelResult'); el.style.display='block'; el.style.color='var(--muted)';
     el.textContent='Not enough notes landed to score that run \u2014 give it another go.'; pendingLevel=null; return; }
-  const stars=starsFor(f), cleared=stars>=1;
+  const stars=starsFor(f), cleared=stars>=3;   // all three stars required to unlock the next level
   const rec=prog.levels[id]||{stars:0,best:null,cleared:false};
   rec.best=bestOf(rec.best,f); rec.stars=Math.max(rec.stars,stars); rec.cleared=rec.cleared||cleared;
   prog.levels[id]=rec; prog.sessions=(prog.sessions||0)+1;
@@ -1155,10 +1201,10 @@ function evaluateLevel(id){
   const hasNext = cleared && id<LEVELS.length;
   const nextName = hasNext ? LEVELS.find(x=>x.id===id+1).name : '';
   showScorePop(f, stars, {
-    title: cleared ? (stars>=3?'Perfect run!':('Level '+id+' cleared!')) : 'So close',
+    title: cleared ? ('Perfect run! Level '+id+' cleared') : (stars+' of 3 stars \u2014 not yet'),
     msg: hasNext ? ('Next up — Level '+(id+1)+': '+nextName)
          : (cleared && id===LEVELS.length) ? 'You topped the challenge. Real pocket.'
-         : 'Earn the Rhythm star (play the written notes) to clear.',
+         : 'You need all 3 stars \u2014 Center, Evenness and Rhythm \u2014 to unlock the next level.',
     nextLabel: hasNext ? 'Next level →' : (cleared ? 'Done' : 'Try again'),
     onNext: function(){ if(hasNext){ loadLevel(id+1); if(window.showScreen) showScreen('play'); } }
   });
@@ -1224,14 +1270,23 @@ function renderClimbNow(){
 }
 let climbMode=true, selectedLevel=null;
 function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
-  if(climbMode){ b.textContent='⚙ Challenge · tap to change'; }
-  else { const nv={whole:'Whole',half:'Half',quarter:'Quarter',eighth:'Eighth',sixteenth:'16th'}[subdiv]; b.textContent='⚙ Freeplay · '+bpm+' bpm · '+(randomMode?'Random':(nv||'')); }
+  if(climbMode){ b.textContent='⚙ Challenge · tap to change'; return; }
+  if(randomMode){ b.textContent='⚙ 🎲 Random · '+bpm+' bpm'; return; }
+  const nv={whole:'Whole',half:'Half',quarter:'Quarter',eighth:'Eighth',sixteenth:'16th'}[subdiv];
+  b.textContent='⚙ Freeplay · '+bpm+' bpm · '+(nv||'');
 }
 function applyMode(m){
-  climbMode=(m==='climb'); segActivate('modeSeg','m',m);
-  const fh=$('freeHint'); if(fh) fh.style.display=climbMode?'none':'block';
+  climbMode=(m==='climb'); const isRandom=(m==='random'); segActivate('modeSeg','m',m);
+  randomMode=isRandom;
+  const fh=$('freeHint'); if(fh){ fh.style.display=climbMode?'none':'block';
+    fh.textContent = isRandom ? 'Random — fresh generated rhythms. Tap New rhythm, or turn on New one every bar.'
+                              : 'Freeplay — build a rhythm below and hit Play. Nothing scored against the challenge.'; }
   const fc=$('freeControls'); if(fc) fc.style.display=climbMode?'none':'block';
-  if(!climbMode){ clearPending(); }
+  const nvr=$('noteValueRow'); if(nvr) nvr.style.display=(!climbMode && !isRandom)?'block':'none';
+  const rr=$('randomRow'); if(rr) rr.style.display=isRandom?'block':'none';
+  if(!climbMode) clearPending();
+  if(isRandom && typeof generateBar==='function') generateBar();
+  if(!climbMode && typeof renderNotation==='function') renderNotation();
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
@@ -1262,6 +1317,7 @@ function measureRoom(auto){
   }, auto?2100:1700);
 }
 $('measureBtn') && ($('measureBtn').onclick=measureRoom);
+$('inputPicker') && ($('inputPicker').onchange=e=>{ if(e.target.value) switchInput(e.target.value); });
 if(prog.roomFloor){ params.floor=prog.roomFloor; }
 
 renderLadder();
@@ -1289,7 +1345,7 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
   ['continueBtn','playBtn','calibBtn','calibNowBtn','playAnywayBtn'].forEach(function(id){var el=document.getElementById(id); if(el) el.addEventListener('click',function(){showScreen('play');});});
   var lad=document.getElementById('ladder'); if(lad) lad.addEventListener('click',function(e){ var t=e.target.closest('.lvl'); if(t && !t.classList.contains('locked')) showScreen('play'); });
   var mseg=document.getElementById('modeSeg');
-  function syncFree(){ var fb=document.querySelector('#modeSeg button[data-m="free"]'); var fc=document.getElementById('freeControls'); if(fc&&fb) fc.style.display=fb.classList.contains('active')?'block':'none'; }
+  function syncFree(){ var cb=document.querySelector('#modeSeg button[data-m="climb"]'); var fc=document.getElementById('freeControls'); if(fc&&cb) fc.style.display=cb.classList.contains('active')?'none':'block'; }
   if(mseg) mseg.addEventListener('click',function(){ setTimeout(syncFree,0); });
   syncFree();
   var sheet=document.getElementById('rhythmSheet');
