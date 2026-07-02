@@ -109,10 +109,15 @@
   .bottomnav button:hover{color:var(--ink)}
   .bottomnav button.active{color:var(--amber)}
   .bottomnav button.active span{filter:drop-shadow(0 0 8px rgba(255,176,32,.6))}
-  @media (orientation:landscape) and (max-height:560px){
-    #hw{height:200px}
-    .appbar{padding-top:8px;padding-bottom:8px}
-    .screen{padding:12px 18px}
+  @media (orientation:landscape) and (max-height:600px){
+    .badgebar{display:none}
+    #hw{height:clamp(110px,32vh,200px)}
+    .appbar{padding-top:6px;padding-bottom:6px}
+    .screen{padding:8px 18px}
+    .screen .transport{margin-top:8px !important;margin-bottom:8px !important}
+    #openRhythm{padding-top:9px;padding-bottom:9px}
+    .primary.big{padding-top:12px;padding-bottom:12px}
+    .countin{margin-top:4px;min-height:0}
   }
 </style>
 </head>
@@ -208,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 58</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 59</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -456,7 +461,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 58 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 59 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
