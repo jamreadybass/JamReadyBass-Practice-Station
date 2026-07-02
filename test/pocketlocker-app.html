@@ -203,7 +203,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 44</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 45</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -416,7 +416,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 44 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 45 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -842,10 +842,24 @@ function scheduleClick(t,accent){
   if(clickVol>0 && (!visualBeat || mode==='calibrate')){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
     const o=ac.createOscillator(),g=ac.createGain();
-    o.frequency.value=accent?1600:1100;o.type='triangle';
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*(accent?0.5:0.36),t+0.0025);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+0.045);
-    o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.05);pending.push(o);if(pending.length>256)pending.shift();
+    o.frequency.value=accent?1600:1100;
+    const peak=clickVol*(accent?0.5:0.36);
+    if(filterClick){
+      // Speaker mode: pure sine + smooth raised-cosine (Hann) envelope = a soft beep with
+      // no sharp transient, so almost nothing survives the notch to trip the onset detector.
+      o.type='sine';
+      const D=0.032, S=48, curve=new Float32Array(S);
+      for(let i=0;i<S;i++){ curve[i]=peak*0.5*(1-Math.cos(2*Math.PI*i/(S-1))); }
+      g.gain.setValueCurveAtTime(curve,t,D);
+      o.connect(g).connect(clickOut());o.start(t);o.stop(t+D+0.02);
+    } else {
+      // Headphones: crisp triangle click for a tighter beat (no bleed to worry about).
+      o.type='triangle';
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+0.0025);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.045);
+      o.connect(g).connect(clickOut());o.start(t);o.stop(t+0.05);
+    }
+    pending.push(o);if(pending.length>256)pending.shift();
   }
 }
 let curBarStart=0;
