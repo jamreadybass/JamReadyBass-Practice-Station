@@ -203,7 +203,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 45</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 46</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -280,6 +280,15 @@
         </div>
       </div>
       <div class="coach" id="coach">Pick a level, hit Play, and read the rhythm to the click.</div>
+      <div id="timingRow" style="margin-top:12px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:9px">Notes reading early or late overall? Play a run, then tap <b>Center from last run</b> — it learns your offset from how you actually played. Works muted or with the click. Never moves the highway visual.</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button id="offMinus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">−5</button>
+          <div style="font-family:var(--mono);font-size:14px;min-width:108px;text-align:center" id="offVal">offset 0ms</div>
+          <button id="offPlus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">+5</button>
+          <button id="centerBtn" class="primary" style="padding:9px 14px;margin-left:auto">Center from last run</button>
+        </div>
+      </div>
       <div class="transport" style="margin-top:14px"><button id="resetBtn" class="danger" style="margin-left:auto">Reset score</button></div>
     </div>
   </section>
@@ -416,7 +425,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 45 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 46 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1022,6 +1031,13 @@ $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor});}
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
+function fmtOff(){ const b=$('offVal'); if(b) b.textContent='offset '+(calibOffset>0?'+':'')+Math.round(calibOffset)+'ms'; }
+function saveCalib(){ calibrated=true; prog.calib=Math.round(calibOffset); saveProg(); fmtOff(); }
+$('offMinus') && ($('offMinus').onclick=()=>{ calibOffset-=5; saveCalib(); });
+$('offPlus')  && ($('offPlus').onclick =()=>{ calibOffset+=5; saveCalib(); });
+$('centerBtn')&& ($('centerBtn').onclick=()=>{ const c=$('coach');
+  if(deltas.length){ calibOffset+=mean(deltas); saveCalib(); if(c) c.textContent='Centered on your last run — your next run reads from here. (Timing offset '+(calibOffset>0?'+':'')+Math.round(calibOffset)+'ms.)'; }
+  else if(c){ c.textContent='Play a run first, then tap Center from last run.'; } });
 $('playBtn').onclick=()=>{
   if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; try{$('calibPrompt').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return; }
   startTransport(false);
@@ -1173,6 +1189,7 @@ function renderLadder(){
 }
 
 if(prog.calib!=null){ calibOffset=prog.calib; calibrated=true; }
+if(typeof fmtOff==='function') fmtOff();
 if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').value=hwNudgeMs;$('hwnudgeVal').textContent=hwNudgeMs;} }
 if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
 if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filterClickChk').checked=false; }
