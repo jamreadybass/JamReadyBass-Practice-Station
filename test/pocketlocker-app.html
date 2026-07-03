@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 85</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 86</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -342,16 +342,16 @@
           <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
             <label style="font-size:11px;color:var(--muted)">Instrument preset — one tap sets a sensible Low-cut, then fine-tune below if needed</label>
             <div class="seg" id="instrSeg" style="margin:2px 0 12px">
-              <button data-lc="100">4-string</button>
-              <button data-lc="195">5-string</button>
+              <button data-instr="4">4-string</button>
+              <button data-instr="5">5-string</button>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tune these while watching the count until each note flashes once:</div>
-            <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.50</b> — raise to stop ringing over-triggers</label>
-            <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.5" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
-            <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">150</b> Hz — lower for more low-string response, raise if low notes over-trigger</label>
-            <input type="range" id="lowCut" min="60" max="240" step="5" value="150" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
-            <label style="font-size:11px;color:var(--muted)">Ring rejection <b id="ringVal" style="color:var(--amber)">0.06</b> — raise to stop ringing re-triggers (lets you lower Low-cut to hear soft notes)</label>
-            <input type="range" id="ringRej" min="0.04" max="0.22" step="0.01" value="0.06" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.70</b> — raise to stop ringing over-triggers</label>
+            <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.7" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">195</b> Hz — lower for more low-string response, raise if low notes over-trigger</label>
+            <input type="range" id="lowCut" min="60" max="240" step="5" value="195" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Ring rejection <b id="ringVal" style="color:var(--amber)">0.16</b> — raise to stop ringing re-triggers (lets you lower Low-cut to hear soft notes)</label>
+            <input type="range" id="ringRej" min="0.04" max="0.22" step="0.01" value="0.16" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
             <label style="font-size:11px;color:var(--muted)">Min gap <b id="gapVal2" style="color:var(--amber)">70</b> ms — minimum time between notes</label>
             <input type="range" id="minGap2" min="40" max="250" step="5" value="70" style="width:100%;accent-color:var(--amber);margin:2px 0 6px">
             <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Tip: for ringing low notes, nudge Trigger threshold up and Low-cut up. If fast notes get missed, ease them back down.</div>
@@ -485,7 +485,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 85 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 86 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -502,7 +502,7 @@ function buildNotchChain(input){
   // narrow notches at the click's tones (and odd harmonics) — kills the metronome
   // in the mic without touching the instrument, whose energy sits elsewhere.
   let prev=input; notchFilters=[]; hpFilters=[];
-  for(let hi=0;hi<2;hi++){ const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=150; hp.Q.value=0.707; prev.connect(hp); prev=hp; hpFilters.push(hp); }
+  for(let hi=0;hi<2;hi++){ const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=195; hp.Q.value=0.707; prev.connect(hp); prev=hp; hpFilters.push(hp); }
   for(const fhz of CLICK_FREQS){
     const bq=ac.createBiquadFilter(); bq.type='notch'; bq.Q.value=5;
     bq.frequency.value = filterClick ? fhz : 19000;   // parked harmlessly high when off
@@ -1181,7 +1181,21 @@ function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK,eSpeed:params.eSpeed});
   prog.det={riseK:params.riseK,lowcut:(hpFilters[0]?Math.round(hpFilters[0].frequency.value):100),ref:+$('ref').value,sens:s,eSpeed:params.eSpeed}; saveProg();}
 function setLowCut(hz){ hpFilters.forEach(f=>{ try{f.frequency.setTargetAtTime(hz,ac.currentTime,0.02);}catch(e){f.frequency.value=hz;} }); const lv=$('lowVal'); if(lv) lv.textContent=hz; }
-function applyDetSaved(){ if(!prog.det) return; const d=prog.det;
+// Fixed instrument presets: tap snaps all four detection knobs to a known-good baseline; sliders stay live to fine-tune from there.
+const INSTR_PRESETS={ '4':{rise:1.55,low:100,ring:0.10,gap:70}, '5':{rise:1.70,low:195,ring:0.16,gap:70} };
+function applyInstrumentPreset(name){
+  const P=INSTR_PRESETS[name]; if(!P) return;
+  if($('riseThresh')){ $('riseThresh').value=P.rise; if($('riseVal')) $('riseVal').textContent=P.rise.toFixed(2); }
+  if($('ringRej')){ $('ringRej').value=P.ring; if($('ringVal')) $('ringVal').textContent=P.ring.toFixed(2); }
+  if($('ref')){ $('ref').value=P.gap; if($('refVal')) $('refVal').textContent=P.gap; }
+  if($('minGap2')){ $('minGap2').value=P.gap; if($('gapVal2')) $('gapVal2').textContent=P.gap; }
+  if($('lowCut')){ $('lowCut').value=P.low; if($('lowVal')) $('lowVal').textContent=P.low; }
+  setLowCut(P.low);
+  if($('instrSeg')) [...$('instrSeg').children].forEach(x=>x.classList.toggle('active', x.dataset.instr===name));
+  pushParams();   // reads the sliders -> updates params, posts to worklet, saves prog.det
+}
+function deselectPreset(){ if($('instrSeg')) [...$('instrSeg').children].forEach(x=>x.classList.remove('active')); }
+function applyDetSaved(){ if(!prog.det){ if(typeof applyInstrumentPreset==='function') applyInstrumentPreset('5'); return; } const d=prog.det;
   if(d.riseK && $('riseThresh')){ $('riseThresh').value=d.riseK; const r=$('riseVal'); if(r) r.textContent=(+d.riseK).toFixed(2); params.riseK=+d.riseK; }
   if(d.eSpeed && $('ringRej')){ $('ringRej').value=d.eSpeed; const rr=$('ringVal'); if(rr) rr.textContent=(+d.eSpeed).toFixed(2); params.eSpeed=+d.eSpeed; }
   if(d.ref && $('ref')){ $('ref').value=d.ref; const rv=$('refVal'); if(rv) rv.textContent=d.ref; params.refractory=d.ref/1000; if($('minGap2')){ $('minGap2').value=d.ref; const g=$('gapVal2'); if(g) g.textContent=d.ref; } }
@@ -1465,12 +1479,12 @@ $('measureBtn') && ($('measureBtn').onclick=measureRoom);
 $('inputPicker') && ($('inputPicker').onchange=e=>{ if(e.target.value) switchInput(e.target.value); });
 $('detTestBtn') && ($('detTestBtn').onclick=()=>{ detTest?stopDetTest():startDetTest(); });
 $('detResetBtn') && ($('detResetBtn').onclick=()=>{ detCount=0; detBars=[]; const c=$('detCount'); if(c) c.textContent='0'; const s=$('detStrip'); if(s) s.innerHTML=''; });
-$('riseThresh') && ($('riseThresh').oninput=e=>{ const r=$('riseVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
-$('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); if($('instrSeg')) [...$('instrSeg').children].forEach(x=>x.classList.remove('active')); pushParams(); });
-$('instrSeg') && $('instrSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hz=+b.dataset.lc; [...$('instrSeg').children].forEach(x=>x.classList.toggle('active',x===b)); if($('lowCut')){ $('lowCut').value=hz; } setLowCut(hz); pushParams(); });
-$('ringRej') && ($('ringRej').oninput=e=>{ const r=$('ringVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
-$('minGap2') && ($('minGap2').oninput=e=>{ const g=$('gapVal2'); if(g) g.textContent=e.target.value; if($('ref')){ $('ref').value=e.target.value; const rv=$('refVal'); if(rv) rv.textContent=e.target.value; } pushParams(); });
-$('detDefaults') && ($('detDefaults').onclick=()=>{ if($('riseThresh')){$('riseThresh').value=1.5;$('riseVal').textContent='1.50';} if($('minGap2')){$('minGap2').value=70;$('gapVal2').textContent='70';} if($('ref')){$('ref').value=70;if($('refVal'))$('refVal').textContent='70';} if($('ringRej')){$('ringRej').value=0.06;if($('ringVal'))$('ringVal').textContent='0.06';} if($('lowCut')){$('lowCut').value=150;if($('lowVal'))$('lowVal').textContent='150';} setLowCut(150); pushParams(); });
+$('riseThresh') && ($('riseThresh').oninput=e=>{ const r=$('riseVal'); if(r) r.textContent=(+e.target.value).toFixed(2); deselectPreset(); pushParams(); });
+$('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); deselectPreset(); pushParams(); });
+$('instrSeg') && $('instrSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; applyInstrumentPreset(b.dataset.instr); });
+$('ringRej') && ($('ringRej').oninput=e=>{ const r=$('ringVal'); if(r) r.textContent=(+e.target.value).toFixed(2); deselectPreset(); pushParams(); });
+$('minGap2') && ($('minGap2').oninput=e=>{ const g=$('gapVal2'); if(g) g.textContent=e.target.value; if($('ref')){ $('ref').value=e.target.value; const rv=$('refVal'); if(rv) rv.textContent=e.target.value; } deselectPreset(); pushParams(); });
+$('detDefaults') && ($('detDefaults').onclick=()=>{ applyInstrumentPreset('5'); });
 if(prog.roomFloor){ params.floor=prog.roomFloor; }
 
 renderLadder();
