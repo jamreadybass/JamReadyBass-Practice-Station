@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 88</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 89</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -488,7 +488,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 88 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 89 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -743,27 +743,26 @@ function sizeStrip(){ DPR=Math.min(window.devicePixelRatio||1,2); const cv=$('hw
   const r=cv.getBoundingClientRect(); if(r.width>0){ cv.width=Math.max(1,Math.round(r.width*DPR)); cv.height=Math.max(1,Math.round(r.height*DPR)); } }
 window.addEventListener('resize',()=>{sizeStrip();});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{sizeStrip();},250));
-// canvas rest glyphs, centered at (x, staffY): quarter (>=0.9 beat), eighth (~0.5), sixteenth (<0.4), dotted-eighth adds a dot
+// canvas rest glyphs — ported from the static staff's gRest so they read identically. Centered at (x, staffY).
 function hwRest(ctx,x,durB,staffY,DPR){
   ctx.save();
-  ctx.strokeStyle='rgba(20,18,12,0.82)'; ctx.fillStyle='rgba(20,18,12,0.82)';
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  if(durB>=0.9){                                   // quarter rest — zigzag body + tail
-    ctx.lineWidth=2.4*DPR; ctx.beginPath();
-    ctx.moveTo(x-3*DPR, staffY-12*DPR);
-    ctx.lineTo(x+3*DPR, staffY-5*DPR);
-    ctx.lineTo(x-3*DPR, staffY+1*DPR);
-    ctx.lineTo(x+4*DPR, staffY+9*DPR);
+  const col='#1a160c'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineJoin='round'; ctx.lineCap='round';
+  if(durB>=0.9){                                   // quarter rest
+    ctx.lineWidth=2.6*DPR; ctx.beginPath();
+    ctx.moveTo(x-2*DPR, staffY-15*DPR);
+    ctx.lineTo(x+3*DPR, staffY-9*DPR);
+    ctx.lineTo(x-2*DPR, staffY-3*DPR);
+    ctx.lineTo(x+4*DPR, staffY+3*DPR);
+    ctx.quadraticCurveTo(x-2*DPR, staffY+2*DPR, x+1*DPR, staffY-4*DPR);
     ctx.stroke();
-    ctx.lineWidth=3*DPR; ctx.beginPath();
-    ctx.moveTo(x+2*DPR, staffY+4*DPR); ctx.quadraticCurveTo(x+5*DPR, staffY+9*DPR, x, staffY+13*DPR); ctx.stroke();
-  } else {                                          // eighth or sixteenth rest — slash + blob(s)
-    const sixteenth = durB<0.4;
-    ctx.lineWidth=2*DPR;
-    ctx.beginPath(); ctx.moveTo(x+4*DPR, staffY-(sixteenth?10:8)*DPR); ctx.lineTo(x-4*DPR, staffY+(sixteenth?10:8)*DPR); ctx.stroke();
-    ctx.beginPath(); ctx.arc(x+4*DPR, staffY-(sixteenth?10:8)*DPR, 2.4*DPR, 0, 7); ctx.fill();
-    if(sixteenth){ ctx.beginPath(); ctx.arc(x+0.5*DPR, staffY-1*DPR, 2.4*DPR, 0, 7); ctx.fill(); }
-    if(Math.abs(durB-0.75)<0.05){ ctx.beginPath(); ctx.arc(x+8*DPR, staffY-2*DPR, 1.7*DPR, 0, 7); ctx.fill(); }  // dotted-eighth rest
+  } else if(durB>=0.4){                             // eighth rest (+ dot if dotted)
+    ctx.beginPath(); ctx.arc(x+1*DPR, staffY-9*DPR, 2.8*DPR, 0, 7); ctx.fill();
+    ctx.lineWidth=2.2*DPR; ctx.beginPath(); ctx.moveTo(x+2*DPR, staffY-10*DPR); ctx.lineTo(x-2*DPR, staffY+6*DPR); ctx.stroke();
+    if(Math.abs(durB-0.75)<0.05){ ctx.beginPath(); ctx.arc(x+8*DPR, staffY-3*DPR, 1.8*DPR, 0, 7); ctx.fill(); }
+  } else {                                          // sixteenth rest
+    ctx.beginPath(); ctx.arc(x+1*DPR, staffY-10*DPR, 2.5*DPR, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(x-1*DPR, staffY-4*DPR,  2.5*DPR, 0, 7); ctx.fill();
+    ctx.lineWidth=2*DPR; ctx.beginPath(); ctx.moveTo(x+2*DPR, staffY-11*DPR); ctx.lineTo(x-3*DPR, staffY+7*DPR); ctx.stroke();
   }
   ctx.restore();
 }
@@ -824,9 +823,9 @@ function drawHighway(){
   if(playing && mode!=='calibrate'){
     const ci=Math.floor((now-firstBarTime)/barDur);
     for(let k=ci-1;k<=ci+1;k++){ const pat=hwBarMap.get(k)||staticNotes(), start=firstBarTime+k*barDur;
-      for(const nt of pat){ const tt=expectedAbsTime(start,nt.pos); if(tt>=firstBarTime-0.001) notes.push({time:tt, durB:nt.dur, beat:nt.pos}); } }
+      for(const nt of pat){ const tt=expectedAbsTime(start,nt.pos); if(tt>=firstBarTime-0.001) notes.push({time:tt, durB:nt.dur, beat:nt.pos, bar:k}); } }
   } else if(!playing){
-    for(const nt of staticNotes()){ notes.push({time:null, ix:idleX(nt.pos), durB:nt.dur, beat:nt.pos}); }
+    for(const nt of staticNotes()){ notes.push({time:null, ix:idleX(nt.pos), durB:nt.dur, beat:nt.pos, bar:0}); }
   }
   // ---- collect rests (centered in their span) ----
   let rests=[];
@@ -840,32 +839,40 @@ function drawHighway(){
   for(const n of notes){ n._x = (n.time!=null)?X(n.time):n.ix; }
   const vis=notes.filter(n=>n._x>-40&&n._x<W+40).sort((a,b)=>a._x-b._x);
 
-  // ---- notation (black on paper) ----
-  const beamed=new Set();
-  for(let i=0;i<vis.length-1;i++){ const a=vis[i],b2=vis[i+1];
-    if(a.durB<=0.6&&b2.durB<=0.6 && Math.floor(a.beat)===Math.floor(b2.beat) && (b2.beat-a.beat)<=0.6){
-      beamed.add(i); beamed.add(i+1);
-      ctx.strokeStyle='rgba(20,18,12,0.85)';ctx.lineWidth=3*DPR;
-      ctx.beginPath();ctx.moveTo(a._x+nhrx,staffY-stem);ctx.lineTo(b2._x+nhrx,staffY-stem);ctx.stroke();
-      if(a.durB<=0.3&&b2.durB<=0.3){ctx.beginPath();ctx.moveTo(a._x+nhrx,staffY-stem+5*DPR);ctx.lineTo(b2._x+nhrx,staffY-stem+5*DPR);ctx.stroke();}
-    }
-  }
-  for(let vi=0; vi<vis.length; vi++){ const n=vis[vi], x=n._x, held=n.durB>=1.5;
+  // ---- notation: engrave by beat-cell (bar + beat) so beams, flags and dots match the staff ----
+  // 1) noteheads, stems, dots, held-note tie bars
+  for(const n of vis){ const x=n._x, held=n.durB>=1.5;
     if(held){ const tw=n.durB*pxPerBeat-nhrx; ctx.strokeStyle='rgba(20,18,12,0.4)';ctx.lineWidth=2*DPR;
       ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx+Math.max(0,tw),staffY);ctx.stroke(); }
     ctx.save();ctx.translate(x,staffY);ctx.rotate(-0.3);
     ctx.fillStyle=held?'#f5f2ea':'#16130d';ctx.strokeStyle='#16130d';ctx.lineWidth=1.8*DPR;
     ctx.beginPath();ctx.ellipse(0,0,nhrx,nhry,0,0,7);ctx.fill();if(held)ctx.stroke();ctx.restore();
-    ctx.strokeStyle='rgba(20,18,12,0.85)';ctx.lineWidth=1.6*DPR;ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx,staffY-stem);ctx.stroke();
-    if(Math.abs(n.durB-0.75)<0.02){ ctx.fillStyle='#16130d';ctx.beginPath();ctx.arc(x+nhrx+5*DPR,staffY-2*DPR,1.8*DPR,0,7);ctx.fill(); }
-    // flag for an UNBEAMED eighth / dotted-eighth / sixteenth so it doesn't read as a quarter
-    if(!held && n.durB>0 && n.durB<=0.85 && !beamed.has(vi)){
-      ctx.strokeStyle='rgba(20,18,12,0.85)';ctx.lineWidth=2.4*DPR;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(x+nhrx,staffY-stem);ctx.quadraticCurveTo(x+nhrx+10*DPR,staffY-stem+7*DPR,x+nhrx+5*DPR,staffY-stem+15*DPR);ctx.stroke();
-      if(n.durB<=0.35){ ctx.beginPath();ctx.moveTo(x+nhrx,staffY-stem+7*DPR);ctx.quadraticCurveTo(x+nhrx+10*DPR,staffY-stem+13*DPR,x+nhrx+5*DPR,staffY-stem+21*DPR);ctx.stroke(); }
+    ctx.strokeStyle='rgba(20,18,12,0.9)';ctx.lineWidth=1.6*DPR;ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx,staffY-stem);ctx.stroke();
+    if(Math.abs(n.durB-0.75)<0.02){ ctx.fillStyle='#16130d';ctx.beginPath();ctx.arc(x+nhrx+6*DPR,staffY-2*DPR,1.8*DPR,0,7);ctx.fill(); }
+  }
+  // 2) beams within each beat group; a lone short note gets a flag
+  const bgroups=new Map();
+  for(const n of vis){ if(!(n.durB>0 && n.durB<1)) continue;   // only 16th/8th/dotted-8th beam-or-flag
+    const key=n.bar+':'+Math.floor(n.beat+0.001); if(!bgroups.has(key)) bgroups.set(key,[]); bgroups.get(key).push(n); }
+  const by=staffY-stem;
+  bgroups.forEach(grp=>{ grp.sort((a,b)=>a._x-b._x);
+    ctx.strokeStyle='rgba(20,18,12,0.9)';
+    if(grp.length>=2){
+      ctx.lineWidth=3*DPR; ctx.beginPath();ctx.moveTo(grp[0]._x+nhrx,by);ctx.lineTo(grp[grp.length-1]._x+nhrx,by);ctx.stroke();   // primary beam
+      for(let i=0;i<grp.length;i++){ if(grp[i].durB>0.3) continue;                                                                // secondary beam only for 16ths
+        const prev=grp[i-1],next=grp[i+1],sx=grp[i]._x+nhrx;
+        if(next && next.durB<=0.3){ ctx.lineWidth=3*DPR;ctx.beginPath();ctx.moveTo(sx,by+6*DPR);ctx.lineTo(next._x+nhrx,by+6*DPR);ctx.stroke(); }
+        else if(prev && prev.durB<=0.3){ /* secondary already drawn from prev */ }
+        else { ctx.lineWidth=3*DPR;ctx.beginPath();ctx.moveTo(sx,by+6*DPR);ctx.lineTo(sx+(prev?-11*DPR:11*DPR),by+6*DPR);ctx.stroke(); }   // partial (stub) beam
+      }
+    } else {   // single short note in the beat -> flag (double flag for a lone 16th)
+      const n=grp[0], x=n._x, dbl=n.durB<=0.3;
+      ctx.lineWidth=2.4*DPR;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x+nhrx,by);ctx.quadraticCurveTo(x+nhrx+10*DPR,by+8*DPR,x+nhrx+4*DPR,by+16*DPR);ctx.stroke();
+      if(dbl){ ctx.beginPath();ctx.moveTo(x+nhrx,by+8*DPR);ctx.quadraticCurveTo(x+nhrx+10*DPR,by+15*DPR,x+nhrx+4*DPR,by+22*DPR);ctx.stroke(); }
       ctx.lineCap='butt';
     }
-  }
+  });
   // ---- rests on the staff (engraved like real music) ----
   for(const r of rests){ if(r._x>-40 && r._x<W+40) hwRest(ctx, r._x, r.durB, staffY, DPR); }
 
