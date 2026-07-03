@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 74</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 75</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -479,7 +479,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 74 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 75 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1100,7 +1100,7 @@ function updateTimingReadout(){
   const byBeat=[[],[],[],[]]; hitLog.forEach(x=>{ const bp=((Math.floor(x.b)%4)+4)%4; byBeat[bp].push(x.d); });
   const cells=byBeat.map((a,i)=>{ if(!a.length) return '<div style="flex:1;text-align:center;font-family:var(--mono);font-size:12px;color:#3a3e48">'+(i+1)+'</div>';
     const m=Math.round(mean(a)); const col=Math.abs(m)<=12?'var(--green)':Math.abs(m)<=30?'var(--amber)':'var(--ember)';
-    return '<div style="flex:1;text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:'+col+'">'+(m>0?'+':'')+m+'</div><div style="font-size:10px;color:var(--muted)">beat '+(i+1)+'</div></div>'; });
+    return '<div style="flex:1;text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:'+col+'">'+(m>0?'+':'')+m+'</div><div style="font-size:10px;color:var(--muted)">beat '+(i+1)+'</div><div style="font-size:9px;color:#4a4e5a">n='+a.length+'</div></div>'; });
   $('trBeats').innerHTML=cells.join('');
   box.style.display='block';
 }
