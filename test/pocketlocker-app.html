@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 68</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 69</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -409,55 +409,21 @@ const $=id=>document.getElementById(id);
 // ---- Onset detector worklet (validated) ----
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
-  constructor(){super();
-    this.N=1024; this.HOP=128;
-    this.win=new Float32Array(this.N);
-    for(let i=0;i<this.N;i++) this.win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(this.N-1));
-    this.cbuf=new Float32Array(this.N); this.cpos=0; this.since=0;
-    this.re=new Float32Array(this.N); this.im=new Float32Array(this.N);
-    this.prevW=new Float32Array(this.N/2+1); this.mavg=new Float32Array(this.N/2+1); for(let i=0;i<this.mavg.length;i++) this.mavg[i]=1e-2;
-    this.br=new Uint32Array(this.N);
-    const lg=Math.round(Math.log2(this.N));
-    for(let i=0;i<this.N;i++){ let x=i,r=0; for(let j=0;j<lg;j++){ r=(r<<1)|(x&1); x>>=1; } this.br[i]=r; }
-    this.cosT=new Float32Array(this.N/2); this.sinT=new Float32Array(this.N/2);
-    for(let i=0;i<this.N/2;i++){ this.cosT[i]=Math.cos(-2*Math.PI*i/this.N); this.sinT[i]=Math.sin(-2*Math.PI*i/this.N); }
-    this.DL=96; this.fbuf=new Float32Array(this.DL); this.enbuf=new Float32Array(this.DL); this.tbuf=new Float64Array(this.DL); this.fpos=0;
-    this.W=12; this.pk=3; this.wtmp=new Float32Array(2*this.W+1); this.lam=2.4; this.dflux=1e-4; this.minIOI=0.06;
-    this.lastOnset=-1; this.fc=0; this.floor=1.3e-5;
-    this.port.onmessage=(e)=>{const d=e.data;
-      if(d.threshFactor!==undefined){ this.lam=Math.max(1.6, 0.8+d.threshFactor*0.35); }
-      if(d.refractory!==undefined) this.refractory=d.refractory;
-      if(d.floor!==undefined) this.floor=d.floor; };
-  }
-  fft(re,im){ const N=this.N, br=this.br;
-    for(let i=0;i<N;i++){ const j=br[i]; if(j>i){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; } }
-    for(let len=2;len<=N;len<<=1){ const half=len>>1, step=(N/len)|0;
-      for(let i=0;i<N;i+=len){ for(let k=0;k<half;k++){ const tw=k*step, c=this.cosT[tw], s=this.sinT[tw], ir=i+k, ih=i+k+half;
-        const ar=re[ih]*c-im[ih]*s, ai=re[ih]*s+im[ih]*c;
-        re[ih]=re[ir]-ar; im[ih]=im[ir]-ai; re[ir]+=ar; im[ir]+=ai; } } }
-  }
-  analyze(){ const N=this.N; let en=0;
-    for(let i=0;i<N;i++){ const idx=(this.cpos+i)%N, s=this.cbuf[idx]; this.re[i]=s*this.win[i]; this.im[i]=0; en+=s*s; }
-    en/=N;
-    this.fft(this.re,this.im);
-    let flux=0;
-    for(let k=8;k<=N/2;k++){ const mag=Math.sqrt(this.re[k]*this.re[k]+this.im[k]*this.im[k]);
-      this.mavg[k]=this.mavg[k]*0.99+mag*0.01; const whit=mag/(this.mavg[k]+1e-9);
-      const d=whit-this.prevW[k]; if(d>0) flux+=d; this.prevW[k]=whit; }
-    const p=this.fpos; this.fbuf[p]=flux; this.enbuf[p]=en; this.tbuf[p]=currentTime; this.fpos=(p+1)%this.DL;
-    const W=this.W, DL=this.DL, c=(this.fpos-1-W+DL)%DL, fc=this.fbuf[c];   // center frame (W frames of look-ahead)
-    let wi=0; for(let j=-W;j<=W;j++) this.wtmp[wi++]=this.fbuf[(c+j+DL)%DL];
-    const a=this.wtmp; for(let x=1;x<wi;x++){ const v=a[x]; let y=x-1; while(y>=0&&a[y]>v){a[y+1]=a[y];y--;} a[y+1]=v; }
-    const med=a[(wi-1)>>1];
-    let isMax=true; for(let j=-this.pk;j<=this.pk;j++){ if(this.fbuf[(c+j+DL)%DL]>fc){ isMax=false; break; } }
-    const tc=this.tbuf[c];
-    if(isMax && fc>med*this.lam+this.dflux && this.enbuf[c]>this.floor && (tc-this.lastOnset)>this.minIOI){
-      this.lastOnset=tc; this.port.postMessage({type:'onset',time:tc,e:fc}); }
-    if((this.fc++ %2)===0) this.port.postMessage({type:'level',e:en,thresh:this.floor});
-  }
-  process(inputs){ const inp=inputs[0]; if(!inp||!inp[0]) return true; const ch=inp[0], n=ch.length;
-    for(let i=0;i<n;i++){ this.cbuf[this.cpos]=ch[i]; this.cpos=(this.cpos+1)%this.N; if(++this.since>=this.HOP){ this.since=0; this.analyze(); } }
-    return true; }
+  constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
+    this.threshFactor=4.0;this.refractory=0.07;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;this.eF=0;this.eS=0;this.riseK=1.5;this.rearmK=1.3;
+    this.port.onmessage=(e)=>{const d=e.data;if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;if(d.refractory!==undefined)this.refractory=d.refractory;if(d.floor!==undefined)this.floor=d.floor;};}
+  process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
+    let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
+    this.eF=this.eF+0.25*(e-this.eF);
+    this.eS=this.eS+0.06*(this.eF-this.eS);
+    const thresh=Math.max(this.floor,this.baseline*this.threshFactor),now=currentTime;
+    if(this.eF<thresh) this.baseline=0.99*this.baseline+0.01*this.eF;
+    const rise=this.eF/(this.eS+1e-9);
+    if(this.armed&&this.eF>thresh&&rise>this.riseK&&(now-this.lastOnset)>this.refractory){
+      this.lastOnset=now;this.armed=false;this.port.postMessage({type:'onset',time:currentTime,e:this.eF});}
+    if(!this.armed&&rise<this.rearmK)this.armed=true;
+    if((this.fc++ %4)===0)this.port.postMessage({type:'level',e:this.eF,thresh:thresh});
+    return true;}
 }
 registerProcessor('onset-processor',OnsetProcessor);`;
 
@@ -467,7 +433,7 @@ let running=false;
 let params={threshFactor:5.2,refractory:0.07,floor:1.3e-5};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
-let notchFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
+let notchFilters=[], hpFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
 let clickTimes=[];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
@@ -495,7 +461,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 68 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 69 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -510,7 +476,8 @@ function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<
 function buildNotchChain(input){
   // narrow notches at the click's tones (and odd harmonics) — kills the metronome
   // in the mic without touching the instrument, whose energy sits elsewhere.
-  let prev=input; notchFilters=[];
+  let prev=input; notchFilters=[]; hpFilters=[];
+  for(let hi=0;hi<2;hi++){ const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=100; hp.Q.value=0.707; prev.connect(hp); prev=hp; hpFilters.push(hp); }
   for(const fhz of CLICK_FREQS){
     const bq=ac.createBiquadFilter(); bq.type='notch'; bq.Q.value=5;
     bq.frequency.value = filterClick ? fhz : 19000;   // parked harmlessly high when off
@@ -539,7 +506,7 @@ async function switchInput(deviceId){
   if(!ac || !deviceId) return;
   try{
     try{ if(src) src.disconnect(); }catch(e){}
-    try{ notchFilters.forEach(bq=>{ try{bq.disconnect();}catch(_){} }); }catch(e){}
+    try{ notchFilters.forEach(bq=>{ try{bq.disconnect();}catch(_){} }); hpFilters.forEach(f=>{ try{f.disconnect();}catch(_){} }); }catch(e){}
     try{ if(detTap) detTap.disconnect(); }catch(e){}
     try{ if(micStream) micStream.getTracks().forEach(t=>t.stop()); }catch(e){}
     micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:deviceId},echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
