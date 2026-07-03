@@ -208,7 +208,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 81</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 82</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -481,7 +481,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 81 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 82 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1208,6 +1208,8 @@ function defaultProg(){ return {levels:{}, unlocked:1, calib:null, sessions:0}; 
 let prog=(function(){ try{const p=JSON.parse(localStorage.getItem(PKEY)); return (p&&p.levels)?p:defaultProg();}catch(e){return defaultProg();} })();
 if(prog.diffMode){ diffMode=prog.diffMode; }
 function saveProg(){ try{localStorage.setItem(PKEY,JSON.stringify(prog));}catch(e){} }
+// build 82 one-time migration: old default Min gap was mistakenly 90ms; correct a saved 90 -> 70 exactly once.
+if(!prog.migRef70){ if(prog.det && +prog.det.ref===90){ prog.det.ref=70; } prog.migRef70=1; saveProg(); }
 
 const LEVELS=[
   {id:1, tier:'Foundation', name:'Steady Quarters',   cfg:{mode:'quarter',bpm:70, swing:0, feel:0, bars:8}},
