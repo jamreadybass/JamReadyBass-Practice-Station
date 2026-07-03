@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 73</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 74</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -290,6 +290,12 @@
         </div>
       </div>
       <div class="coach" id="coach">Pick a level, hit Play, and read the rhythm to the click.</div>
+      <div id="timingReadout" style="display:none;margin-top:10px;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
+        <div style="font-family:var(--mono);font-size:13px"><span style="color:var(--muted)">Timing spread</span> <b id="trSpread" style="color:var(--amber)">–</b> <span style="color:var(--muted)">· avg</span> <b id="trAvg" style="color:var(--ink)">–</b></div>
+        <div style="font-size:11px;color:var(--muted);margin:8px 0 4px">Average placement per beat (spot a drift):</div>
+        <div id="trBeats" style="display:flex;gap:6px"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">If these climb across the bar and reset on beat 1, you’re drifting late then re-anchoring — real, and worth practicing. If they’re scattered, that’s normal variance.</div>
+      </div>
       <div id="timingRow" style="margin-top:12px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:9px">Notes reading early or late overall? Play a run, then tap <b>Center from last run</b> — it learns your offset from how you actually played. Muted and click keep <b>separate</b> offsets — center each once. Never moves the highway visual.</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -450,7 +456,7 @@ let clickTimes=[];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0, calibOffsetVis=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false, roomCheckedThisSession=false;
-let deltas=[], hits=0, missed=0, extra=0;
+let deltas=[], hits=0, missed=0, extra=0, hitLog=[];
 // transport
 let beatDur=60/90, barDur=4*beatDur;
 let schedId=null, nextBeatTime=0, beatIndex=0, countInBeats=4, maxBars=8;
@@ -473,7 +479,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 73 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 74 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -914,7 +920,7 @@ function startTransport(forCalib){
     if(node) node.port.postMessage({threshFactor:params.threshFactor, refractory:params.refractory});
   }
   expected=[]; beatIndex=0; repCount=0;
-  if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; }
+  if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; hitLog=[]; }
   nextBeatTime=ac.currentTime+0.25;
   firstBarTime=nextBeatTime+countInBeats*beatDur;
   hwBarMap.clear(); hwFlashes=[]; hwHits.clear(); hwLastBeat=null; beatPulses=[]; clickTimes=[];
@@ -1016,7 +1022,7 @@ function registerBar(barStart){
     if(i>0) gapBeats=Math.min(gapBeats, pos[i]-pos[i-1]);
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
     const win=Math.min(0.18, Math.max(0.05, gapBeats*beatDur*0.5));
-    expected.push({time:t,hit:false,idx:i,win,pitch:null});
+    expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
     if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
       o.frequency.value=2200;o.type='sine';
@@ -1050,7 +1056,7 @@ function handleOnset(t){
   if(best && bd<(best.win||0.12)){
     best.hit=true;
     const delta=(tc-best.time)*1000;   // latency already removed via tc; this is vs the feel target
-    deltas.push(delta); hits++;
+    deltas.push(delta); hits++; hitLog.push({d:delta, b:(best.beat!=null?best.beat:0)});
     const r=rating(Math.abs(delta));
     setNoteColor(best.idx, r.c);
     hwHits.set(Math.round(best.time*1000), r.c);
@@ -1085,7 +1091,20 @@ function rhythmScore(){
   const pen=Math.min(0.30, (extra/Math.max(1,need))*0.15);  // extras sting, but never wreck a clean run
   return Math.round(Math.max(0, Math.min(1, cov*(1-pen)))*100);
 }
-function renderScore(){
+function updateTimingReadout(){
+  const box=$('timingReadout'); if(!box) return;
+  if(hitLog.length<4){ box.style.display='none'; return; }
+  const ds=hitLog.map(x=>x.d), avg=mean(ds), sd=std(ds);
+  $('trSpread').textContent='\u00b1'+Math.round(sd)+'ms';
+  $('trAvg').textContent=(avg>0?'+':'')+Math.round(avg)+'ms';
+  const byBeat=[[],[],[],[]]; hitLog.forEach(x=>{ const bp=((Math.floor(x.b)%4)+4)%4; byBeat[bp].push(x.d); });
+  const cells=byBeat.map((a,i)=>{ if(!a.length) return '<div style="flex:1;text-align:center;font-family:var(--mono);font-size:12px;color:#3a3e48">'+(i+1)+'</div>';
+    const m=Math.round(mean(a)); const col=Math.abs(m)<=12?'var(--green)':Math.abs(m)<=30?'var(--amber)':'var(--ember)';
+    return '<div style="flex:1;text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:'+col+'">'+(m>0?'+':'')+m+'</div><div style="font-size:10px;color:var(--muted)">beat '+(i+1)+'</div></div>'; });
+  $('trBeats').innerHTML=cells.join('');
+  box.style.display='block';
+}
+function renderScore(){ updateTimingReadout();
   const rhy = rhythmScore();
   if(deltas.length>=3){
     const bias=mean(deltas), s=std(deltas);
@@ -1170,7 +1189,7 @@ $('playBtn').onclick=()=>{
 $('calibNowBtn').onclick=()=>{ $('calibPrompt').style.display='none'; calibSamples=[];calibOffset=0; startTransport(true); };
 $('playAnywayBtn').onclick=()=>{ calibPromptDismissed=true; $('calibPrompt').style.display='none'; startTransport(false); };
 $('stopBtn').onclick=()=>{stopTransport(false);};
-$('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;
+$('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;hitLog=[];
   ['cen','evn'].forEach(k=>{$(k+'Num').textContent='—';$(k+'Num').style.color='';$(k+'Grade').textContent='play to score';$(k+'Grade').style.color='';$(k+'Bar').style.width='0';});
   $('rhyNum').textContent='—';$('rhyNum').style.color='';$('rhyGrade').textContent='right notes';$('rhyGrade').style.color='';$('rhyBar').style.width='0';
   $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';clearNoteColors();striphits=[];};
