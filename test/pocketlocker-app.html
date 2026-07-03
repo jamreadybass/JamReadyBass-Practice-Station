@@ -142,14 +142,9 @@
 <div id="rhythmSheet" style="position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;background:rgba(8,9,12,.72);backdrop-filter:blur(4px)">
   <div style="max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;padding:18px 18px 26px;max-height:88vh;overflow:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700">Practice setup</div>
+      <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700">Rhythm setup</div>
       <button id="rhythmSheetClose" class="primary" style="padding:9px 18px">Done</button>
     </div>
-      <div class="seg" id="modeSeg" style="margin-bottom:16px">
-        <button data-m="climb">Challenge</button>
-        <button data-m="free" class="active">Freeplay</button>
-        <button data-m="random">🎲 Random</button>
-      </div>
       <div id="freeHint" class="climb-summary" style="display:none">Freeplay — build a rhythm below and hit Play. Nothing is scored against the challenge.</div>
       <div id="freeControls" style="display:none;margin-top:14px">
         <div class="panel" style="margin-bottom:0">
@@ -213,7 +208,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 75</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 80</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -240,7 +235,12 @@
   </section>
 
   <section id="screenPlay" class="screen">
-    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" class="primary" style="flex:1">⚙ Practice setup</button></div>
+    <div class="seg" id="modeSeg" style="margin-bottom:12px">
+      <button data-m="climb">Challenge</button>
+      <button data-m="free" class="active">Freeplay</button>
+      <button data-m="random">🎲 Random</button>
+    </div>
+    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" class="primary" style="flex:1">⚙ Rhythm setup</button></div>
     <div class="panel" id="startPanel">
       <h2>Start audio</h2>
       <button class="primary big" id="startBtn" style="width:100%">Enable mic &amp; click</button>
@@ -344,8 +344,10 @@
             <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tune these while watching the count until each note flashes once:</div>
             <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.50</b> — raise to stop ringing over-triggers</label>
             <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.5" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
-            <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">195</b> Hz — lower for more low-string response, raise if low notes over-trigger</label>
-            <input type="range" id="lowCut" min="60" max="240" step="5" value="195" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">150</b> Hz — lower for more low-string response, raise if low notes over-trigger</label>
+            <input type="range" id="lowCut" min="60" max="240" step="5" value="150" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Ring rejection <b id="ringVal" style="color:var(--amber)">0.06</b> — raise to stop ringing re-triggers (lets you lower Low-cut to hear soft notes)</label>
+            <input type="range" id="ringRej" min="0.04" max="0.22" step="0.01" value="0.06" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
             <label style="font-size:11px;color:var(--muted)">Min gap <b id="gapVal2" style="color:var(--amber)">70</b> ms — minimum time between notes</label>
             <input type="range" id="minGap2" min="40" max="250" step="5" value="70" style="width:100%;accent-color:var(--amber);margin:2px 0 6px">
             <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Tip: for ringing low notes, nudge Trigger threshold up and Low-cut up. If fast notes get missed, ease them back down.</div>
@@ -428,12 +430,12 @@ const $=id=>document.getElementById(id);
 const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
   constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
-    this.threshFactor=4.0;this.refractory=0.07;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;this.eF=0;this.eS=0;this.riseK=1.5;this.rearmK=1.3;
-    this.port.onmessage=(e)=>{const d=e.data;if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;if(d.refractory!==undefined)this.refractory=d.refractory;if(d.floor!==undefined)this.floor=d.floor;if(d.riseK!==undefined)this.riseK=d.riseK;};}
+    this.threshFactor=4.0;this.refractory=0.07;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;this.eF=0;this.eS=0;this.riseK=1.5;this.rearmK=1.3;this.eSpeed=0.06;
+    this.port.onmessage=(e)=>{const d=e.data;if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;if(d.refractory!==undefined)this.refractory=d.refractory;if(d.floor!==undefined)this.floor=d.floor;if(d.riseK!==undefined)this.riseK=d.riseK;if(d.eSpeed!==undefined)this.eSpeed=d.eSpeed;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
     this.eF=this.eF+0.25*(e-this.eF);
-    this.eS=this.eS+0.06*(this.eF-this.eS);
+    this.eS=this.eS+this.eSpeed*(this.eF-this.eS);
     const thresh=Math.max(this.floor,this.baseline*this.threshFactor),now=currentTime;
     if(this.eF<thresh) this.baseline=0.99*this.baseline+0.01*this.eF;
     const rise=this.eF/(this.eS+1e-9);
@@ -448,7 +450,7 @@ registerProcessor('onset-processor',OnsetProcessor);`;
 // ---- State ----
 let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
 let running=false;
-let params={threshFactor:5.2,refractory:0.07,floor:1.3e-5,riseK:1.5};
+let params={threshFactor:5.2,refractory:0.07,floor:1.3e-5,riseK:1.5,eSpeed:0.06};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], hpFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
@@ -479,7 +481,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 75 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 80 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -496,7 +498,7 @@ function buildNotchChain(input){
   // narrow notches at the click's tones (and odd harmonics) — kills the metronome
   // in the mic without touching the instrument, whose energy sits elsewhere.
   let prev=input; notchFilters=[]; hpFilters=[];
-  for(let hi=0;hi<2;hi++){ const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=195; hp.Q.value=0.707; prev.connect(hp); prev=hp; hpFilters.push(hp); }
+  for(let hi=0;hi<2;hi++){ const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=150; hp.Q.value=0.707; prev.connect(hp); prev=hp; hpFilters.push(hp); }
   for(const fhz of CLICK_FREQS){
     const bq=ac.createBiquadFilter(); bq.type='notch'; bq.Q.value=5;
     bq.frequency.value = filterClick ? fhz : 19000;   // parked harmlessly high when off
@@ -533,6 +535,8 @@ async function switchInput(deviceId){
     detTap=buildNotchChain(src);
     if(node) detTap.connect(node); else if(spNode) detTap.connect(spNode);
     currentInputId=deviceId; prog.inputId=deviceId; saveProg();
+    try{ const _sel=$('inputPicker'); const _lbl=_sel&&_sel.selectedOptions[0]?_sel.selectedOptions[0].textContent:'';
+      if(_lbl && !/microphone|built.?in|internal|macbook|imac|default/i.test(_lbl)){ if(filterClick){ setFilterClick(false); if($('filterClickChk')) $('filterClickChk').checked=false; } } }catch(e){}
     const rs=$('roomStatus'); if(rs){ rs.style.display='block'; rs.textContent='Switched input — measuring room…'; }
     setTimeout(()=>measureRoom(true), 300);
   }catch(err){ showErr("Couldn't switch to that input: "+err.message); refreshInputs(); }
@@ -571,7 +575,7 @@ function setupFallback(){
   spNode.onaudioprocess=(e)=>{const ch=e.inputBuffer.getChannelData(0),sr=ac.sampleRate,bufStart=ac.currentTime-ch.length/sr,B=128;
     for(let off=0;off+B<=ch.length;off+=B){let en=0;
       for(let i=0;i<B;i++){const x=ch[off+i];const y=x-0.85*fb.prev;fb.prev=x;en+=y*y;}en/=B;
-      fb.eF=fb.eF+0.25*(en-fb.eF); fb.eS=fb.eS+0.06*(fb.eF-fb.eS);
+      fb.eF=fb.eF+0.25*(en-fb.eF); fb.eS=fb.eS+(params.eSpeed||0.06)*(fb.eF-fb.eS);
       const thresh=Math.max(params.floor||1.3e-5,fb.baseline*params.threshFactor);
       if(fb.eF<thresh) fb.baseline=0.99*fb.baseline+0.01*fb.eF;
       const rise=fb.eF/(fb.eS+1e-9), tNow=bufStart+(off+B)/sr;
@@ -864,7 +868,7 @@ function drawHighway(){
   }
   // ---- flashes + popup ----
   hwFlashes=hwFlashes.filter(fl=>nowMs-fl.t<1000);
-  const MAG=3.4;   // magnify small timing errors so the landing line is readable
+  const MAG=2.0;   // magnify timing errors modestly so the line reads calmer, closer to reality
   for(const fl of hwFlashes){ const age=nowMs-fl.t; const a=Math.max(0,1-age/1000);
     let xm=pocketX-((fl.delta||0)/1000)*SPEED*MAG;
     xm=Math.max(pocketX-W*0.22, Math.min(pocketX+W*0.22, xm));
@@ -1163,15 +1167,17 @@ $('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.targe
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if($('riseThresh')) params.riseK=+$('riseThresh').value;
-  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK});
-  prog.det={riseK:params.riseK,lowcut:(hpFilters[0]?Math.round(hpFilters[0].frequency.value):100),ref:+$('ref').value,sens:s}; saveProg();}
+  if($('ringRej')) params.eSpeed=+$('ringRej').value;
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK,eSpeed:params.eSpeed});
+  prog.det={riseK:params.riseK,lowcut:(hpFilters[0]?Math.round(hpFilters[0].frequency.value):100),ref:+$('ref').value,sens:s,eSpeed:params.eSpeed}; saveProg();}
 function setLowCut(hz){ hpFilters.forEach(f=>{ try{f.frequency.setTargetAtTime(hz,ac.currentTime,0.02);}catch(e){f.frequency.value=hz;} }); const lv=$('lowVal'); if(lv) lv.textContent=hz; }
 function applyDetSaved(){ if(!prog.det) return; const d=prog.det;
   if(d.riseK && $('riseThresh')){ $('riseThresh').value=d.riseK; const r=$('riseVal'); if(r) r.textContent=(+d.riseK).toFixed(2); params.riseK=+d.riseK; }
+  if(d.eSpeed && $('ringRej')){ $('ringRej').value=d.eSpeed; const rr=$('ringVal'); if(rr) rr.textContent=(+d.eSpeed).toFixed(2); params.eSpeed=+d.eSpeed; }
   if(d.ref && $('ref')){ $('ref').value=d.ref; const rv=$('refVal'); if(rv) rv.textContent=d.ref; params.refractory=d.ref/1000; }
   if(d.sens && $('sens')){ $('sens').value=d.sens; const sv=$('sensVal'); if(sv) sv.textContent=d.sens; }
   if(d.lowcut && $('lowCut')){ $('lowCut').value=d.lowcut; } 
-  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK});
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK,eSpeed:params.eSpeed});
   if(d.lowcut) setLowCut(d.lowcut); }
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
 function curOffset(){ return visualBeat ? calibOffsetVis : calibOffset; }
@@ -1180,7 +1186,7 @@ function addOffset(ms){ if(visualBeat) calibOffsetVis+=ms; else calibOffset+=ms;
 $('offMinus') && ($('offMinus').onclick=()=>{ addOffset(-5); });
 $('offPlus')  && ($('offPlus').onclick =()=>{ addOffset(5); });
 $('centerBtn')&& ($('centerBtn').onclick=()=>{ const c=$('coach');
-  if(deltas.length){ addOffset(mean(deltas)); if(c) c.textContent='Centered your '+(visualBeat?'muted':'click')+' timing on that run — next run reads from here ('+(curOffset()>0?'+':'')+Math.round(curOffset())+'ms). The other mode keeps its own offset.'; }
+  if(deltas.length){ addOffset(median(deltas)); if(c) c.textContent='Centered your '+(visualBeat?'muted':'click')+' timing on that run — next run reads from here ('+(curOffset()>0?'+':'')+Math.round(curOffset())+'ms). The other mode keeps its own offset.'; }
   else if(c){ c.textContent='Play a run first, then tap Center from last run.'; } });
 $('playBtn').onclick=()=>{
   if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; try{$('calibPrompt').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return; }
@@ -1207,10 +1213,10 @@ const LEVELS=[
   {id:2, tier:'Foundation', name:'Quarters Up-Tempo', cfg:{mode:'quarter',bpm:96, swing:0, feel:0, bars:8}},
   {id:3, tier:'Foundation', name:'Into Eighths',      cfg:{mode:'eighth', bpm:76, swing:0, feel:0, bars:8}},
   {id:4, tier:'Eighths',    name:'Eighths Up-Tempo',  cfg:{mode:'eighth', bpm:100,swing:0, feel:0, bars:8}},
-  {id:5, tier:'Eighths',    name:'Mixed Rhythms',     cfg:{mode:'random', diff:1, auto:true, bpm:84, swing:0, feel:0, bars:8}},
-  {id:6, tier:'Eighths',    name:'Mixed Up-Tempo',    cfg:{mode:'random', diff:1, auto:true, bpm:104,swing:0, feel:0, bars:8}},
+  {id:5, tier:'Eighths',    name:'Random Rhythms',     cfg:{mode:'random', diff:1, auto:true, bpm:84, swing:0, feel:0, bars:8}},
+  {id:6, tier:'Eighths',    name:'Random · Up-Tempo',    cfg:{mode:'random', diff:1, auto:true, bpm:104,swing:0, feel:0, bars:8}},
   {id:7, tier:'Sixteenths', name:'Sixteenth Runs',    cfg:{mode:'sixteenth',bpm:68,swing:0, feel:0, bars:8}},
-  {id:8, tier:'Sixteenths', name:'Mixed Sixteenths',  cfg:{mode:'random', diff:2, auto:true, bpm:84, swing:0, feel:0, bars:8}},
+  {id:8, tier:'Sixteenths', name:'Random Sixteenths',  cfg:{mode:'random', diff:2, auto:true, bpm:84, swing:0, feel:0, bars:8}},
   {id:9, tier:'Syncopation',name:'First Syncopation', cfg:{mode:'random', diff:3, auto:true, bpm:80, swing:0, feel:0, bars:8}},
   {id:10,tier:'Syncopation',name:'Syncopated Swing',  cfg:{mode:'random', diff:3, auto:true, bpm:92, swing:55,feel:0, bars:8}},
   {id:11,tier:'Syncopation',name:'Fast Syncopation',  cfg:{mode:'random', diff:3, auto:true, bpm:110,swing:0, feel:0, bars:8}},
@@ -1392,7 +1398,7 @@ function applyMode(m){
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
-$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; if(b.dataset.m==='climb'){ loadLevel(selectedLevel||currentLevelId()); } else applyMode(b.dataset.m); });
+$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; if(b.dataset.m==='climb'){ loadLevel(selectedLevel||currentLevelId()); } else { applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; } });
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||currentLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
@@ -1435,8 +1441,9 @@ $('detTestBtn') && ($('detTestBtn').onclick=()=>{ detTest?stopDetTest():startDet
 $('detResetBtn') && ($('detResetBtn').onclick=()=>{ detCount=0; detBars=[]; const c=$('detCount'); if(c) c.textContent='0'; const s=$('detStrip'); if(s) s.innerHTML=''; });
 $('riseThresh') && ($('riseThresh').oninput=e=>{ const r=$('riseVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
 $('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); pushParams(); });
+$('ringRej') && ($('ringRej').oninput=e=>{ const r=$('ringVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
 $('minGap2') && ($('minGap2').oninput=e=>{ const g=$('gapVal2'); if(g) g.textContent=e.target.value; if($('ref')){ $('ref').value=e.target.value; const rv=$('refVal'); if(rv) rv.textContent=e.target.value; } pushParams(); });
-$('detDefaults') && ($('detDefaults').onclick=()=>{ if($('riseThresh')){$('riseThresh').value=1.5;$('riseVal').textContent='1.50';} if($('lowCut')){$('lowCut').value=195;if($('lowVal'))$('lowVal').textContent='195';} if($('minGap2')){$('minGap2').value=70;$('gapVal2').textContent='70';} if($('ref')){$('ref').value=70;if($('refVal'))$('refVal').textContent='70';} setLowCut(195); pushParams(); });
+$('detDefaults') && ($('detDefaults').onclick=()=>{ if($('riseThresh')){$('riseThresh').value=1.5;$('riseVal').textContent='1.50';} if($('lowCut')){$('lowCut').value=195;if($('lowVal'))$('lowVal').textContent='195';} if($('minGap2')){$('minGap2').value=70;$('gapVal2').textContent='70';} if($('ref')){$('ref').value=70;if($('refVal'))$('refVal').textContent='70';} if($('ringRej')){$('ringRej').value=0.06;if($('ringVal'))$('ringVal').textContent='0.06';} if($('lowCut')){$('lowCut').value=150;if($('lowVal'))$('lowVal').textContent='150';} setLowCut(150); pushParams(); });
 if(prog.roomFloor){ params.floor=prog.roomFloor; }
 
 renderLadder();
