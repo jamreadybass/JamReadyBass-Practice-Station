@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 86</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 87</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -340,12 +340,14 @@
           <div id="detStrip" style="display:flex;align-items:flex-end;gap:3px;height:40px"></div>
           <div style="font-size:11px;color:var(--muted);margin-top:8px">Flashes while you're <b>not</b> playing = phantom hits. If you get them: lower <b>Sensitivity</b>, re-run <b>Measure my room</b>, or use an audio interface. A few room reflections rarely cause phantoms — watch and see.</div>
           <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
-            <label style="font-size:11px;color:var(--muted)">Instrument preset — one tap sets a sensible Low-cut, then fine-tune below if needed</label>
+            <label style="font-size:11px;color:var(--muted)">Instrument preset — one tap sets sensible detection settings, then fine-tune under Advanced if needed</label>
             <div class="seg" id="instrSeg" style="margin:2px 0 12px">
               <button data-instr="4">4-string</button>
               <button data-instr="5">5-string</button>
             </div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tune these while watching the count until each note flashes once:</div>
+            <details id="advDet" style="margin-top:6px">
+            <summary style="cursor:pointer;font-size:12px;color:var(--amber);font-weight:700;padding:6px 0">Advanced — manual tuning</summary>
+            <div style="font-size:11px;color:var(--muted);margin:8px 0 8px">Tune these while watching the count until each note flashes once:</div>
             <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.70</b> — raise to stop ringing over-triggers</label>
             <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.7" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
             <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">195</b> Hz — lower for more low-string response, raise if low notes over-trigger</label>
@@ -356,6 +358,7 @@
             <input type="range" id="minGap2" min="40" max="250" step="5" value="70" style="width:100%;accent-color:var(--amber);margin:2px 0 6px">
             <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Tip: for ringing low notes, nudge Trigger threshold up and Low-cut up. If fast notes get missed, ease them back down.</div>
             <button id="detDefaults" style="padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;margin-right:8px">Reset detection</button>
+            </details>
           </div>
           <button id="detResetBtn" style="margin-top:10px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer">Reset count</button>
         </div>
@@ -485,7 +488,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 86 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 87 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
