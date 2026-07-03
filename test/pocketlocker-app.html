@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 69</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 70</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -333,6 +333,17 @@
           <div style="height:8px;background:#08090c;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:10px"><div id="detLevel" style="height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--ember));transition:width .05s"></div></div>
           <div id="detStrip" style="display:flex;align-items:flex-end;gap:3px;height:40px"></div>
           <div style="font-size:11px;color:var(--muted);margin-top:8px">Flashes while you're <b>not</b> playing = phantom hits. If you get them: lower <b>Sensitivity</b>, re-run <b>Measure my room</b>, or use an audio interface. A few room reflections rarely cause phantoms — watch and see.</div>
+          <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tune these while watching the count until each note flashes once:</div>
+            <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.50</b> — raise to stop ringing over-triggers</label>
+            <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.5" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">100</b> Hz — raise if low notes over-trigger</label>
+            <input type="range" id="lowCut" min="60" max="220" step="5" value="100" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <label style="font-size:11px;color:var(--muted)">Min gap <b id="gapVal2" style="color:var(--amber)">70</b> ms — minimum time between notes</label>
+            <input type="range" id="minGap2" min="40" max="250" step="5" value="70" style="width:100%;accent-color:var(--amber);margin:2px 0 6px">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Tip: for ringing low notes, nudge Trigger threshold up and Low-cut up. If fast notes get missed, ease them back down.</div>
+            <button id="detDefaults" style="padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;margin-right:8px">Reset detection</button>
+          </div>
           <button id="detResetBtn" style="margin-top:10px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer">Reset count</button>
         </div>
       </div>
@@ -411,7 +422,7 @@ const workletSrc=`
 class OnsetProcessor extends AudioWorkletProcessor {
   constructor(){super();this.prev=0;this.baseline=1e-7;this.lastOnset=-1;this.armed=true;
     this.threshFactor=4.0;this.refractory=0.07;this.prevEnergy=0;this.fc=0;this.lowCnt=0;this.floor=1.3e-5;this.eF=0;this.eS=0;this.riseK=1.5;this.rearmK=1.3;
-    this.port.onmessage=(e)=>{const d=e.data;if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;if(d.refractory!==undefined)this.refractory=d.refractory;if(d.floor!==undefined)this.floor=d.floor;};}
+    this.port.onmessage=(e)=>{const d=e.data;if(d.threshFactor!==undefined)this.threshFactor=d.threshFactor;if(d.refractory!==undefined)this.refractory=d.refractory;if(d.floor!==undefined)this.floor=d.floor;if(d.riseK!==undefined)this.riseK=d.riseK;};}
   process(inputs){const inp=inputs[0];if(!inp||!inp[0])return true;const ch=inp[0],N=ch.length;
     let e=0;for(let i=0;i<N;i++){const x=ch[i];const y=x-0.85*this.prev;this.prev=x;e+=y*y;}e/=N;
     this.eF=this.eF+0.25*(e-this.eF);
@@ -430,7 +441,7 @@ registerProcessor('onset-processor',OnsetProcessor);`;
 // ---- State ----
 let ac=null,micStream=null,src=null,node=null,spNode=null,fb=null;
 let running=false;
-let params={threshFactor:5.2,refractory:0.07,floor:1.3e-5};
+let params={threshFactor:5.2,refractory:0.07,floor:1.3e-5,riseK:1.5};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], hpFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
@@ -461,13 +472,14 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 69 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 70 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
     renderNotation();
     sizeStrip(); requestAnimationFrame(drawStrip);
     if(!roomCheckedThisSession){ roomCheckedThisSession=true; initInputs(); }
+    setTimeout(()=>{ if(typeof applyDetSaved==='function') applyDetSaved(); }, 700);
     if(navigator.mediaDevices) navigator.mediaDevices.ondevicechange=refreshInputs;
   }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
 };
@@ -556,7 +568,7 @@ function setupFallback(){
       const thresh=Math.max(params.floor||1.3e-5,fb.baseline*params.threshFactor);
       if(fb.eF<thresh) fb.baseline=0.99*fb.baseline+0.01*fb.eF;
       const rise=fb.eF/(fb.eS+1e-9), tNow=bufStart+(off+B)/sr;
-      if(fb.armed&&fb.eF>thresh&&rise>1.5&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;if(detTest)detHit(fb.eF);handleOnset(bufStart+off/sr);}
+      if(fb.armed&&fb.eF>thresh&&rise>(params.riseK||1.5)&&(tNow-fb.lastOnset)>params.refractory){fb.lastOnset=tNow;fb.armed=false;if(detTest)detHit(fb.eF);handleOnset(bufStart+off/sr);}
       if(!fb.armed&&rise<1.3)fb.armed=true;
       if((fb.fc++ %4)===0)lastLevel={e:fb.eF,thresh:thresh};}};
   const mute=ac.createGain();mute.gain.value=0;(detTap||src).connect(spNode);spNode.connect(mute).connect(ac.destination);
@@ -1121,7 +1133,17 @@ $('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.chec
 $('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); if(e.target.checked && $('visualBeatChk') && $('visualBeatChk').checked){ $('visualBeatChk').checked=false; visualBeat=false; prog.visualBeat=false; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=false; cvs.style.opacity=1; } if(typeof fmtOff==='function') fmtOff(); } });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
-  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor});}
+  if($('riseThresh')) params.riseK=+$('riseThresh').value;
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK});
+  prog.det={riseK:params.riseK,lowcut:(hpFilters[0]?Math.round(hpFilters[0].frequency.value):100),ref:+$('ref').value,sens:s}; saveProg();}
+function setLowCut(hz){ hpFilters.forEach(f=>{ try{f.frequency.setTargetAtTime(hz,ac.currentTime,0.02);}catch(e){f.frequency.value=hz;} }); const lv=$('lowVal'); if(lv) lv.textContent=hz; }
+function applyDetSaved(){ if(!prog.det) return; const d=prog.det;
+  if(d.riseK && $('riseThresh')){ $('riseThresh').value=d.riseK; const r=$('riseVal'); if(r) r.textContent=(+d.riseK).toFixed(2); params.riseK=+d.riseK; }
+  if(d.ref && $('ref')){ $('ref').value=d.ref; const rv=$('refVal'); if(rv) rv.textContent=d.ref; params.refractory=d.ref/1000; }
+  if(d.sens && $('sens')){ $('sens').value=d.sens; const sv=$('sensVal'); if(sv) sv.textContent=d.sens; }
+  if(d.lowcut && $('lowCut')){ $('lowCut').value=d.lowcut; } 
+  if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK});
+  if(d.lowcut) setLowCut(d.lowcut); }
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
 function curOffset(){ return visualBeat ? calibOffsetVis : calibOffset; }
 function fmtOff(){ const b=$('offVal'); if(!b) return; const o=curOffset(); b.textContent=(visualBeat?'muted':'click')+' offset '+(o>0?'+':'')+Math.round(o)+'ms'; }
@@ -1371,6 +1393,10 @@ $('measureBtn') && ($('measureBtn').onclick=measureRoom);
 $('inputPicker') && ($('inputPicker').onchange=e=>{ if(e.target.value) switchInput(e.target.value); });
 $('detTestBtn') && ($('detTestBtn').onclick=()=>{ detTest?stopDetTest():startDetTest(); });
 $('detResetBtn') && ($('detResetBtn').onclick=()=>{ detCount=0; detBars=[]; const c=$('detCount'); if(c) c.textContent='0'; const s=$('detStrip'); if(s) s.innerHTML=''; });
+$('riseThresh') && ($('riseThresh').oninput=e=>{ const r=$('riseVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
+$('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); pushParams(); });
+$('minGap2') && ($('minGap2').oninput=e=>{ const g=$('gapVal2'); if(g) g.textContent=e.target.value; if($('ref')){ $('ref').value=e.target.value; const rv=$('refVal'); if(rv) rv.textContent=e.target.value; } pushParams(); });
+$('detDefaults') && ($('detDefaults').onclick=()=>{ if($('riseThresh')){$('riseThresh').value=1.5;$('riseVal').textContent='1.50';} if($('lowCut')){$('lowCut').value=100;} if($('minGap2')){$('minGap2').value=70;$('gapVal2').textContent='70';} if($('ref')){$('ref').value=70;if($('refVal'))$('refVal').textContent='70';} setLowCut(100); pushParams(); });
 if(prog.roomFloor){ params.floor=prog.roomFloor; }
 
 renderLadder();
