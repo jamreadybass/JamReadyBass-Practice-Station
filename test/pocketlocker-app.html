@@ -195,7 +195,6 @@
             <div class="seg" id="diffModeSeg">
               <button data-dm="easy">Easy</button>
               <button data-dm="medium" class="active">Medium</button>
-              <button data-dm="hard">Hard</button>
               <button data-dm="pro">Pro</button>
             </div>
           </div>
@@ -208,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 83</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 84</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -341,6 +340,11 @@
           <div id="detStrip" style="display:flex;align-items:flex-end;gap:3px;height:40px"></div>
           <div style="font-size:11px;color:var(--muted);margin-top:8px">Flashes while you're <b>not</b> playing = phantom hits. If you get them: lower <b>Sensitivity</b>, re-run <b>Measure my room</b>, or use an audio interface. A few room reflections rarely cause phantoms — watch and see.</div>
           <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+            <label style="font-size:11px;color:var(--muted)">Instrument preset — one tap sets a sensible Low-cut, then fine-tune below if needed</label>
+            <div class="seg" id="instrSeg" style="margin:2px 0 12px">
+              <button data-lc="100">4-string</button>
+              <button data-lc="195">5-string</button>
+            </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tune these while watching the count until each note flashes once:</div>
             <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.50</b> — raise to stop ringing over-triggers</label>
             <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.5" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
@@ -481,7 +485,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 83 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 84 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1081,8 +1085,13 @@ function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.
 function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
 function rating(absd){const k=curDiff().rate;if(absd<=15*k)return{w:'Perfect',c:'#46d39a'};if(absd<=35*k)return{w:'Great',c:'#7ad39a'};if(absd<=60*k)return{w:'Good',c:'#ffb020'};if(absd<=100*k)return{w:'Loose',c:'#ff8a3d'};return{w:'Miss',c:'#ff5a52'};}
 let diffMode='medium';
-const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, hard:{cen:2.1,evn:1.35,rate:0.7}, pro:{cen:2.9,evn:1.8,rate:0.5} };
+const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, pro:{cen:2.9,evn:1.8,rate:0.5} };
 function curDiff(){ return DIFFS[diffMode]||DIFFS.medium; }
+// stars needed to advance scales with difficulty: Easy 1, Medium 2, Pro 3
+const ADVANCE={easy:1,medium:2,pro:3};
+function needStars(d){ return ADVANCE[d||diffMode]||3; }
+function diffStars(rec,d){ return (rec&&rec.byDiff&&rec.byDiff[d||diffMode])||0; }
+function clearedOn(rec,d){ d=d||diffMode; return diffStars(rec,d) >= needStars(d); }
 function centerScore(bias){return Math.max(0,Math.min(100,100-Math.abs(bias)*curDiff().cen));}
 function evennessScore(s){return Math.max(0,Math.min(100,100-s*curDiff().evn));}
 function centerGrade(sc,bias){const dir=Math.abs(bias)<6?'':bias>0?' · behind':' · ahead';
@@ -1153,7 +1162,7 @@ $('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(
 $('lenSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   const n=+b.dataset.n; maxBars=(n===0)?Infinity:n;
   [...$('lenSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
-$('diffModeSeg') && $('diffModeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; diffMode=b.dataset.dm; [...$('diffModeSeg').children].forEach(x=>x.classList.toggle('active',x===b)); prog.diffMode=diffMode; saveProg(); renderScore();});
+$('diffModeSeg') && $('diffModeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; diffMode=b.dataset.dm; [...$('diffModeSeg').children].forEach(x=>x.classList.toggle('active',x===b)); prog.diffMode=diffMode; saveProg(); renderScore(); if(typeof renderLadder==='function')renderLadder(); if(typeof renderClimbNow==='function')renderClimbNow();});
 $('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;updateSetupBtn();};
 $('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
@@ -1206,7 +1215,7 @@ function flashCountIn(n){$('countin').textContent='count-in… '+n;}
 const PKEY='pocketlocker.progress.v1';
 function defaultProg(){ return {levels:{}, unlocked:1, calib:null, sessions:0}; }
 let prog=(function(){ try{const p=JSON.parse(localStorage.getItem(PKEY)); return (p&&p.levels)?p:defaultProg();}catch(e){return defaultProg();} })();
-if(prog.diffMode){ diffMode=prog.diffMode; }
+if(prog.diffMode){ if(prog.diffMode==='hard'){ prog.diffMode='medium'; } if(DIFFS[prog.diffMode]) diffMode=prog.diffMode; }
 function saveProg(){ try{localStorage.setItem(PKEY,JSON.stringify(prog));}catch(e){} }
 // build 82 one-time migration: old default Min gap was mistakenly 90ms; correct a saved 90 -> 70 exactly once.
 if(!prog.migRef70){ if(prog.det && +prog.det.ref===90){ prog.det.ref=70; } prog.migRef70=1; saveProg(); }
@@ -1252,7 +1261,7 @@ function applyConfig(cfg){
 function loadLevel(id){
   const L=LEVELS.find(x=>x.id===id); if(!L||id>prog.unlocked) return;
   applyConfig(L.cfg);
-  pendingLevel=id;
+  pendingLevel=id; prog.lastLevel=id; saveProg();
   applyMode('climb');
   renderClimbNow();
   const b=$('levelBanner');
@@ -1298,23 +1307,26 @@ function evaluateLevel(id){
   const f=finalScores();
   if(!f){ const el=$('levelResult'); el.style.display='block'; el.style.color='var(--muted)';
     el.textContent='Not enough notes landed to score that run \u2014 give it another go.'; pendingLevel=null; return; }
-  const stars=starsFor(f), cleared=stars>=3;   // all three stars required to unlock the next level
+  const need=needStars(diffMode), stars=starsFor(f), cleared=stars>=need;   // stars to advance scale with difficulty: easy 1, medium 2, pro 3
   const rec=prog.levels[id]||{stars:0,best:null,cleared:false};
   rec.best=bestOf(rec.best,f); rec.stars=Math.max(rec.stars,stars); rec.cleared=rec.cleared||cleared;
   rec.byDiff=rec.byDiff||{}; rec.byDiff[diffMode]=Math.max(rec.byDiff[diffMode]||0,stars);
-  const DRANK={easy:1,medium:2,hard:3,pro:4};
+  const DRANK={easy:1,medium:2,pro:3};
   if(cleared && (!rec.clearedDiff || DRANK[diffMode]>DRANK[rec.clearedDiff])) rec.clearedDiff=diffMode;
   prog.levels[id]=rec; prog.sessions=(prog.sessions||0)+1;
   if(cleared && id<LEVELS.length && prog.unlocked<id+1){ prog.unlocked=id+1; }
   saveProg();
   const hasNext = cleared && id<LEVELS.length;
   const nextName = hasNext ? LEVELS.find(x=>x.id===id+1).name : '';
+  const DNAME={easy:'Easy',medium:'Medium',pro:'Pro'};
+  const nextDiff={easy:'Medium',medium:'Pro'}[diffMode];
   showScorePop(f, stars, {
-    title: cleared ? ('Perfect run! Level '+id+' cleared') : (stars+' of 3 stars \u2014 not yet'),
-    msg: hasNext ? ('Cleared on '+({easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'}[diffMode])+'. Next up — Level '+(id+1)+': '+nextName + (diffMode!=='pro'?'   ·   replay on '+({easy:'Medium',medium:'Hard',hard:'Pro'}[diffMode])+' for a tougher star':''))
-         : (cleared && id===LEVELS.length) ? ('You topped the challenge on '+({easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'}[diffMode])+'. Real pocket.')
-         : 'You need all 3 stars \u2014 Center, Evenness and Rhythm \u2014 to unlock the next level.',
-    nextLabel: hasNext ? 'Next level →' : (cleared ? 'Done' : 'Try again'),
+    title: cleared ? ('Level '+id+' cleared on '+DNAME[diffMode]+'!') : (stars+' of '+need+' star'+(need>1?'s':'')+' needed \u2014 not yet'),
+    msg: cleared
+        ? (hasNext ? ('Next up \u2014 Level '+(id+1)+': '+nextName + (nextDiff?('   \u00b7   or replay on '+nextDiff+' for a tougher clear'):''))
+                   : (id===LEVELS.length ? ('You topped the challenge on '+DNAME[diffMode]+'. Real pocket.') : ''))
+        : ('You need '+need+' star'+(need>1?'s':'')+' \u2014 Center, Evenness, Rhythm \u2014 on '+DNAME[diffMode]+' to unlock the next level. Try again, or drop to an easier difficulty.'),
+    nextLabel: hasNext ? 'Next level \u2192' : (cleared ? 'Done' : 'Try again'),
     onNext: function(){ if(hasNext){ loadLevel(id+1); if(window.showScreen) showScreen('play'); } }
   });
   const el=$('levelResult'); if(el) el.style.display='none';
@@ -1328,11 +1340,11 @@ function renderLadder(){
   let tier='';
   LEVELS.forEach(L=>{
     if(L.tier!==tier){ tier=L.tier; const h=document.createElement('div'); h.className='tier'; h.textContent=tier; wrap.appendChild(h); }
-    const rec=prog.levels[L.id]||{}, locked=L.id>prog.unlocked, stars=rec.stars||0;
+    const rec=prog.levels[L.id]||{}, locked=L.id>prog.unlocked, stars=diffStars(rec,diffMode);
     const btn=document.createElement('button');
-    btn.className='lvl'+(locked?' locked':'')+(rec.cleared?' cleared':'');
+    btn.className='lvl'+(locked?' locked':'')+(clearedOn(rec,diffMode)?' cleared':'');
     const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
-    const DL={easy:'EASY',medium:'MED',hard:'HARD',pro:'PRO'};
+    const DL={easy:'EASY',medium:'MED',pro:'PRO'};
     const dtag = (!locked && rec.clearedDiff) ? ' <span style="color:var(--amber);font-size:9px;letter-spacing:.1em;font-weight:800">'+DL[rec.clearedDiff]+'</span>' : '';
     btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+dtag+'</span><span class="lstars">'+starCell+'</span>';
     if(!locked) btn.onclick=()=>{ selectedLevel=L.id; const fl=$('climbFull'); if(fl){fl.style.display='none'; $('progressToggle').textContent='View progress \u25BE';} loadLevel(L.id); };
@@ -1369,15 +1381,22 @@ function currentLevelId(){
   for(const L of LEVELS){ const r=prog.levels[L.id]||{}; if(L.id<=prog.unlocked && !r.cleared) return L.id; }
   return Math.min(prog.unlocked, LEVELS.length);
 }
+function resumeLevelId(){
+  if(prog.lastLevel && prog.lastLevel<=prog.unlocked && LEVELS.find(x=>x.id===prog.lastLevel)) return prog.lastLevel;
+  return currentLevelId();
+}
 function renderClimbNow(){
   if(!$('climbNow')) return;
-  const id=selectedLevel||currentLevelId(), L=LEVELS.find(x=>x.id===id)||LEVELS[0], r=prog.levels[id]||{}, st=r.stars||0;
+  const id=selectedLevel||resumeLevelId(), L=LEVELS.find(x=>x.id===id)||LEVELS[0], r=prog.levels[id]||{};
+  const st=diffStars(r,diffMode), need=needStars(diffMode);
   const stars='★'.repeat(st)+'☆'.repeat(3-st);
-  const cleared=LEVELS.filter(x=>(prog.levels[x.id]||{}).cleared).length;
-  const done=cleared>=LEVELS.length;
+  const DNAME={easy:'Easy',medium:'Medium',pro:'Pro'};
+  const clearedCount=LEVELS.filter(x=>(prog.levels[x.id]||{}).cleared).length;
+  const done=clearedCount>=LEVELS.length;
   const tag=done?'Challenge complete — replay anytime':'Up next';
-  $('climbNow').innerHTML='<div class="cn-tag">'+tag+'</div><div class="cn-main"><span class="cn-lvl">Lv '+id+'</span><span class="cn-name">'+L.name+'</span></div><div class="cn-meta"><span class="cn-stars">'+stars+'</span> &middot; '+cleared+'/'+LEVELS.length+' levels cleared</div>';
-  $('continueBtn').textContent=(cleared>0||st>0||prog.unlocked>1)?'▶ Continue challenge':'▶ Start the challenge';
+  const clr = clearedOn(r,diffMode) ? '<span style="color:#46d39a">cleared</span>' : ('need '+need+' to advance');
+  $('climbNow').innerHTML='<div class="cn-tag">'+tag+'</div><div class="cn-main"><span class="cn-lvl">Lv '+id+'</span><span class="cn-name">'+L.name+'</span></div><div class="cn-meta"><span class="cn-stars">'+stars+'</span> &middot; '+DNAME[diffMode]+' \u00b7 '+clr+' &middot; '+clearedCount+'/'+LEVELS.length+' cleared</div>';
+  $('continueBtn').textContent=(clearedCount>0||st>0||prog.unlocked>1)?'▶ Continue challenge':'▶ Start the challenge';
 }
 let climbMode=true, selectedLevel=null, proView=false;
 function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
@@ -1401,8 +1420,8 @@ function applyMode(m){
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
-$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; if(b.dataset.m==='climb'){ loadLevel(selectedLevel||currentLevelId()); } else { applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; } });
-$('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||currentLevelId()));
+$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; if(b.dataset.m==='climb'){ loadLevel(selectedLevel||resumeLevelId()); } else { applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; } });
+$('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
 document.addEventListener('keydown',function(e){
@@ -1443,7 +1462,8 @@ $('inputPicker') && ($('inputPicker').onchange=e=>{ if(e.target.value) switchInp
 $('detTestBtn') && ($('detTestBtn').onclick=()=>{ detTest?stopDetTest():startDetTest(); });
 $('detResetBtn') && ($('detResetBtn').onclick=()=>{ detCount=0; detBars=[]; const c=$('detCount'); if(c) c.textContent='0'; const s=$('detStrip'); if(s) s.innerHTML=''; });
 $('riseThresh') && ($('riseThresh').oninput=e=>{ const r=$('riseVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
-$('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); pushParams(); });
+$('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); if($('instrSeg')) [...$('instrSeg').children].forEach(x=>x.classList.remove('active')); pushParams(); });
+$('instrSeg') && $('instrSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hz=+b.dataset.lc; [...$('instrSeg').children].forEach(x=>x.classList.toggle('active',x===b)); if($('lowCut')){ $('lowCut').value=hz; } setLowCut(hz); pushParams(); });
 $('ringRej') && ($('ringRej').oninput=e=>{ const r=$('ringVal'); if(r) r.textContent=(+e.target.value).toFixed(2); pushParams(); });
 $('minGap2') && ($('minGap2').oninput=e=>{ const g=$('gapVal2'); if(g) g.textContent=e.target.value; if($('ref')){ $('ref').value=e.target.value; const rv=$('refVal'); if(rv) rv.textContent=e.target.value; } pushParams(); });
 $('detDefaults') && ($('detDefaults').onclick=()=>{ if($('riseThresh')){$('riseThresh').value=1.5;$('riseVal').textContent='1.50';} if($('minGap2')){$('minGap2').value=70;$('gapVal2').textContent='70';} if($('ref')){$('ref').value=70;if($('refVal'))$('refVal').textContent='70';} if($('ringRej')){$('ringRej').value=0.06;if($('ringVal'))$('ringVal').textContent='0.06';} if($('lowCut')){$('lowCut').value=150;if($('lowVal'))$('lowVal').textContent='150';} setLowCut(150); pushParams(); });
