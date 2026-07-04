@@ -13,6 +13,10 @@
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --appw:520px;
   }
+  html[data-theme="light"]{
+    --bg:#f2ede3; --panel:#fbf8f1; --panel2:#efe9dd; --line:#dcd4c4;
+    --ink:#2a251c; --muted:#726c5d; --amber-dim:#f2e4c2;
+  }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
   body{max-width:var(--appw);margin:0 auto;min-height:100vh;padding:0 0 calc(92px + env(safe-area-inset-bottom,0px));
@@ -120,6 +124,7 @@
     .countin{margin-top:4px;min-height:0}
   }
 </style>
+<script>try{var _p=JSON.parse(localStorage.getItem('pocketlocker.progress.v1'));if(_p&&_p.theme==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
 </head>
 <body>
 <div id="roomOverlay" style="position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(8,9,12,.94);backdrop-filter:blur(5px);text-align:center">
@@ -226,7 +231,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 102</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 103</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -334,6 +339,7 @@
       <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
       <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
       <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
+      <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--amber)"> Light mode — switch the app to a light theme (default is dark)</label>
       <div style="margin-top:14px">
         <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Input device</label>
         <select id="inputPicker" style="width:100%;margin-top:6px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:14px">
@@ -524,7 +530,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 102 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 103 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1490,6 +1496,7 @@ if(prog.calibVis!=null){ calibOffsetVis=prog.calibVis; }
 if(typeof fmtOff==='function') fmtOff();
 if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').value=hwNudgeMs;$('hwnudgeVal').textContent=hwNudgeMs;} }
 if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
+if(prog.theme==='light'){ document.documentElement.setAttribute('data-theme','light'); if($('lightModeChk'))$('lightModeChk').checked=true; }
 if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filterClickChk').checked=false; }
 
 ['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
@@ -1569,6 +1576,7 @@ function applyMode(m){
 $('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; });
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
+$('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
 document.addEventListener('keydown',function(e){
   if(e.code!=='Space' && e.key!==' ') return;
