@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 92</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 93</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -489,7 +489,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 92 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 93 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -692,7 +692,7 @@ function drawCells(cells,color,withIds){
       if(n.d===3) s+=gDot(x,color);
       if(n.d>=1&&n.d<=3) beam.push({x,d:n.d});
       idx++;});
-    cell.rests.forEach(r=>{ s+=gRest(NX(b+(r.s+r.d/2)/4), r.d, color); });
+    cell.rests.forEach(r=>{ const rf=r.d>=4?0.5:0.15; s+=gRest(NX(b+(r.s+r.d*rf)/4), r.d, color); });
     if(beam.length>=2){
       const by=NY-NSTEM, x0=beam[0].x+NHRX-1, x1=beam[beam.length-1].x+NHRX-1;
       s+=gBeam(x0,x1,by,color);
@@ -824,9 +824,9 @@ function drawHighway(){
   if(playing && mode!=='calibrate'){
     const rci=Math.floor((now-firstBarTime)/barDur);
     for(let k=rci-1;k<=rci+1;k++){ const rpat=hwRestMap.get(k)||staticRests(), start=firstBarTime+k*barDur;
-      for(const rt of rpat){ if(expectedAbsTime(start,rt.pos)>=firstBarTime-0.001) rests.push({_x:X(expectedAbsTime(start,rt.pos+rt.dur/2)), durB:rt.dur}); } }
+      for(const rt of rpat){ if(expectedAbsTime(start,rt.pos)>=firstBarTime-0.001){ const rf=rt.dur>=0.9?0.5:0.15; rests.push({_x:X(expectedAbsTime(start,rt.pos+rt.dur*rf)), durB:rt.dur}); } } }
   } else if(!playing){
-    for(const rt of staticRests()){ rests.push({_x:idleX(rt.pos+rt.dur/2), durB:rt.dur}); }
+    for(const rt of staticRests()){ const rf=rt.dur>=0.9?0.5:0.15; rests.push({_x:idleX(rt.pos+rt.dur*rf), durB:rt.dur}); }
   }
   for(const n of notes){ n._x = (n.time!=null)?X(n.time):n.ix; }
   const vis=notes.filter(n=>n._x>-40&&n._x<W+40).sort((a,b)=>a._x-b._x);
