@@ -225,7 +225,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 98</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 99</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -507,7 +507,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 98 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 99 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1480,11 +1480,24 @@ if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filte
 $('autoAdvChk') && $('autoAdvChk').addEventListener('change',()=>{ if(!applyingCfg) clearPending(); });
 $('newRhythmBtn') && $('newRhythmBtn').addEventListener('click',()=>{ if(!applyingCfg) clearPending(); });
 
-function resetProgress(){
-  if(confirm('Reset all challenge progress and saved calibration? This cannot be undone.')){
-    prog=defaultProg(); saveProg(); calibrated=false; calibOffset=0;
-    if($('levelResult')) $('levelResult').style.display='none'; if($('levelBanner')) $('levelBanner').style.display='none'; renderLadder(); if(typeof updateSetupBtn==='function') updateSetupBtn();
+let _resetArmed=false, _resetTimer=null;
+function resetProgress(ev){
+  const btn = ev && ev.currentTarget;
+  if(!_resetArmed){                                    // first tap: arm + ask
+    _resetArmed=true;
+    if(btn){ if(btn.dataset.orig==null) btn.dataset.orig=btn.textContent; btn.textContent='Are you sure? Tap again to wipe ALL challenge progress'; btn.style.outline='2px solid var(--ember)'; }
+    _resetTimer=setTimeout(()=>{ _resetArmed=false; if(btn && btn.dataset.orig!=null){ btn.textContent=btn.dataset.orig; btn.style.outline=''; } }, 5000);
+    return;
   }
+  clearTimeout(_resetTimer); _resetArmed=false;         // second tap: wipe
+  prog.levels={}; prog.unlocked=1; prog.lastLevel=null; prog.sessions=0;   // clears every level, star, per-difficulty clear (keeps calibration + detection tuning)
+  saveProg();
+  selectedLevel=null; pendingLevel=null;
+  if($('levelResult')) $('levelResult').style.display='none';
+  if($('levelBanner')) $('levelBanner').style.display='none';
+  if(typeof renderLadder==='function') renderLadder();
+  if(typeof updateSetupBtn==='function') updateSetupBtn();
+  if(btn){ btn.textContent='Progress cleared \u2713'; btn.style.outline=''; setTimeout(()=>{ if(btn.dataset.orig!=null) btn.textContent=btn.dataset.orig; }, 2000); }
 }
 $('resetProgBtn') && ($('resetProgBtn').onclick=resetProgress);
 $('resetProgBtn2') && ($('resetProgBtn2').onclick=resetProgress);
