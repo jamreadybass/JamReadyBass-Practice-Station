@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 91</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 92</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -323,9 +323,9 @@
         <div style="font-size:11px;color:var(--muted);margin-top:5px">On desktop with an audio interface or mixer, pick it here and turn <b>Speaker mode off</b> — a direct line signal is the most accurate (no room noise, no click bleed). Monitor yourself through the interface's own headphone out.</div>
         <div style="font-size:11px;color:var(--amber);margin-top:6px;line-height:1.5">Using a USB mixer for headphones? Also set your <b>computer's output</b> to that mixer (System Sound settings) so the click is sent back to it — otherwise you'll hear your bass but no click.</div>
       </div>
-      <div id="detTestWrap" style="margin-top:14px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <div style="font-size:12px;color:var(--muted)">Detection test — check your rig for phantom hits before a run.</div>
+      <details id="detTestWrap" style="margin-top:14px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--amber);font-weight:700">Detection test — check your rig for phantom hits</summary>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
           <button id="detTestBtn" class="primary" style="padding:8px 14px;white-space:nowrap">Start test</button>
         </div>
         <div id="detTestBody" style="display:none;margin-top:12px">
@@ -362,7 +362,7 @@
           </div>
           <button id="detResetBtn" style="margin-top:10px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer">Reset count</button>
         </div>
-      </div>
+      </details>
       <details>
         <summary>Sound &amp; timing setup</summary>
         <div style="margin-top:14px">
@@ -377,6 +377,7 @@
         <div class="row" style="margin-top:14px">
           <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">6</span></label><input type="range" id="sens" min="1" max="10" value="6"></div>
           <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+          <div class="ctrl"><label>Downbeat volume <span class="val" id="dbVal">100</span> — lower if beat 1 is too loud vs the subdivisions</label><input type="range" id="downbeat" min="0" max="100" value="100"></div>
         </div>
         <div style="margin-top:16px">
           <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Highway sync <span class="val" id="hwnudgeVal">0</span> ms</label>
@@ -462,7 +463,7 @@ let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], hpFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
 let clickTimes=[];
-let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true;
+let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true, downbeatLevel=100;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0, calibOffsetVis=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false, roomCheckedThisSession=false;
 let deltas=[], hits=0, missed=0, extra=0, hitLog=[];
@@ -488,7 +489,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 91 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 92 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -774,7 +775,7 @@ function drawHighway(){
   ctx.fillStyle='#f5f2ea';ctx.fillRect(0,0,W,notBot);
   ctx.fillStyle='rgba(10,8,4,0.22)';ctx.fillRect(0,notBot-1.5*DPR,W,1.5*DPR);
 
-  const playing = !!schedId && !!ac && firstBarTime>0;
+  const playing = (!!schedId || paused) && !!ac && firstBarTime>0;
   const hwLat = ac ? ((ac.outputLatency||ac.baseLatency||0)+hwNudgeMs/1000) : 0;
   const now = ac ? (ac.currentTime - hwLat) : 0;   // shift visuals to when you HEAR the beat
   if(playing){ const bi=Math.floor((now-firstBarTime)/beatDur);
@@ -976,6 +977,7 @@ function startTransport(forCalib){
   requestAnimationFrame(drawPlayhead);
 }
 function stopTransport(silent){
+  if(paused){ paused=false; try{ac.resume();}catch(e){} }
   if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; calibratedThisSession=true; prog.calib=Math.round(calibOffset); saveProg(); }
   if(schedId){clearInterval(schedId);schedId=null;}
   if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } killPending();
@@ -986,6 +988,19 @@ function stopTransport(silent){
     if(sessionCompleted && pendingLevel!=null) evaluateLevel(pendingLevel);
     else if(sessionCompleted){ const _f=finalScores(); if(_f) showScorePop(_f,0,{free:true,title:'Nice run!',msg:'Freeplay — not scored against the challenge.',nextLabel:'Done'}); } }
   if(!silent) mode='idle';
+}
+let paused=false;
+function pauseTransport(){
+  if(paused || !schedId || !(mode==='play'||mode==='calibrate')) return;
+  paused=true;
+  clearInterval(schedId); schedId=null;
+  try{ ac.suspend(); }catch(e){}                 // freezes ac.currentTime, so everything resumes in sync
+  const ci=$('countin'); if(ci) ci.textContent='paused \u2014 space to resume';
+}
+function resumeTransport(){
+  if(!paused) return;
+  const go=()=>{ paused=false; const ci=$('countin'); if(ci) ci.textContent=''; if(!schedId) schedId=setInterval(scheduler,25); };
+  try{ const p=ac.resume(); (p&&p.then)?p.then(go):go(); }catch(e){ go(); }
 }
 function scheduler(){
   if(!running||!schedId)return;
@@ -1017,7 +1032,7 @@ function scheduleClick(t,accent){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
     const o=ac.createOscillator(),g=ac.createGain();
     o.frequency.value=accent?1600:1100;
-    const peak=clickVol*(accent?0.5:0.36);
+    const peak=clickVol*(accent? 0.36*(1+0.4*(downbeatLevel/100)) : 0.36);
     if(filterClick){
       // Speaker mode: pure sine + smooth raised-cosine (Hann) envelope = a soft beep with
       // no sharp transient, so almost nothing survives the notch to trip the onset detector.
@@ -1204,6 +1219,7 @@ $('diffModeSeg') && $('diffModeSeg').addEventListener('click',e=>{const b=e.targ
 $('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;updateSetupBtn();};
 $('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
+$('downbeat') && ($('downbeat').oninput=e=>{downbeatLevel=+e.target.value;$('dbVal').textContent=e.target.value;});
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); });
@@ -1251,7 +1267,7 @@ $('centerBtn')&& ($('centerBtn').onclick=()=>{ const c=$('coach');
   if(deltas.length){ addOffset(median(deltas)); if(c) c.textContent='Centered your '+(visualBeat?'muted':'click')+' timing on that run — next run reads from here ('+(curOffset()>0?'+':'')+Math.round(curOffset())+'ms). The other mode keeps its own offset.'; }
   else if(c){ c.textContent='Play a run first, then tap Center from last run.'; } });
 $('playBtn').onclick=()=>{
-  if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; try{$('calibPrompt').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return; }
+  if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; try{($('calibNowBtn')||$('calibPrompt')).scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return; }
   startTransport(false);
 };
 $('calibNowBtn').onclick=()=>{ $('calibPrompt').style.display='none'; calibSamples=[];calibOffset=0; startTransport(true); };
@@ -1486,7 +1502,8 @@ document.addEventListener('keydown',function(e){
   if(t==='input'||t==='textarea'||t==='select'||(e.target&&e.target.isContentEditable)) return;
   if(document.getElementById('screenPlay') && !document.getElementById('screenPlay').classList.contains('active')) return;
   e.preventDefault();
-  if(mode==='play'||mode==='calibrate'){ stopTransport(false); }
+  if(paused){ resumeTransport(); }
+  else if(mode==='play'||mode==='calibrate'){ pauseTransport(); }
   else { const pb=document.getElementById('playBtn'); if(pb) pb.click(); }
 });
 $('progressToggle') && ($('progressToggle').onclick=()=>{ const fl=$('climbFull'),open=fl.style.display!=='none';
