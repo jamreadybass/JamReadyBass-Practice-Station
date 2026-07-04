@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 89</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 90</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -488,7 +488,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 89 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 90 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -659,10 +659,15 @@ function gBeam(x1,x2,yy,c){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${
 function gFlag(x,dbl,c){const col=c||FILL,sx=x+NHRX-1,ty=NY-NSTEM;
   const flag=oy=>`<path d="M${sx} ${ty+oy} c 9 2 13 8 9 17 c 3 -8 -1 -12 -9 -13 z" fill="${col}"/>`;
   return flag(0)+(dbl?flag(7):'');}
-function gRest(x,d,c){const col=c||FILL;
-  if(d>=4) return `<path d="M${x-2} ${NY-15} l5 6 l-5 6 l6 6 q-6 -1 -3 -7" stroke="${col}" stroke-width="2.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
-  if(d>=2) return `<g><circle cx="${x+1}" cy="${NY-9}" r="2.8" fill="${col}"/><path d="M${x+2} ${NY-10} l-4 16" stroke="${col}" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>`+(d===3?gDot(x+1,col):'');
-  return `<g><circle cx="${x+1}" cy="${NY-10}" r="2.5" fill="${col}"/><circle cx="${x-1}" cy="${NY-4}" r="2.5" fill="${col}"/><path d="M${x+2} ${NY-11} l-5 18" stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round"/></g>`;
+// Standard rest glyphs — Bravura (SMuFL) outlines, shared by the static staff (SVG) and the highway (canvas Path2D).
+const REST_D={ q:'M112 55C135 84 156 111 174 141C177 147 183 158 183 161C183 163 183 166 181 167C179 173 173 174 166 174C160 174 148 171 143 170C141 170 138 170 137 170L125 166C50 166 1 233 1 304C1 376 63 446 168 527C180 536 194 540 206 540C216 540 226 537 228 531C229 527 230 524 230 521C230 508 219 497 207 487C189 487 173 448 170 435C166 423 164 410 164 397C164 338 194 292 255 292C297 292 344 308 369 317L370 318C376 320 379 320 382 320C386 320 389 318 389 314C389 297 351 249 336 232C281 166 236 112 236 32C236 30 236 29 236 27L238 17C238 16 238 14 238 13C243 -71 295 -140 333 -199C337 -206 338 -213 338 -220C338 -235 333 -248 333 -248C333 -248 120 -501 95 -526C88 -533 78 -537 69 -537C55 -537 40 -527 40 -507C40 -500 42 -492 46 -484C52 -468 134 -395 134 -291C134 -238 112 -176 48 -108C33 -94 27 -78 27 -66C27 -46 42 -32 42 -32Z', e:'M193 -154C193 -207 150 -251 96 -251C43 -251 0 -207 0 -154C0 -124 17 -98 39 -81C62 -65 89 -56 117 -56C137 -56 157 -60 173 -66C193 -72 206 -78 225 -88C228 -89 230 -89 232 -89C238 -89 239 -84 239 -76C239 -72 239 -66 238 -60C233 -39 130 248 104 343C104 360 137 361 145 361C161 361 181 359 196 347C200 344 341 -161 341 -161C347 -187 354 -210 356 -217C356 -232 341 -239 338 -240C336 -240 331 -240 323 -235C312 -226 240 -140 193 -140Z', s:'M300 -160C300 -215 256 -258 202 -258C148 -258 104 -215 104 -160C104 -101 164 -62 219 -62C258 -62 298 -75 331 -94C336 -95 338 -96 341 -96C346 -96 348 -94 348 -86C348 -63 275 151 265 173C253 200 215 217 194 217C196 212 196 207 196 203C196 148 151 105 98 105C43 105 0 148 0 203C0 262 60 301 115 301C153 301 190 288 223 271C226 271 229 274 229 279L228 281C228 282 228 282 228 282L91 690C91 690 91 691 91 691L89 693C89 706 102 720 134 720C176 720 183 703 189 687L356 138C393 16 420 -81 420 -81C420 -81 456 -207 459 -226C459 -229 461 -230 461 -232C461 -240 449 -246 446 -248C439 -248 435 -245 431 -242C420 -233 348 -147 300 -145Z' };
+const REST_CTR={ q:[135.5,1], e:[123.5,38.5], s:[160,160.5] };   // [cx,cy] bbox centers to place the glyph on the line
+const REST_S=0.036;                                              // glyph scale (font units -> px)
+const REST_P2D=(typeof Path2D!=='undefined')?{q:new Path2D(REST_D.q),e:new Path2D(REST_D.e),s:new Path2D(REST_D.s)}:null;
+function gRest(x,d,c){ const col=c||FILL, k=(d>=4?'q':(d>=2?'e':'s')), C=REST_CTR[k];
+  let out=`<path d="${REST_D[k]}" fill="${col}" transform="translate(${x} ${NY}) scale(${REST_S}) translate(${-C[0]} ${-C[1]})"/>`;
+  if(d===3) out+=`<circle cx="${x+8}" cy="${NY-1}" r="2.1" fill="${col}"/>`;   // dotted-eighth rest dot
+  return out;
 }
 function gStaff(light){const lc=light?'#cfc7b4':'#9a917c',tc=light?'#d9d1bd':'#c3b89c';
   let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="${lc}" stroke-width="1.5"/>`;
@@ -743,28 +748,14 @@ function sizeStrip(){ DPR=Math.min(window.devicePixelRatio||1,2); const cv=$('hw
   const r=cv.getBoundingClientRect(); if(r.width>0){ cv.width=Math.max(1,Math.round(r.width*DPR)); cv.height=Math.max(1,Math.round(r.height*DPR)); } }
 window.addEventListener('resize',()=>{sizeStrip();});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{sizeStrip();},250));
-// canvas rest glyphs — ported from the static staff's gRest so they read identically. Centered at (x, staffY).
+// canvas rest glyphs — same Bravura (SMuFL) outlines as the static staff, via Path2D. Centered on (x, staffY).
 function hwRest(ctx,x,durB,staffY,DPR){
-  ctx.save();
-  const col='#1a160c'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineJoin='round'; ctx.lineCap='round';
-  if(durB>=0.9){                                   // quarter rest
-    ctx.lineWidth=2.6*DPR; ctx.beginPath();
-    ctx.moveTo(x-2*DPR, staffY-15*DPR);
-    ctx.lineTo(x+3*DPR, staffY-9*DPR);
-    ctx.lineTo(x-2*DPR, staffY-3*DPR);
-    ctx.lineTo(x+4*DPR, staffY+3*DPR);
-    ctx.quadraticCurveTo(x-2*DPR, staffY+2*DPR, x+1*DPR, staffY-4*DPR);
-    ctx.stroke();
-  } else if(durB>=0.4){                             // eighth rest (+ dot if dotted)
-    ctx.beginPath(); ctx.arc(x+1*DPR, staffY-9*DPR, 2.8*DPR, 0, 7); ctx.fill();
-    ctx.lineWidth=2.2*DPR; ctx.beginPath(); ctx.moveTo(x+2*DPR, staffY-10*DPR); ctx.lineTo(x-2*DPR, staffY+6*DPR); ctx.stroke();
-    if(Math.abs(durB-0.75)<0.05){ ctx.beginPath(); ctx.arc(x+8*DPR, staffY-3*DPR, 1.8*DPR, 0, 7); ctx.fill(); }
-  } else {                                          // sixteenth rest
-    ctx.beginPath(); ctx.arc(x+1*DPR, staffY-10*DPR, 2.5*DPR, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(x-1*DPR, staffY-4*DPR,  2.5*DPR, 0, 7); ctx.fill();
-    ctx.lineWidth=2*DPR; ctx.beginPath(); ctx.moveTo(x+2*DPR, staffY-11*DPR); ctx.lineTo(x-3*DPR, staffY+7*DPR); ctx.stroke();
-  }
+  const k=(durB>=0.9?'q':(durB>=0.4?'e':'s')), C=REST_CTR[k], S=REST_S*DPR;
+  ctx.save(); ctx.fillStyle='#1a160c';
+  ctx.translate(x,staffY); ctx.scale(S,S); ctx.translate(-C[0],-C[1]);
+  if(REST_P2D) ctx.fill(REST_P2D[k]); else ctx.fill(new Path2D(REST_D[k]));
   ctx.restore();
+  if(Math.abs(durB-0.75)<0.05){ ctx.save(); ctx.fillStyle='#1a160c'; ctx.beginPath(); ctx.arc(x+8*DPR, staffY-1*DPR, 1.9*DPR, 0, 7); ctx.fill(); ctx.restore(); }
 }
 function drawHighway(){
   const cv=$('hw'); if(!cv) return;
