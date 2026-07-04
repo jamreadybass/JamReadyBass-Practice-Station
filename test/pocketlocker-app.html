@@ -14,9 +14,13 @@
     --appw:520px;
   }
   html[data-theme="light"]{
-    --bg:#f2ede3; --panel:#fbf8f1; --panel2:#efe9dd; --line:#dcd4c4;
-    --ink:#2a251c; --muted:#726c5d; --amber-dim:#f2e4c2;
+    --bg:#f6ecd9; --panel:#fdf6e8; --panel2:#f1e6d1; --line:#e2d4b6;
+    --ink:#2c2415; --muted:#7d7158; --amber-dim:#efe0bd;
   }
+  html[data-theme="light"] .appbar{ background:linear-gradient(180deg, rgba(253,246,232,.97), rgba(253,246,232,.84)); }
+  html[data-theme="light"] .bottomnav{ background:linear-gradient(0deg, rgba(253,246,232,.98), rgba(253,246,232,.9)); }
+  html[data-theme="light"] .score-bar{ background:#e7dcc4; }
+  html[data-theme="light"] .lvl:hover:not(.locked){ background:#efe6d3; }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
   body{max-width:var(--appw);margin:0 auto;min-height:100vh;padding:0 0 calc(92px + env(safe-area-inset-bottom,0px));
@@ -231,7 +235,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 103</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 104</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -283,7 +287,7 @@
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
     <div id="calibPrompt" class="warn" style="display:none">
-      <b>Calibrate first?</b> Your device's audio delay shifts every note late — without calibrating, fast notes land in the wrong slot. Takes ~16 taps.
+      <b>Calibrate first?</b> Play ~16 steady quarter notes locked to the <b>click</b> — ignore the highway; you're playing to the sound. This measures your device's audio delay so your notes land in the right slot. Re-do it if you change headphones.
       <div class="transport" style="margin-top:8px">
         <button class="primary" id="calibNowBtn">Calibrate now</button>
         <button id="playAnywayBtn">Play anyway</button>
@@ -334,12 +338,16 @@
 
   <section id="screenSettings" class="screen">
     <div class="panel" id="setupPanel">
-      <h2>Options</h2>
-      <label class="chk"><input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)</label>
-      <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
-      <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
-      <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
-      <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--amber)"> Light mode — switch the app to a light theme (default is dark)</label>
+      <details>
+        <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Options</summary>
+        <div style="margin-top:10px">
+          <label class="chk"><input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)</label>
+          <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
+          <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
+          <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
+          <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--amber)"> Light mode — switch the app to a light theme (default is dark)</label>
+        </div>
+      </details>
       <div style="margin-top:14px">
         <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Input device</label>
         <select id="inputPicker" style="width:100%;margin-top:6px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:14px">
@@ -530,7 +538,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 103 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 104 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1124,7 +1132,7 @@ function registerBar(barStart){
     let gapBeats=4;                                   // window = half the space around THIS note
     if(i>0) gapBeats=Math.min(gapBeats, pos[i]-pos[i-1]);
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
-    const win=Math.min(0.18, Math.max(0.05, gapBeats*beatDur*0.5));
+    const win=Math.min(0.10, Math.max(0.045, gapBeats*beatDur*0.42));
     expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
     if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
@@ -1197,7 +1205,7 @@ function rhythmGrade(sc){if(sc>=95)return{w:'All there',c:'#46d39a'};if(sc>=85)r
 function rhythmScore(){
   const need=hits+missed; if(need===0) return null;
   const cov=hits/need;                                  // did you play the written notes?
-  const pen=Math.min(0.30, (extra/Math.max(1,need))*0.15);  // extras sting, but never wreck a clean run
+  const pen=Math.min(0.70, (extra/Math.max(1,need))*0.45);  // extras now sting hard — random spraying tanks Rhythm
   return Math.round(Math.max(0, Math.min(1, cov*(1-pen)))*100);
 }
 function updateTimingReadout(){
@@ -1388,7 +1396,9 @@ function clearPending(){ if(pendingLevel!=null){ pendingLevel=null; $('levelBann
 function finalScores(){
   if((hits+missed)===0||deltas.length<3) return null;
   const bias=mean(deltas), sd=std(deltas);
-  return { cen:Math.round(centerScore(bias)), evn:Math.round(evennessScore(sd)), rhy:rhythmScore()||0 };
+  const cov=hits/Math.max(1,hits+missed);
+  const covGate=Math.max(0, Math.min(1, (cov-0.2)/0.35));   // full credit at ~55%+ of notes hit; ~0 below ~20% (kills random)
+  return { cen:Math.round(centerScore(bias)*covGate), evn:Math.round(evennessScore(sd)*covGate), rhy:rhythmScore()||0 };
 }
 function starsFor(f){   // one star per scoring category met
   let s=0;
