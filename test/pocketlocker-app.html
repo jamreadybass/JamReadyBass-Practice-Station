@@ -200,6 +200,17 @@
           </div>
         </div>
       </div>
+      <div id="climbControls" style="display:none;margin-top:8px">
+        <div class="ctrl" style="margin-bottom:12px"><label>Difficulty — Easy 1&#9733; &middot; Medium 2&#9733; &middot; Pro 3&#9733; to advance</label>
+          <div class="seg" id="climbDiffSeg">
+            <button data-dm="easy">Easy</button>
+            <button data-dm="medium">Medium</button>
+            <button data-dm="pro">Pro</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tap any unlocked level to play it:</div>
+        <div id="sheetLadder"></div>
+      </div>
   </div>
 </div>
 <div class="appbar">
@@ -207,7 +218,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 93</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 94</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -489,7 +500,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 93 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 94 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1215,7 +1226,8 @@ $('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(
 $('lenSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   const n=+b.dataset.n; maxBars=(n===0)?Infinity:n;
   [...$('lenSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
-$('diffModeSeg') && $('diffModeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; diffMode=b.dataset.dm; [...$('diffModeSeg').children].forEach(x=>x.classList.toggle('active',x===b)); prog.diffMode=diffMode; saveProg(); renderScore(); if(typeof renderLadder==='function')renderLadder(); if(typeof renderClimbNow==='function')renderClimbNow();});
+$('diffModeSeg') && $('diffModeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; setDifficulty(b.dataset.dm);});
+$('climbDiffSeg') && $('climbDiffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; setDifficulty(b.dataset.dm);});
 $('bpm').oninput=e=>{bpm=+e.target.value;$('bpmVal').textContent=bpm;updateSetupBtn();};
 $('swing').oninput=e=>{swing=+e.target.value;$('swingVal').textContent=swing;};
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
@@ -1384,18 +1396,27 @@ function evaluateLevel(id){
   prog.levels[id]=rec; prog.sessions=(prog.sessions||0)+1;
   if(cleared && id<LEVELS.length && prog.unlocked<id+1){ prog.unlocked=id+1; }
   saveProg();
-  const hasNext = cleared && id<LEVELS.length;
-  const nextName = hasNext ? LEVELS.find(x=>x.id===id+1).name : '';
   const DNAME={easy:'Easy',medium:'Medium',pro:'Pro'};
-  const nextDiff={easy:'Medium',medium:'Pro'}[diffMode];
+  const upDiff={easy:'medium',medium:'pro'}[diffMode];               // next difficulty tier
+  const inTierNext = cleared && id<LEVELS.length;                    // more levels this tier
+  const crossToNext = cleared && id===LEVELS.length && !!upDiff;     // beat 12 -> next difficulty, Level 1
+  const hasNext = inTierNext || crossToNext;
+  const nextName = inTierNext ? LEVELS.find(x=>x.id===id+1).name : (crossToNext ? LEVELS[0].name : '');
+  const tierUpLabel={easy:'Medium',medium:'Pro'}[diffMode];
   showScorePop(f, stars, {
     title: cleared ? ('Level '+id+' cleared on '+DNAME[diffMode]+'!') : (stars+' of '+need+' star'+(need>1?'s':'')+' needed \u2014 not yet'),
-    msg: cleared
-        ? (hasNext ? ('Next up \u2014 Level '+(id+1)+': '+nextName + (nextDiff?('   \u00b7   or replay on '+nextDiff+' for a tougher clear'):''))
-                   : (id===LEVELS.length ? ('You topped the challenge on '+DNAME[diffMode]+'. Real pocket.') : ''))
-        : ('You need '+need+' star'+(need>1?'s':'')+' \u2014 Center, Evenness, Rhythm \u2014 on '+DNAME[diffMode]+' to unlock the next level. Try again, or drop to an easier difficulty.'),
-    nextLabel: hasNext ? 'Next level \u2192' : (cleared ? 'Done' : 'Try again'),
-    onNext: function(){ if(hasNext){ loadLevel(id+1); if(window.showScreen) showScreen('play'); } }
+    msg: !cleared
+        ? ('You need '+need+' star'+(need>1?'s':'')+' \u2014 Center, Evenness, Rhythm \u2014 on '+DNAME[diffMode]+' to unlock the next level. Try again, or drop to an easier difficulty.')
+        : inTierNext
+        ? ('Next up \u2014 Level '+(id+1)+': '+nextName + (tierUpLabel?('   \u00b7   or replay on '+tierUpLabel+' for a tougher clear'):''))
+        : crossToNext
+        ? ('You cleared all 12 on '+DNAME[diffMode]+'! Moving up to '+DNAME[upDiff]+' \u2014 next: Level 1, '+nextName+'.')
+        : ('You topped the entire challenge on '+DNAME[diffMode]+'. Real pocket.'),
+    nextLabel: inTierNext ? 'Next level \u2192' : (crossToNext ? ('Start '+DNAME[upDiff]+' \u2192') : (cleared ? 'Done' : 'Try again')),
+    onNext: function(){
+      if(inTierNext){ loadLevel(id+1); if(window.showScreen) showScreen('play'); }
+      else if(crossToNext){ setDifficulty(upDiff); prog.lastLevel=1; saveProg(); loadLevel(1); if(window.showScreen) showScreen('play'); }
+    }
   });
   const el=$('levelResult'); if(el) el.style.display='none';
   $('levelBanner').style.display='none';
@@ -1403,9 +1424,8 @@ function evaluateLevel(id){
   renderLadder();
 }
 
-function renderLadder(){
-  const wrap=$('ladder'); if(!wrap) return; wrap.innerHTML='';
-  let tier='';
+function buildLadder(wrap, inSheet){
+  wrap.innerHTML=''; let tier='';
   LEVELS.forEach(L=>{
     if(L.tier!==tier){ tier=L.tier; const h=document.createElement('div'); h.className='tier'; h.textContent=tier; wrap.appendChild(h); }
     const rec=prog.levels[L.id]||{}, locked=L.id>prog.unlocked, stars=diffStars(rec,diffMode);
@@ -1415,15 +1435,27 @@ function renderLadder(){
     const DL={easy:'EASY',medium:'MED',pro:'PRO'};
     const dtag = (!locked && rec.clearedDiff) ? ' <span style="color:var(--amber);font-size:9px;letter-spacing:.1em;font-weight:800">'+DL[rec.clearedDiff]+'</span>' : '';
     btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+dtag+'</span><span class="lstars">'+starCell+'</span>';
-    if(!locked) btn.onclick=()=>{ selectedLevel=L.id; const fl=$('climbFull'); if(fl){fl.style.display='none'; $('progressToggle').textContent='View progress \u25BE';} loadLevel(L.id); };
+    if(!locked) btn.onclick=()=>{ selectedLevel=L.id;
+      if(inSheet){ const sh=$('rhythmSheet'); if(sh) sh.style.display='none'; loadLevel(L.id); if(typeof updateSetupBtn==='function') updateSetupBtn(); if(window.showScreen) showScreen('play'); }
+      else { const fl=$('climbFull'); if(fl){fl.style.display='none'; $('progressToggle').textContent='View progress \u25BE';} loadLevel(L.id); }
+    };
     wrap.appendChild(btn);
   });
+}
+function renderLadder(){
+  const w=$('ladder'); if(w) buildLadder(w,false);
+  const sw=$('sheetLadder'); if(sw) buildLadder(sw,true);
   const cleared=LEVELS.filter(L=>(prog.levels[L.id]||{}).cleared).length;
   const stars=LEVELS.reduce((a,L)=>a+((prog.levels[L.id]||{}).stars||0),0);
-  let sum='<b style="color:#46d39a">\u2605 '+stars+'</b> / '+STAR_TOTAL+' stars earned &middot; <b>'+cleared+'</b> / '+LEVELS.length+' levels cleared';
-  if(prog.calib!=null) sum+=' &middot; calibration saved ('+prog.calib+'ms)';
-  $('climbSummary').innerHTML=sum;
+  if($('climbSummary')){ let sum='<b style="color:#46d39a">\u2605 '+stars+'</b> / '+STAR_TOTAL+' stars earned &middot; <b>'+cleared+'</b> / '+LEVELS.length+' levels cleared';
+    if(prog.calib!=null) sum+=' &middot; calibration saved ('+prog.calib+'ms)'; $('climbSummary').innerHTML=sum; }
   renderClimbNow();
+}
+function setDifficulty(dm){
+  if(!DIFFS[dm]) return; diffMode=dm; prog.diffMode=dm; saveProg();
+  segActivate('diffModeSeg','dm',dm); segActivate('climbDiffSeg','dm',dm);
+  if(typeof renderScore==='function') renderScore();
+  renderLadder();
 }
 
 if(prog.calib!=null){ calibOffset=prog.calib; calibrated=true; }
@@ -1484,6 +1516,8 @@ function applyMode(m){
     fh.textContent = isRandom ? 'Random — fresh generated rhythms. Tap New rhythm, or turn on New one every bar.'
                               : 'Freeplay — build a rhythm below and hit Play. Nothing scored against the challenge.'; }
   const fc=$('freeControls'); if(fc) fc.style.display=climbMode?'none':'block';
+  const cc=$('climbControls'); if(cc) cc.style.display=climbMode?'block':'none';
+  if(climbMode){ segActivate('climbDiffSeg','dm',diffMode); if(typeof renderLadder==='function') renderLadder(); }
   const nvr=$('noteValueRow'); if(nvr) nvr.style.display=(!climbMode && !isRandom)?'block':'none';
   const rr=$('randomRow'); if(rr) rr.style.display=isRandom?'block':'none';
   if(!climbMode) clearPending();
@@ -1492,7 +1526,7 @@ function applyMode(m){
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
-$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; if(b.dataset.m==='climb'){ loadLevel(selectedLevel||resumeLevelId()); } else { applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; } });
+$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; });
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
@@ -1585,7 +1619,7 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
   var openBtn=document.getElementById('openRhythm');
   var closeBtn=document.getElementById('rhythmSheetClose');
   if(openBtn&&sheet) openBtn.addEventListener('click',function(){ sheet.style.display='flex'; });
-  function closeSheet(){ if(sheet) sheet.style.display='none'; if(typeof updateSetupBtn==='function') updateSetupBtn(); }
+  function closeSheet(){ if(sheet) sheet.style.display='none'; if(climbMode && pendingLevel==null && typeof loadLevel==='function'){ loadLevel(resumeLevelId()); } if(typeof updateSetupBtn==='function') updateSetupBtn(); }
   if(closeBtn) closeBtn.addEventListener('click',closeSheet);
   if(sheet) sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); });
   if(typeof updateSetupBtn==='function') updateSetupBtn();
