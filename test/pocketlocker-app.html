@@ -226,7 +226,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 100</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 101</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -334,7 +334,6 @@
       <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
       <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
       <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
-      <div style="margin-top:14px"><button id="resetProgBtn2" class="danger">Reset challenge progress</button></div>
       <div style="margin-top:14px">
         <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Input device</label>
         <select id="inputPicker" style="width:100%;margin-top:6px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:14px">
@@ -508,7 +507,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 100 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 101 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1501,7 +1500,6 @@ function resetProgress(ev){
   if(btn){ btn.textContent='Progress cleared \u2713'; btn.style.outline=''; setTimeout(()=>{ if(btn.dataset.orig!=null) btn.textContent=btn.dataset.orig; }, 2000); }
 }
 $('resetProgBtn') && ($('resetProgBtn').onclick=resetProgress);
-$('resetProgBtn2') && ($('resetProgBtn2').onclick=resetProgress);
 $('resetProgBtn3') && ($('resetProgBtn3').onclick=resetProgress);
 
 function currentLevelId(){ return unlockedFor(diffMode); }   // first level not yet cleared on this difficulty
