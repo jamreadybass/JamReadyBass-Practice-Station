@@ -207,6 +207,7 @@
         </div>
       </div>
       <div id="climbControls" style="display:none;margin-top:8px">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button id="resetProgBtn3" class="danger" style="font-size:12px;padding:6px 12px">Reset challenge progress</button></div>
         <div class="ctrl" style="margin-bottom:12px"><label>Difficulty — Easy 1&#9733; &middot; Medium 2&#9733; &middot; Hard/Pro 3&#9733; to advance</label>
           <div class="seg" id="climbDiffSeg">
             <button data-dm="easy">Easy</button>
@@ -225,7 +226,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 99</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 100</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -507,7 +508,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 99 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 100 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1501,6 +1502,7 @@ function resetProgress(ev){
 }
 $('resetProgBtn') && ($('resetProgBtn').onclick=resetProgress);
 $('resetProgBtn2') && ($('resetProgBtn2').onclick=resetProgress);
+$('resetProgBtn3') && ($('resetProgBtn3').onclick=resetProgress);
 
 function currentLevelId(){ return unlockedFor(diffMode); }   // first level not yet cleared on this difficulty
 function resumeLevelId(){
