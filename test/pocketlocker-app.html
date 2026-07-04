@@ -226,7 +226,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 101</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 102</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -419,11 +419,26 @@
       <details open>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">How to use PocketLocker</summary>
         <p class="help" style="margin-top:10px">
-          <b>1 · Start audio.</b> On the Play tab, tap <b>Enable mic &amp; click</b> and allow the microphone. Headphones are best. PocketLocker calibrates to your room automatically.<br><br>
-          <b>2 · Calibrate timing.</b> When prompted, play steady quarter notes on the click (~15 hits) so your scores read true. Re-calibrate if you switch headphones.<br><br>
-          <b>3 · Pick a level.</b> On the Levels tab, use <b>The Challenge</b> to work through levels in order, or switch to <b>Freeplay</b> to build your own rhythm.<br><br>
-          <b>4 · Play to the pocket.</b> Notes roll along the highway. Play each note the instant its gem center crosses the amber <b>pocket</b> line.<br><br>
-          <b>5 · Read your scores.</b> <b>Center</b> = on your chosen feel. <b>Evenness</b> = consistency. <b>Rhythm</b> = right notes. Clearing a Challenge level earns up to three stars and unlocks the next.
+          <b>1 · Start audio.</b> On the Play tab, tap <b>Enable mic &amp; click</b> and allow the microphone. Headphones (or an interface with headphone monitoring) are best. PocketLocker checks your room automatically.<br><br>
+          <b>2 · Set your instrument.</b> Open <b>Setup → Detection test</b> and tap <b>4-string</b> or <b>5-string</b>. That one tap tunes the mic so every note counts once — no phantom hits from ringing strings. (See <b>Dial it in</b> below to fine-tune.)<br><br>
+          <b>3 · Calibrate.</b> Hit <b>Play</b>; when it asks, tap <b>Calibrate now</b> and play ~16 steady notes locked to the click. This measures your device's audio delay so your notes land in the right slot. Re-calibrate if you switch headphones or interface.<br><br>
+          <b>4 · Pick a mode.</b> <b>Challenge</b>, <b>Freeplay</b>, or <b>Random</b> — tap one to open its setup box. The amber bar up top always shows your current mode and settings.<br><br>
+          <b>5 · Play the Challenge.</b> Tap <b>Challenge</b>, choose a difficulty (Easy → Medium → Hard → Pro) and any level you've unlocked. Read the staff up top and play each note the instant its gem crosses the amber <b>pocket</b> line. Clear a level to unlock the next; clear all 12 to move up a difficulty.<br><br>
+          <b>6 · Read your scores.</b> <b>Center</b> = on your chosen feel. <b>Evenness</b> = consistency. <b>Rhythm</b> = right notes. Stars to advance: Easy 1, Medium 2, Hard and Pro 3. Pro also hides the gems — you read the notation.<br><br>
+          <b>Controls.</b> <b>Spacebar</b> pauses and resumes a run; <b>Stop</b> ends it.
+        </p>
+      </details>
+    </div>
+
+    <div class="panel">
+      <details>
+        <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Dial it in — detection &amp; calibration</summary>
+        <p class="help" style="margin-top:10px">
+          <b>Get detection accurate.</b> Open <b>Setup → Detection test</b> and tap <b>Start test</b>. Tap your instrument preset, then play 8 steady notes on each string — ringing <i>and</i> muted. Watch the count: each note should register once. Muted should read 8; ringing should land near 8 too.<br><br>
+          <b>If ringing over-counts</b> (phantom hits from sustain): open <b>Advanced</b> and raise <b>Trigger threshold</b> a little, then <b>Ring rejection</b>. If a low B or low E over-triggers, raise <b>Low-cut</b>. Nudge until ringing reads 8 while muted still reads 8.<br><br>
+          <b>If soft notes get missed:</b> lower <b>Trigger threshold</b>, or lower <b>Low-cut</b> so it hears the low strings. There's always a trade-off between catching soft notes and rejecting ring — the knobs let you pick the balance. The 5-string preset (Trigger 1.70 · Low-cut 195 · Ring 0.16) is a solid starting point.<br><br>
+          <b>Calibrate your timing.</b> Every device delays the sound a little; without calibrating, every note reads late. <b>Play → Calibrate now →</b> play ~16 steady quarter notes to the click. Click mode and Visual-only (muted) mode keep <b>separate</b> offsets — calibrate each once.<br><br>
+          <b>Fine-tune from a real run.</b> If your notes read a touch early or late overall, play a run and tap <b>Center from last run</b> — it learns your offset from how you actually played. Re-calibrate whenever you change headphones or interface.
         </p>
       </details>
     </div>
@@ -432,11 +447,13 @@
       <details>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Troubleshooting</summary>
         <p class="help" style="margin-top:10px">
-          <b>Notes aren't registering.</b> Open <b>Sound &amp; timing setup</b> and watch the level meter as you play. Raise <b>Sensitivity</b> until your notes clear the amber line.<br><br>
-          <b>Phantom / extra notes.</b> Tap <b>Measure my room</b> (stay silent). Keep <b>Speaker mode</b> on. Headphones help most.<br><br>
+          <b>Extra / phantom notes.</b> Tap your instrument preset first. Still over-counting? In <b>Detection test → Advanced</b>, raise <b>Trigger threshold</b> and <b>Ring rejection</b>. Keep <b>Speaker mode</b> on; headphones help most.<br><br>
+          <b>Notes aren't registering.</b> In <b>Detection test → Advanced</b>, lower <b>Trigger threshold</b>, or lower <b>Low-cut</b> so it hears your low strings — or just dig in a little harder.<br><br>
+          <b>Notes read early or late.</b> Calibrate (<b>Play → Calibrate now</b>), or tap <b>Center from last run</b> after a run to auto-correct.<br><br>
           <b>Gems don't line up (Bluetooth lag).</b> Adjust <b>Highway sync</b> with the <b>−5 / +5</b> buttons until a gem meets the click. Never affects your score.<br><br>
           <b>Phone, no headphones.</b> Turn on <b>Visual-only beat</b> — the click goes silent and the pocket pulses; play to the pulse.<br><br>
-          <b>Score feels unfair.</b> Make sure you <b>calibrated</b> this session; re-calibrate if you changed headphones.
+          <b>A level's locked.</b> Levels unlock one at a time per difficulty — clear the current one to open the next. Switch difficulty in the Challenge box.<br><br>
+          <b>Start over.</b> <b>Reset challenge progress</b> is at the top of the Challenge box (tap twice to confirm). It keeps your calibration and detection tuning.
         </p>
       </details>
     </div>
@@ -507,7 +524,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 101 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 102 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
