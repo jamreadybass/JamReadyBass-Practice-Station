@@ -235,7 +235,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 104</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 105</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -538,7 +538,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 104 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 105 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -647,7 +647,7 @@ function setupFallback(){
 const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
   eighth:[0,.5,1,1.5,2,2.5,3,3.5],
   sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
-let randomMode=false, genDiff=2, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
+let randomMode=false, genDiff=2, genDiffMin=1, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
 let sessionCompleted=false, pendingLevel=null, applyingCfg=false;
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
@@ -675,9 +675,15 @@ const CELLS=[
   {dif:3,notes:[{s:0,d:1},{s:1,d:3}],rests:[]},                         // 16th + dotted-8th
   {dif:3,notes:[{s:1,d:1},{s:2,d:2}],rests:[{s:0,d:1}]},                // 16-rest, e, +8th
   {dif:3,notes:[{s:0,d:2},{s:2,d:1}],rests:[{s:3,d:1}]},                // 8th + 16th + 16-rest
+  {dif:4,notes:[{s:0,d:1},{s:2,d:1},{s:3,d:1}],rests:[{s:1,d:1}]},      // 16 · [e rest] · and · a
+  {dif:4,notes:[{s:1,d:1},{s:2,d:1},{s:3,d:1}],rests:[{s:0,d:1}]},      // [rest] · e · and · a (off-beat entrance)
+  {dif:4,notes:[{s:0,d:1},{s:1,d:1},{s:3,d:1}],rests:[{s:2,d:1}]},      // 16 · e · [and rest] · a
+  {dif:4,notes:[{s:1,d:2},{s:3,d:1}],rests:[{s:0,d:1}]},                // [rest] · off-beat 8th · a (syncopated push)
+  {dif:4,notes:[{s:0,d:2},{s:3,d:1}],rests:[{s:2,d:1}]},                // 8th · [and rest] · a
 ];
 function makeBar(){
-  const pool=CELLS.filter(c=>c.dif<=genDiff);
+  let pool=CELLS.filter(c=>c.dif<=genDiff && c.dif>=genDiffMin);
+  if(!pool.length) pool=CELLS.filter(c=>c.dif<=genDiff);
   let cells,onsets,tries=0;
   do{
     cells=[0,1,2,3].map(()=>pool[Math.floor(Math.random()*pool.length)]);
@@ -1340,19 +1346,52 @@ function saveProg(){ try{localStorage.setItem(PKEY,JSON.stringify(prog));}catch(
 if(!prog.migRef70){ if(prog.det && +prog.det.ref===90){ prog.det.ref=70; } prog.migRef70=1; saveProg(); }
 
 const LEVELS=[
-  {id:1, tier:'Foundation', name:'Steady Quarters',   cfg:{mode:'quarter',bpm:70, swing:0, feel:0, bars:8}},
-  {id:2, tier:'Foundation', name:'Quarters Up-Tempo', cfg:{mode:'quarter',bpm:96, swing:0, feel:0, bars:8}},
-  {id:3, tier:'Foundation', name:'Into Eighths',      cfg:{mode:'eighth', bpm:76, swing:0, feel:0, bars:8}},
-  {id:4, tier:'Eighths',    name:'Eighths Up-Tempo',  cfg:{mode:'eighth', bpm:100,swing:0, feel:0, bars:8}},
-  {id:5, tier:'Eighths',    name:'Random Rhythms',     cfg:{mode:'random', diff:1, auto:true, bpm:84, swing:0, feel:0, bars:8}},
-  {id:6, tier:'Eighths',    name:'Random · Up-Tempo',    cfg:{mode:'random', diff:1, auto:true, bpm:104,swing:0, feel:0, bars:8}},
-  {id:7, tier:'Sixteenths', name:'Sixteenth Runs',    cfg:{mode:'sixteenth',bpm:68,swing:0, feel:0, bars:8}},
-  {id:8, tier:'Sixteenths', name:'Random Sixteenths',  cfg:{mode:'random', diff:2, auto:true, bpm:84, swing:0, feel:0, bars:8}},
-  {id:9, tier:'Syncopation',name:'First Syncopation', cfg:{mode:'random', diff:3, auto:true, bpm:80, swing:0, feel:0, bars:8}},
-  {id:10,tier:'Syncopation',name:'Syncopated Swing',  cfg:{mode:'random', diff:3, auto:true, bpm:92, swing:55,feel:0, bars:8}},
-  {id:11,tier:'Syncopation',name:'Fast Syncopation',  cfg:{mode:'random', diff:3, auto:true, bpm:110,swing:0, feel:0, bars:8}},
-  {id:12,tier:'Mastery',    name:'In the Pocket',     cfg:{mode:'random', diff:3, auto:true, bpm:104,swing:0, feel:25,bars:8}},
+  {id:1, tier:'Warm-up',  name:'First Steps'},
+  {id:2, tier:'Warm-up',  name:'Steady'},
+  {id:3, tier:'Warm-up',  name:'Settling In'},
+  {id:4, tier:'Building', name:'Stretch'},
+  {id:5, tier:'Building', name:'Loosen Up'},
+  {id:6, tier:'Building', name:'Momentum'},
+  {id:7, tier:'Climbing', name:'Digging In'},
+  {id:8, tier:'Climbing', name:'Fresh Ground'},
+  {id:9, tier:'Climbing', name:'Off the Grid'},
+  {id:10,tier:'Mastery',  name:'Syncopate'},
+  {id:11,tier:'Mastery',  name:'No Repeats'},
+  {id:12,tier:'Mastery',  name:'In the Pocket'},
 ];
+// pattern difficulty scales with BOTH level (1-12) and tier — see the curve doc
+function levelCfg(level, tier){
+  tier = DIFFS[tier] ? tier : 'medium';
+  const L = Math.max(1, Math.min(12, level|0));
+  const t = (L-1)/11;                                            // 0..1 across the ladder
+  const TEMPO = {easy:[68,96], medium:[80,116], hard:[92,140], pro:[104,165]}[tier];
+  const bpm = Math.round(TEMPO[0] + (TEMPO[1]-TEMPO[0])*t);
+  let mode='random', diff=2, diffMin=1, auto=false;
+  if(tier==='easy'){
+    if(L<=2){ mode='quarter'; }                                  // pure drills up front
+    else if(L<=4){ mode='eighth'; }
+    else if(L<=6){ diff=1; }                                     // basic generated (on-beat + rests)
+    else if(L<=10){ diff=2; auto=true; }                        // sixteenth patterns
+    else { diff=3; auto=true; }                                  // light sync (easy cells still in the pool)
+  } else if(tier==='medium'){
+    if(L<=2){ diff=1; }                                          // qtr/8th mix
+    else if(L<=4){ diff=2; auto=true; }
+    else if(L<=7){ diff=2; auto=true; }
+    else if(L<=10){ diff=3; auto=true; }                        // real syncopation
+    else { diff=3; diffMin=2; auto=true; }                       // top: drop the easiest cells
+  } else if(tier==='hard'){
+    if(L<=2){ diff=2; auto=true; }                              // starts on sixteenths
+    else if(L<=5){ diff=3; auto=true; }
+    else if(L<=8){ diff=3; diffMin=2; auto=true; }              // no easy cells
+    else { diff=4; diffMin=2; auto=true; }                       // dense sync
+  } else { // pro
+    if(L<=2){ diff=3; auto=true; }                              // starts on syncopation
+    else if(L<=4){ diff=3; diffMin=2; auto=true; }
+    else if(L<=7){ diff=4; diffMin=2; auto=true; }              // dif-4 dense cells
+    else { diff=4; diffMin=3; auto=true; }                       // only the hardest cells, fastest tempo
+  }
+  return { mode, diff, diffMin, auto, bpm, swing:0, feel:0, bars:8 };
+}
 const STAR_TOTAL=LEVELS.length*3;
 
 function segActivate(segId,attr,val){ const seg=$(segId); if(!seg)return;
@@ -1362,12 +1401,12 @@ function applyConfig(cfg){
   applyingCfg=true;
   if(cfg.mode==='random'){
     randomMode=true; $('randomRow').style.display='block'; segActivate('subdivSeg','s','random');
-    genDiff=cfg.diff||2; segActivate('diffSeg','d',String(genDiff));
+    genDiff=cfg.diff||2; genDiffMin=cfg.diffMin||1; segActivate('diffSeg','d',String(genDiff));
     autoAdv=!!cfg.auto; $('autoAdvChk').checked=autoAdv;
     if(autoAdv&&!nextBar) nextBar=makeBar().cells;
     generateBar();
   } else {
-    randomMode=false; subdiv=cfg.mode; $('randomRow').style.display='none'; segActivate('subdivSeg','s',cfg.mode);
+    randomMode=false; genDiffMin=1; subdiv=cfg.mode; $('randomRow').style.display='none'; segActivate('subdivSeg','s',cfg.mode);
   }
   bpm=cfg.bpm; $('bpm').value=bpm; $('bpmVal').textContent=bpm; beatDur=60/bpm; barDur=4*beatDur;
   swing=cfg.swing||0; segActivate('swingSeg','sw',(swing<=16?'0':swing<=49?'33':swing<=83?'66':'100')); const _sv=$('swingVal'); if(_sv) _sv.textContent={0:'straight',33:'soft',66:'medium',100:'hard'}[swing]||('swing '+swing);
@@ -1382,7 +1421,7 @@ function loadLevel(id){
   const L=LEVELS.find(x=>x.id===id); if(!L||id>unlockedFor(diffMode)) return;
   pendingLevel=id; prog.lastLevel=id; saveProg();
   applyMode('climb');       // enter climb first (this alone forces randomMode=false)
-  applyConfig(L.cfg);       // then apply the level — sets randomMode/subdiv correctly and renders
+  applyConfig(levelCfg(id, diffMode));   // pattern scales with the chosen difficulty tier
   renderClimbNow();
   const b=$('levelBanner');
   b.textContent='Level '+id+' \u00b7 '+L.name+'  loaded \u2014 '+(calibrated?'':'calibrate first, then ')+'press \u25B6 Play rhythm';
