@@ -227,7 +227,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 96</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 97</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -335,6 +335,7 @@
       <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
       <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
       <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
+      <div style="margin-top:14px"><button id="resetProgBtn2" class="danger">Reset challenge progress</button></div>
       <div style="margin-top:14px">
         <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Input device</label>
         <select id="inputPicker" style="width:100%;margin-top:6px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:14px">
@@ -445,8 +446,7 @@
 </main>
 
 <nav class="bottomnav">
-  <button data-screen="home" class="active"><span>▲</span>Levels</button>
-  <button data-screen="play"><span>▶</span>Play</button>
+  <button data-screen="play" class="active"><span>▶</span>Play</button>
   <button data-screen="settings"><span>⚙</span>Setup</button>
 </nav>
 
@@ -509,7 +509,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 96 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 97 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1165,6 +1165,7 @@ const ADVANCE={easy:1,medium:2,hard:3,pro:3};
 function needStars(d){ return ADVANCE[d||diffMode]||3; }
 function diffStars(rec,d){ return (rec&&rec.byDiff&&rec.byDiff[d||diffMode])||0; }
 function clearedOn(rec,d){ d=d||diffMode; return diffStars(rec,d) >= needStars(d); }
+function unlockedFor(dm){ dm=dm||diffMode; for(const L of LEVELS){ if(!clearedOn(prog.levels[L.id]||{},dm)) return L.id; } return LEVELS.length; }
 function centerScore(bias){return Math.max(0,Math.min(100,100-Math.abs(bias)*curDiff().cen));}
 function evennessScore(s){return Math.max(0,Math.min(100,100-s*curDiff().evn));}
 function centerGrade(sc,bias){const dir=Math.abs(bias)<6?'':bias>0?' · behind':' · ahead';
@@ -1288,7 +1289,7 @@ $('centerBtn')&& ($('centerBtn').onclick=()=>{ const c=$('coach');
   if(deltas.length){ addOffset(median(deltas)); if(c) c.textContent='Centered your '+(visualBeat?'muted':'click')+' timing on that run — next run reads from here ('+(curOffset()>0?'+':'')+Math.round(curOffset())+'ms). The other mode keeps its own offset.'; }
   else if(c){ c.textContent='Play a run first, then tap Center from last run.'; } });
 $('playBtn').onclick=()=>{
-  if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; try{($('calibNowBtn')||$('calibPrompt')).scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return; }
+  if(!calibratedThisSession && !calibPromptDismissed){ $('calibPrompt').style.display='block'; setTimeout(()=>{ try{ ($('calibNowBtn')||$('calibPrompt')).scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} },60); return; }
   startTransport(false);
 };
 $('calibNowBtn').onclick=()=>{ $('calibPrompt').style.display='none'; calibSamples=[];calibOffset=0; startTransport(true); };
@@ -1349,7 +1350,7 @@ function applyConfig(cfg){
 }
 
 function loadLevel(id){
-  const L=LEVELS.find(x=>x.id===id); if(!L||id>prog.unlocked) return;
+  const L=LEVELS.find(x=>x.id===id); if(!L||id>unlockedFor(diffMode)) return;
   pendingLevel=id; prog.lastLevel=id; saveProg();
   applyMode('climb');       // enter climb first (this alone forces randomMode=false)
   applyConfig(L.cfg);       // then apply the level — sets randomMode/subdiv correctly and renders
@@ -1438,7 +1439,7 @@ function buildLadder(wrap, inSheet){
   wrap.innerHTML=''; let tier='';
   LEVELS.forEach(L=>{
     if(L.tier!==tier){ tier=L.tier; const h=document.createElement('div'); h.className='tier'; h.textContent=tier; wrap.appendChild(h); }
-    const rec=prog.levels[L.id]||{}, locked=L.id>prog.unlocked, stars=diffStars(rec,diffMode);
+    const rec=prog.levels[L.id]||{}, locked=L.id>unlockedFor(diffMode), stars=diffStars(rec,diffMode);
     const btn=document.createElement('button');
     btn.className='lvl'+(locked?' locked':'')+(clearedOn(rec,diffMode)?' cleared':'');
     const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
@@ -1481,24 +1482,21 @@ if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filte
 $('autoAdvChk') && $('autoAdvChk').addEventListener('change',()=>{ if(!applyingCfg) clearPending(); });
 $('newRhythmBtn') && $('newRhythmBtn').addEventListener('click',()=>{ if(!applyingCfg) clearPending(); });
 
-$('resetProgBtn') && ($('resetProgBtn').onclick=()=>{
-  if(confirm('Reset all climb progress and saved calibration? This cannot be undone.')){
+function resetProgress(){
+  if(confirm('Reset all challenge progress and saved calibration? This cannot be undone.')){
     prog=defaultProg(); saveProg(); calibrated=false; calibOffset=0;
-    $('levelResult').style.display='none'; $('levelBanner').style.display='none'; renderLadder();
+    if($('levelResult')) $('levelResult').style.display='none'; if($('levelBanner')) $('levelBanner').style.display='none'; renderLadder(); if(typeof updateSetupBtn==='function') updateSetupBtn();
   }
-});
-
-function currentLevelId(){
-  for(const L of LEVELS){ const r=prog.levels[L.id]||{}; if(L.id<=prog.unlocked && !r.cleared) return L.id; }
-  return Math.min(prog.unlocked, LEVELS.length);
 }
+$('resetProgBtn') && ($('resetProgBtn').onclick=resetProgress);
+$('resetProgBtn2') && ($('resetProgBtn2').onclick=resetProgress);
+
+function currentLevelId(){ return unlockedFor(diffMode); }   // first level not yet cleared on this difficulty
 function resumeLevelId(){
-  // resume an unfinished level you were on; once it's cleared, move on to the next challenge
-  if(prog.lastLevel && prog.lastLevel<=prog.unlocked && LEVELS.find(x=>x.id===prog.lastLevel)){
-    const r=prog.levels[prog.lastLevel]||{};
-    if(!r.cleared) return prog.lastLevel;
-  }
-  return currentLevelId();
+  const u=unlockedFor(diffMode);
+  // resume the last level you were on if it's earned on this difficulty; otherwise the next unearned one
+  if(prog.lastLevel && prog.lastLevel<=u && LEVELS.find(x=>x.id===prog.lastLevel)) return prog.lastLevel;
+  return u;
 }
 function renderClimbNow(){
   if(!$('climbNow')) return;
