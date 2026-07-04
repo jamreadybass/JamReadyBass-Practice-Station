@@ -375,33 +375,59 @@ footer .small{color:var(--faint);font-size:.72rem;font-family:var(--ff-mono);mar
 document.getElementById('year').textContent = new Date().getFullYear();
 
 /* ---- generator data pools (from the JamReadyBass brief) ---- */
-const KEYS     = ['C','G','D','A','E','F','B\u266D','E\u266D'];
-const STYLES   = ['Funk','Soul','Motown','Blues','Rock','Pop','Jazz Swing','R&B','Reggae','Country'];
+const KEYS     = ['C','G','D','A','E','B','F\u266F','F','B\u266D','E\u266D','A\u266D','D\u266D'];
+const STYLES   = ['Funk','Soul','Motown','Blues','Rock','Pop','Jazz Swing','R&B','Reggae','Country',
+                  'Gospel','Latin','Bossa Nova','Ska','Disco','Hip-Hop','Neo-Soul','Fusion','Afrobeat','New Orleans Funk'];
 const FOCUS    = ['Pocket','Time Feel','Subdivision Control','Syncopation','Dynamics','Ghost Notes',
-                  'Articulation','Consistency','Space','Note Length'];
+                  'Articulation','Consistency','Space','Note Length',
+                  'Muting Control','Fretting-Hand Efficiency','Groove Repetition','Feel Behind the Beat',
+                  'Feel On Top of the Beat','Accent Placement','Two-Feel vs Four-Feel','Locking with the Kick',
+                  'Tone Consistency','Rhythmic Displacement'];
 const CONSTRAINTS = ['Roots only','Roots and fifths','Chord tones only','Use one position','Stay below the 7th fret',
                   'Leave space every measure','Quarter notes only','Use ghost notes','Use octaves',
-                  'Use chromatic approaches','Use rests creatively','Play only on beats 1 and 3','Play only on beats 2 and 4'];
+                  'Use chromatic approaches','Use rests creatively','Play only on beats 1 and 3','Play only on beats 2 and 4',
+                  'Eighth notes only','Stay in first position','No open strings','One finger per fret',
+                  'Use only two notes','Start every phrase on an upbeat','Land hard on beat 1','Play a walking line',
+                  'Repeat one one-bar pattern','Add a fill only in the last bar','Stay in one octave','Use slides between notes'];
 const CREATIVE = ['Create a 2-bar groove','Create a 4-bar groove','Support an imaginary singer','Make people dance',
                   'Lock in with the kick drum','Build tension and release','Play less than you want to',
-                  'Make a simple groove feel great','Create a memorable hook','Think like a session bassist'];
+                  'Make a simple groove feel great','Create a memorable hook','Think like a session bassist',
+                  'Write a groove you could loop for five minutes','Leave a hole for a horn stab',
+                  'Move the groove between low and high register','Make it feel lazy and relaxed',
+                  'Make it feel urgent and driving','Groove around a single repeated note','Answer an imaginary drum fill',
+                  'Build a bassline from just three notes','Make the verse and chorus feel different','Give the singer something to ride on'];
 
 /* ---- coach mode prompt pools ---- */
 const LISTENING = ['Listen to a classic Motown bass line.','Listen to a James Jamerson groove.',
                   'Listen to a Pino Palladino bass line.','Listen to a Duck Dunn recording.',
                   'Listen to a classic reggae bass groove.','Listen to a Bootsy Collins funk line.',
-                  'Listen to a Carol Kaye session recording.'];
+                  'Listen to a Carol Kaye session recording.','Listen to a Jaco Pastorius bass line.',
+                  'Listen to a Rocco Prestia sixteenth-note funk groove.','Listen to a Willie Weeks bass line.',
+                  'Listen to a Chuck Rainey groove.','Listen to a Verdine White disco line.',
+                  'Listen to an Aston Barrett reggae groove.','Listen to a Larry Graham slap groove.'];
 const EAR = ['Sing the root before playing it.','Sing the groove before playing it.','Hear the downbeat internally.',
-                  'Identify the chord movement by ear.','Sing the rhythm before performing it.'];
+                  'Identify the chord movement by ear.','Sing the rhythm before performing it.',
+                  'Hum the bassline away from the instrument.','Find the key by ear before you start.',
+                  'Tap the groove on your leg first.','Anticipate the next chord before it arrives.',
+                  'Listen for the space between the notes.'];
 const TECHNIQUE = ['Relax your plucking hand.','Minimize finger movement.','Focus on consistent tone.',
-                  'Play with lighter touch.','Focus on muting accuracy.'];
+                  'Play with lighter touch.','Focus on muting accuracy.',
+                  'Keep your fretting-hand thumb behind the neck.','Anchor your plucking hand for stability.',
+                  'Let unused strings rest under your fingers.','Keep your wrist relaxed and low.',
+                  'Match the volume of every note.'];
 const MINDSET = ['Serve the song.','Prioritize feel over complexity.','Play with confidence.',
-                  'Make every note intentional.','Focus on connection, not perfection.'];
+                  'Make every note intentional.','Focus on connection, not perfection.',
+                  'Hold the groove down for everyone else.','Play for the room, not the ego.',
+                  'Trust the pocket and stay patient.','Lock in and let the drummer breathe.',
+                  'Less is usually more.'];
 
 /* ---- rotating quick reminders ---- */
 const REMINDERS = ['Groove first.','Simplicity wins.','Leave space.','Support the music.','Listen deeply.',
                   'Time is everything.','Consistency beats intensity.','Make every note count.',
-                  'Practice with intention.','Feel before technique.'];
+                  'Practice with intention.','Feel before technique.',
+                  'Lock with the kick.','Breathe with the band.','Repetition builds pocket.','Play behind the beat.',
+                  'Let it groove.','Own beat one.','Mute the notes you skip.','Feel the space.',
+                  'Confidence is contagious.','Slow is smooth.'];
 
 /* ============================================================
    Safe localStorage wrapper (persists when hosted; degrades
