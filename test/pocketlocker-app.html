@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 90</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 91</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -488,7 +488,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 90 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 91 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -662,10 +662,10 @@ function gFlag(x,dbl,c){const col=c||FILL,sx=x+NHRX-1,ty=NY-NSTEM;
 // Standard rest glyphs — Bravura (SMuFL) outlines, shared by the static staff (SVG) and the highway (canvas Path2D).
 const REST_D={ q:'M112 55C135 84 156 111 174 141C177 147 183 158 183 161C183 163 183 166 181 167C179 173 173 174 166 174C160 174 148 171 143 170C141 170 138 170 137 170L125 166C50 166 1 233 1 304C1 376 63 446 168 527C180 536 194 540 206 540C216 540 226 537 228 531C229 527 230 524 230 521C230 508 219 497 207 487C189 487 173 448 170 435C166 423 164 410 164 397C164 338 194 292 255 292C297 292 344 308 369 317L370 318C376 320 379 320 382 320C386 320 389 318 389 314C389 297 351 249 336 232C281 166 236 112 236 32C236 30 236 29 236 27L238 17C238 16 238 14 238 13C243 -71 295 -140 333 -199C337 -206 338 -213 338 -220C338 -235 333 -248 333 -248C333 -248 120 -501 95 -526C88 -533 78 -537 69 -537C55 -537 40 -527 40 -507C40 -500 42 -492 46 -484C52 -468 134 -395 134 -291C134 -238 112 -176 48 -108C33 -94 27 -78 27 -66C27 -46 42 -32 42 -32Z', e:'M193 -154C193 -207 150 -251 96 -251C43 -251 0 -207 0 -154C0 -124 17 -98 39 -81C62 -65 89 -56 117 -56C137 -56 157 -60 173 -66C193 -72 206 -78 225 -88C228 -89 230 -89 232 -89C238 -89 239 -84 239 -76C239 -72 239 -66 238 -60C233 -39 130 248 104 343C104 360 137 361 145 361C161 361 181 359 196 347C200 344 341 -161 341 -161C347 -187 354 -210 356 -217C356 -232 341 -239 338 -240C336 -240 331 -240 323 -235C312 -226 240 -140 193 -140Z', s:'M300 -160C300 -215 256 -258 202 -258C148 -258 104 -215 104 -160C104 -101 164 -62 219 -62C258 -62 298 -75 331 -94C336 -95 338 -96 341 -96C346 -96 348 -94 348 -86C348 -63 275 151 265 173C253 200 215 217 194 217C196 212 196 207 196 203C196 148 151 105 98 105C43 105 0 148 0 203C0 262 60 301 115 301C153 301 190 288 223 271C226 271 229 274 229 279L228 281C228 282 228 282 228 282L91 690C91 690 91 691 91 691L89 693C89 706 102 720 134 720C176 720 183 703 189 687L356 138C393 16 420 -81 420 -81C420 -81 456 -207 459 -226C459 -229 461 -230 461 -232C461 -240 449 -246 446 -248C439 -248 435 -245 431 -242C420 -233 348 -147 300 -145Z' };
 const REST_CTR={ q:[135.5,1], e:[123.5,38.5], s:[160,160.5] };   // [cx,cy] bbox centers to place the glyph on the line
-const REST_S=0.036;                                              // glyph scale (font units -> px)
+const REST_S={ q:0.034, e:0.032, s:0.025 };                       // per-glyph scale (sixteenth smaller; its long tail reads big on a 1-line staff)
 const REST_P2D=(typeof Path2D!=='undefined')?{q:new Path2D(REST_D.q),e:new Path2D(REST_D.e),s:new Path2D(REST_D.s)}:null;
 function gRest(x,d,c){ const col=c||FILL, k=(d>=4?'q':(d>=2?'e':'s')), C=REST_CTR[k];
-  let out=`<path d="${REST_D[k]}" fill="${col}" transform="translate(${x} ${NY}) scale(${REST_S}) translate(${-C[0]} ${-C[1]})"/>`;
+  let out=`<path d="${REST_D[k]}" fill="${col}" transform="translate(${x} ${NY}) scale(${REST_S[k]}) translate(${-C[0]} ${-C[1]})"/>`;
   if(d===3) out+=`<circle cx="${x+8}" cy="${NY-1}" r="2.1" fill="${col}"/>`;   // dotted-eighth rest dot
   return out;
 }
@@ -750,7 +750,7 @@ window.addEventListener('resize',()=>{sizeStrip();});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{sizeStrip();},250));
 // canvas rest glyphs — same Bravura (SMuFL) outlines as the static staff, via Path2D. Centered on (x, staffY).
 function hwRest(ctx,x,durB,staffY,DPR){
-  const k=(durB>=0.9?'q':(durB>=0.4?'e':'s')), C=REST_CTR[k], S=REST_S*DPR;
+  const k=(durB>=0.9?'q':(durB>=0.4?'e':'s')), C=REST_CTR[k], S=REST_S[k]*DPR;
   ctx.save(); ctx.fillStyle='#1a160c';
   ctx.translate(x,staffY); ctx.scale(S,S); ctx.translate(-C[0],-C[1]);
   if(REST_P2D) ctx.fill(REST_P2D[k]); else ctx.fill(new Path2D(REST_D[k]));
