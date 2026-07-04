@@ -202,16 +202,18 @@
             <div class="seg" id="diffModeSeg">
               <button data-dm="easy">Easy</button>
               <button data-dm="medium" class="active">Medium</button>
+              <button data-dm="hard">Hard</button>
               <button data-dm="pro">Pro</button>
             </div>
           </div>
         </div>
       </div>
       <div id="climbControls" style="display:none;margin-top:8px">
-        <div class="ctrl" style="margin-bottom:12px"><label>Difficulty — Easy 1&#9733; &middot; Medium 2&#9733; &middot; Pro 3&#9733; to advance</label>
+        <div class="ctrl" style="margin-bottom:12px"><label>Difficulty — Easy 1&#9733; &middot; Medium 2&#9733; &middot; Hard/Pro 3&#9733; to advance</label>
           <div class="seg" id="climbDiffSeg">
             <button data-dm="easy">Easy</button>
             <button data-dm="medium">Medium</button>
+            <button data-dm="hard">Hard</button>
             <button data-dm="pro">Pro</button>
           </div>
         </div>
@@ -225,7 +227,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 95</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 96</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -507,7 +509,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 95 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 96 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1156,10 +1158,10 @@ function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.
 function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
 function rating(absd){const k=curDiff().rate;if(absd<=15*k)return{w:'Perfect',c:'#46d39a'};if(absd<=35*k)return{w:'Great',c:'#7ad39a'};if(absd<=60*k)return{w:'Good',c:'#ffb020'};if(absd<=100*k)return{w:'Loose',c:'#ff8a3d'};return{w:'Miss',c:'#ff5a52'};}
 let diffMode='medium';
-const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, pro:{cen:2.9,evn:1.8,rate:0.5} };
+const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, hard:{cen:2.1,evn:1.35,rate:0.7}, pro:{cen:2.9,evn:1.8,rate:0.5} };
 function curDiff(){ return DIFFS[diffMode]||DIFFS.medium; }
 // stars needed to advance scales with difficulty: Easy 1, Medium 2, Pro 3
-const ADVANCE={easy:1,medium:2,pro:3};
+const ADVANCE={easy:1,medium:2,hard:3,pro:3};
 function needStars(d){ return ADVANCE[d||diffMode]||3; }
 function diffStars(rec,d){ return (rec&&rec.byDiff&&rec.byDiff[d||diffMode])||0; }
 function clearedOn(rec,d){ d=d||diffMode; return diffStars(rec,d) >= needStars(d); }
@@ -1302,7 +1304,7 @@ function flashCountIn(n){$('countin').textContent='count-in… '+n;}
 const PKEY='pocketlocker.progress.v1';
 function defaultProg(){ return {levels:{}, unlocked:1, calib:null, sessions:0}; }
 let prog=(function(){ try{const p=JSON.parse(localStorage.getItem(PKEY)); return (p&&p.levels)?p:defaultProg();}catch(e){return defaultProg();} })();
-if(prog.diffMode){ if(prog.diffMode==='hard'){ prog.diffMode='medium'; } if(DIFFS[prog.diffMode]) diffMode=prog.diffMode; }
+if(prog.diffMode){ if(DIFFS[prog.diffMode]) diffMode=prog.diffMode; }
 function saveProg(){ try{localStorage.setItem(PKEY,JSON.stringify(prog));}catch(e){} }
 // build 82 one-time migration: old default Min gap was mistakenly 90ms; correct a saved 90 -> 70 exactly once.
 if(!prog.migRef70){ if(prog.det && +prog.det.ref===90){ prog.det.ref=70; } prog.migRef70=1; saveProg(); }
@@ -1399,18 +1401,18 @@ function evaluateLevel(id){
   const rec=prog.levels[id]||{stars:0,best:null,cleared:false};
   rec.best=bestOf(rec.best,f); rec.stars=Math.max(rec.stars,stars); rec.cleared=rec.cleared||cleared;
   rec.byDiff=rec.byDiff||{}; rec.byDiff[diffMode]=Math.max(rec.byDiff[diffMode]||0,stars);
-  const DRANK={easy:1,medium:2,pro:3};
+  const DRANK={easy:1,medium:2,hard:3,pro:4};
   if(cleared && (!rec.clearedDiff || DRANK[diffMode]>DRANK[rec.clearedDiff])) rec.clearedDiff=diffMode;
   prog.levels[id]=rec; prog.sessions=(prog.sessions||0)+1;
   if(cleared && id<LEVELS.length && prog.unlocked<id+1){ prog.unlocked=id+1; }
   saveProg();
-  const DNAME={easy:'Easy',medium:'Medium',pro:'Pro'};
-  const upDiff={easy:'medium',medium:'pro'}[diffMode];               // next difficulty tier
+  const DNAME={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
+  const upDiff={easy:'medium',medium:'hard',hard:'pro'}[diffMode];    // next difficulty tier
   const inTierNext = cleared && id<LEVELS.length;                    // more levels this tier
   const crossToNext = cleared && id===LEVELS.length && !!upDiff;     // beat 12 -> next difficulty, Level 1
   const hasNext = inTierNext || crossToNext;
   const nextName = inTierNext ? LEVELS.find(x=>x.id===id+1).name : (crossToNext ? LEVELS[0].name : '');
-  const tierUpLabel={easy:'Medium',medium:'Pro'}[diffMode];
+  const tierUpLabel={easy:'Medium',medium:'Hard',hard:'Pro'}[diffMode];
   showScorePop(f, stars, {
     title: cleared ? ('Level '+id+' cleared on '+DNAME[diffMode]+'!') : (stars+' of '+need+' star'+(need>1?'s':'')+' needed \u2014 not yet'),
     msg: !cleared
@@ -1440,7 +1442,7 @@ function buildLadder(wrap, inSheet){
     const btn=document.createElement('button');
     btn.className='lvl'+(locked?' locked':'')+(clearedOn(rec,diffMode)?' cleared':'');
     const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
-    const DL={easy:'EASY',medium:'MED',pro:'PRO'};
+    const DL={easy:'EASY',medium:'MED',hard:'HARD',pro:'PRO'};
     const dtag = (!locked && rec.clearedDiff) ? ' <span style="color:var(--amber);font-size:9px;letter-spacing:.1em;font-weight:800">'+DL[rec.clearedDiff]+'</span>' : '';
     btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+dtag+'</span><span class="lstars">'+starCell+'</span>';
     if(!locked) btn.onclick=()=>{ selectedLevel=L.id;
@@ -1503,7 +1505,7 @@ function renderClimbNow(){
   const id=selectedLevel||resumeLevelId(), L=LEVELS.find(x=>x.id===id)||LEVELS[0], r=prog.levels[id]||{};
   const st=diffStars(r,diffMode), need=needStars(diffMode);
   const stars='★'.repeat(st)+'☆'.repeat(3-st);
-  const DNAME={easy:'Easy',medium:'Medium',pro:'Pro'};
+  const DNAME={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
   const clearedCount=LEVELS.filter(x=>(prog.levels[x.id]||{}).cleared).length;
   const done=clearedCount>=LEVELS.length;
   const tag=done?'Challenge complete — replay anytime':'Up next';
@@ -1514,7 +1516,7 @@ function renderClimbNow(){
 let climbMode=true, selectedLevel=null, proView=false;
 function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
   const swName={0:'straight',33:'soft swing',66:'med swing',100:'hard swing'}[swing]||(swing>0?('swing '+swing):'straight');
-  const DN={easy:'Easy',medium:'Medium',pro:'Pro'};
+  const DN={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
   if(climbMode){ const lv=pendingLevel||selectedLevel||(typeof resumeLevelId==='function'?resumeLevelId():1);
     b.textContent='\u2699 Challenge \u00b7 Lv '+lv+' \u00b7 '+DN[diffMode]+' \u00b7 '+bpm+' bpm'; return; }
   if(randomMode){ b.textContent='\u2699 \uD83C\uDFB2 Random \u00b7 '+bpm+' bpm \u00b7 '+swName+' \u00b7 '+DN[diffMode]; return; }
