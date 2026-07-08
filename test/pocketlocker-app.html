@@ -127,6 +127,8 @@
     .primary.big{padding-top:12px;padding-bottom:12px}
     .countin{margin-top:4px;min-height:0}
   }
+  .jump{color:var(--amber);cursor:pointer;border-bottom:1px dotted var(--amber)}
+  .jump:active{opacity:.7}
 </style>
 <script>try{var _p=JSON.parse(localStorage.getItem('pocketlocker.progress.v1'));if(_p&&_p.theme==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
 </head>
@@ -145,6 +147,8 @@
     <div id="spScores" style="display:flex;gap:10px;justify-content:center;margin:14px 0"></div>
     <div id="spMsg" style="font-size:13px;color:var(--muted);margin-bottom:18px;min-height:16px"></div>
     <button class="primary big" id="spNext" style="width:100%">Continue</button>
+    <button id="spReplay" style="width:100%;margin-top:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;font-weight:600;cursor:pointer;display:none">Replay this level</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:12px">tap outside to stay on this level</div>
   </div>
 </div>
 
@@ -235,7 +239,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 105</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 107</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -461,11 +465,11 @@
       <details>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Troubleshooting</summary>
         <p class="help" style="margin-top:10px">
-          <b>Extra / phantom notes.</b> Tap your instrument preset first. Still over-counting? In <b>Detection test → Advanced</b>, raise <b>Trigger threshold</b> and <b>Ring rejection</b>. Keep <b>Speaker mode</b> on; headphones help most.<br><br>
-          <b>Notes aren't registering.</b> In <b>Detection test → Advanced</b>, lower <b>Trigger threshold</b>, or lower <b>Low-cut</b> so it hears your low strings — or just dig in a little harder.<br><br>
-          <b>Notes read early or late.</b> Calibrate (<b>Play → Calibrate now</b>), or tap <b>Center from last run</b> after a run to auto-correct.<br><br>
-          <b>Gems don't line up (Bluetooth lag).</b> Adjust <b>Highway sync</b> with the <b>−5 / +5</b> buttons until a gem meets the click. Never affects your score.<br><br>
-          <b>Phone, no headphones.</b> Turn on <b>Visual-only beat</b> — the click goes silent and the pocket pulses; play to the pulse.<br><br>
+          <b>Extra / phantom notes.</b> Tap your <b class="jump" data-jump="instrSeg">instrument preset</b> first. Still over-counting? In <b class="jump" data-jump="advDet">Detection test → Advanced</b>, raise <b class="jump" data-jump="riseThresh">Trigger threshold</b> and <b class="jump" data-jump="ringRej">Ring rejection</b>. Keep <b class="jump" data-jump="filterClickChk">Speaker mode</b> on; headphones help most.<br><br>
+          <b>Notes aren't registering.</b> In <b class="jump" data-jump="advDet">Detection test → Advanced</b>, lower <b class="jump" data-jump="riseThresh">Trigger threshold</b>, or lower <b class="jump" data-jump="lowCut">Low-cut</b> so it hears your low strings — or just dig in a little harder.<br><br>
+          <b>Notes read early or late.</b> <b class="jump" data-jump="calibBtn">Calibrate</b>, or tap <b class="jump" data-jump="centerBtn">Center from last run</b> after a run to auto-correct.<br><br>
+          <b>Gems don't line up (Bluetooth lag).</b> Adjust <b class="jump" data-jump="hwnudge">Highway sync</b> until a gem meets the click. Never affects your score.<br><br>
+          <b>Phone, no headphones.</b> Turn on <b class="jump" data-jump="visualBeatChk">Visual-only beat</b> — the click goes silent and the pocket pulses; play to the pulse.<br><br>
           <b>A level's locked.</b> Levels unlock one at a time per difficulty — clear the current one to open the next. Switch difficulty in the Challenge box.<br><br>
           <b>Start over.</b> <b>Reset challenge progress</b> is at the top of the Challenge box (tap twice to confirm). It keeps your calibration and detection tuning.
         </p>
@@ -538,7 +542,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 105 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 107 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1015,7 +1019,7 @@ function startTransport(forCalib){
     // short for fast ones (so real sixteenths aren't swallowed).
     const gapB = randomMode ? (genDiff>=2?0.25:0.5)
                : ({whole:4,half:2,quarter:1,eighth:0.5,sixteenth:0.25}[subdiv]||1);
-    const refMs = Math.round(Math.min(300, Math.max(60, gapB*beatDur*620)));
+    const refMs = Math.round(Math.min(170, Math.max(55, gapB*beatDur*380)));
     if($('ref')){ $('ref').value=refMs; $('refVal').textContent=refMs; }
     params.refractory=refMs/1000;
     if(node) node.port.postMessage({threshFactor:params.threshFactor, refractory:params.refractory});
@@ -1138,7 +1142,7 @@ function registerBar(barStart){
     let gapBeats=4;                                   // window = half the space around THIS note
     if(i>0) gapBeats=Math.min(gapBeats, pos[i]-pos[i-1]);
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
-    const win=Math.min(0.10, Math.max(0.045, gapBeats*beatDur*0.42));
+    const win=Math.min(0.10, Math.max(0.04, gapBeats*beatDur*0.35));
     expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
     if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
@@ -1390,7 +1394,14 @@ function levelCfg(level, tier){
     else if(L<=7){ diff=4; diffMin=2; auto=true; }              // dif-4 dense cells
     else { diff=4; diffMin=3; auto=true; }                       // only the hardest cells, fastest tempo
   }
-  return { mode, diff, diffMin, auto, bpm, swing:0, feel:0, bars:8 };
+  let swing=0, feel=0;
+  const TI={easy:0,medium:1,hard:2,pro:3}[tier];
+  if(TI>=1){                                    // Medium and up get feel + swing variety (Easy stays straight/on-beat)
+    if(L===5) feel=-25;                          // push-ahead pocket (aim early)
+    if(L===9) feel=25;                           // lay-back pocket (sit behind)
+    if(L===7 || L>=11) swing=(TI>=2?66:33);      // swung levels, deeper on Hard/Pro
+  }
+  return { mode, diff, diffMin, auto, bpm, swing, feel, bars:8 };
 }
 const STAR_TOTAL=LEVELS.length*3;
 
@@ -1460,6 +1471,9 @@ function showScorePop(f, stars, opts){
   $('spMsg').textContent = opts.msg||'';
   const btn=$('spNext'); btn.textContent=opts.nextLabel||'Continue';
   btn.onclick=function(){ pop.style.display='none'; if(opts.onNext) opts.onNext(); };
+  const rbtn=$('spReplay');
+  if(rbtn){ if(opts.onReplay){ rbtn.style.display='block'; rbtn.textContent=opts.replayLabel||'Replay this level'; rbtn.onclick=function(){ pop.style.display='none'; opts.onReplay(); }; } else rbtn.style.display='none'; }
+  pop.onclick=function(e){ if(e.target===pop){ pop.style.display='none'; } };   // tap the backdrop to dismiss and stay on this level
   pop.style.display='flex';
   const card=$('scorePopCard'); if(card){ card.style.animation='none'; void card.offsetWidth; card.style.animation='spop .34s cubic-bezier(.2,1.1,.3,1)'; }
 }
@@ -1494,9 +1508,12 @@ function evaluateLevel(id){
         ? ('You cleared all 12 on '+DNAME[diffMode]+'! Moving up to '+DNAME[upDiff]+' \u2014 next: Level 1, '+nextName+'.')
         : ('You topped the entire challenge on '+DNAME[diffMode]+'. Real pocket.'),
     nextLabel: inTierNext ? 'Next level \u2192' : (crossToNext ? ('Start '+DNAME[upDiff]+' \u2192') : (cleared ? 'Done' : 'Try again')),
+    onReplay: cleared ? function(){ loadLevel(id); if(window.showScreen) showScreen('play'); } : null,
+    replayLabel: 'Replay this level',
     onNext: function(){
       if(inTierNext){ loadLevel(id+1); if(window.showScreen) showScreen('play'); }
       else if(crossToNext){ setDifficulty(upDiff); prog.lastLevel=1; saveProg(); loadLevel(1); if(window.showScreen) showScreen('play'); }
+      else if(!cleared){ loadLevel(id); if(window.showScreen) showScreen('play'); }   // Try again -> replay this level
     }
   });
   const el=$('levelResult'); if(el) el.style.display='none';
@@ -1600,7 +1617,8 @@ function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
   const swName={0:'straight',33:'soft swing',66:'med swing',100:'hard swing'}[swing]||(swing>0?('swing '+swing):'straight');
   const DN={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
   if(climbMode){ const lv=pendingLevel||selectedLevel||(typeof resumeLevelId==='function'?resumeLevelId():1);
-    b.textContent='\u2699 Challenge \u00b7 Lv '+lv+' \u00b7 '+DN[diffMode]+' \u00b7 '+bpm+' bpm'; return; }
+    const extra = (feelMs<0?' \u00b7 push ahead':feelMs>0?' \u00b7 lay back':'') + (swing>0?' \u00b7 '+swName:'');
+    b.textContent='\u2699 Challenge \u00b7 Lv '+lv+' \u00b7 '+DN[diffMode]+' \u00b7 '+bpm+' bpm'+extra; return; }
   if(randomMode){ b.textContent='\u2699 \uD83C\uDFB2 Random \u00b7 '+bpm+' bpm \u00b7 '+swName+' \u00b7 '+DN[diffMode]; return; }
   const nv={whole:'Whole',half:'Half',quarter:'Quarter',eighth:'Eighth',sixteenth:'16th'}[subdiv];
   b.textContent='\u2699 Freeplay \u00b7 '+bpm+' bpm \u00b7 '+(nv||'')+' \u00b7 '+swName;
@@ -1626,6 +1644,18 @@ $('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.close
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
 $('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
+// clickable help terms -> jump to the actual control
+function jumpTo(elId){
+  const el=document.getElementById(elId); if(!el) return;
+  const scr=el.closest('.screen'); const map={screenPlay:'play',screenSettings:'settings',screenHome:'home'};
+  if(scr && window.showScreen) window.showScreen(map[scr.id]||'settings');
+  const body=el.closest('#detTestBody'); if(body) body.style.display='block';            // reveal the detection-test body if the target lives inside it
+  let p=el; while(p){ if(p.tagName==='DETAILS') p.open=true; p=p.parentElement; }          // open any collapsed sections above it
+  setTimeout(()=>{ try{ el.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
+    el.style.transition='outline .15s'; el.style.outline='2px solid var(--amber)'; el.style.outlineOffset='3px';
+    setTimeout(()=>{ el.style.outline=''; }, 1700); }, 90);
+}
+document.addEventListener('click', e=>{ const j=e.target.closest('[data-jump]'); if(j){ e.preventDefault(); jumpTo(j.dataset.jump); } });
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
 document.addEventListener('keydown',function(e){
   if(e.code!=='Space' && e.key!==' ') return;
