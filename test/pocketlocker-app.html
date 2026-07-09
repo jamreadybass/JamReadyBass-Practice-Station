@@ -243,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 110</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 111</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -547,7 +547,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 110 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 111 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1484,7 +1484,9 @@ function finalScores(){
   const cov=hits/Math.max(1,hits+missed);
   const covGate=Math.max(0, Math.min(1, (cov-0.35)/0.45));   // Center/Evenness need most notes actually hit
   const consist=Math.max(0, Math.min(1, 1-(sd-14)/26));      // "centered" requires a TIGHT spread — scatter can't fake it with a ~0 average
-  return { cen:Math.round(centerScore(bias)*consist*covGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)), rhy:rhythmScore()||0 };
+  const rhy=rhythmScore()||0;
+  const feelGate=Math.max(0, Math.min(1, rhy/60));            // no high feel score without playing the notes — low Rhythm tanks Center/Evenness (kills random's selection-bias Evenness)
+  return { cen:Math.round(centerScore(bias)*consist*covGate*feelGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)*feelGate), rhy };
 }
 function starsFor(f){   // one star per scoring category met
   let s=0;
