@@ -243,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 109</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 110</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -547,7 +547,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 109 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 110 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1177,7 +1177,7 @@ function registerBar(barStart){
     let gapBeats=4;                                   // window = half the space around THIS note
     if(i>0) gapBeats=Math.min(gapBeats, pos[i]-pos[i-1]);
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
-    const win=Math.min(0.10, Math.max(0.038, gapBeats*beatDur*0.30));
+    const win=Math.min(0.10, Math.max(0.032, gapBeats*beatDur*0.24));
     expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
     if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
@@ -1482,8 +1482,9 @@ function finalScores(){
   if((hits+missed)===0||deltas.length<3) return null;
   const bias=mean(deltas), sd=std(deltas);
   const cov=hits/Math.max(1,hits+missed);
-  const covGate=Math.max(0, Math.min(1, (cov-0.35)/0.45));   // Center/Evenness need most notes actually hit — patchy/random can't fluke a high feel score
-  return { cen:Math.round(centerScore(bias)*covGate), evn:Math.round(evennessScore(sd)*covGate), rhy:rhythmScore()||0 };
+  const covGate=Math.max(0, Math.min(1, (cov-0.35)/0.45));   // Center/Evenness need most notes actually hit
+  const consist=Math.max(0, Math.min(1, 1-(sd-14)/26));      // "centered" requires a TIGHT spread — scatter can't fake it with a ~0 average
+  return { cen:Math.round(centerScore(bias)*consist*covGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)), rhy:rhythmScore()||0 };
 }
 function starsFor(f){   // one star per scoring category met
   let s=0;
