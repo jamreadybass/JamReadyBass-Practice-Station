@@ -232,6 +232,10 @@
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tap any unlocked level to play it:</div>
         <div id="sheetLadder"></div>
       </div>
+      <div id="styleControls" style="display:none;margin-top:8px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Pick a groove — it loops with notation and gems, and scores how tight you lock to the feel:</div>
+        <div id="styleLadder"></div>
+      </div>
   </div>
 </div>
 <div class="appbar">
@@ -239,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 107</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 109</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -270,6 +274,7 @@
       <button data-m="climb">Challenge</button>
       <button data-m="free" class="active">Freeplay</button>
       <button data-m="random">🎲 Random</button>
+      <button data-m="style">🌍 Styles</button>
     </div>
     <div class="transport" style="margin-bottom:14px"><button id="openRhythm" class="primary" style="flex:1">⚙ Rhythm setup</button></div>
     <div class="panel" id="startPanel">
@@ -542,7 +547,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 107 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 109 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -652,8 +657,37 @@ const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
   eighth:[0,.5,1,1.5,2,2.5,3,3.5],
   sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
 let randomMode=false, genDiff=2, genDiffMin=1, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
+let styleMode=false, styleBars=[], styleIdx=0, styleName='';
+const STYLES=[{"genre":"Afro-Cuban / Latin","name":"Son / Salsa Tumbao","bars":[[{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":0,"d":4}],"rests":[]}],[{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":178,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Afro-Cuban / Latin","name":"Cha-cha-chá","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":122,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Afro-Cuban / Latin","name":"Bolero","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":80,"swing":0,"feel":16,"feelName":"laid back"},{"genre":"Afro-Cuban / Latin","name":"Cumbia","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":96,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Afro-Cuban / Latin","name":"Merengue","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":140,"swing":0,"feel":-10,"feelName":"on top"},{"genre":"Brazilian","name":"Bossa Nova","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":132,"swing":0,"feel":8,"feelName":"relaxed"},{"genre":"Brazilian","name":"Samba","bars":[[{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":130,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Brazilian","name":"Baião","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":104,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"One Drop","bars":[[{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":74,"swing":0,"feel":22,"feelName":"deep behind"},{"genre":"Reggae / Caribbean","name":"Steppers","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":78,"swing":0,"feel":14,"feelName":"behind"},{"genre":"Reggae / Caribbean","name":"Ska","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":150,"swing":33,"feel":0,"feelName":"bouncy swing"},{"genre":"Reggae / Caribbean","name":"Rocksteady","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":66,"swing":0,"feel":20,"feelName":"behind"},{"genre":"Reggae / Caribbean","name":"Reggaeton / Dembow","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]}]],"bpm":94,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"Mento","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":106,"swing":0,"feel":6,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"Calypso","bars":[[{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":124,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"Dub","bars":[[{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":70,"swing":0,"feel":24,"feelName":"deep behind"},{"genre":"African / World","name":"Afrobeat","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":112,"swing":0,"feel":0,"feelName":"centered"},{"genre":"African / World","name":"Highlife","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]}]],"bpm":116,"swing":0,"feel":-8,"feelName":"on top"},{"genre":"African / World","name":"Soukous","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]}]],"bpm":132,"swing":0,"feel":-6,"feelName":"on top"},{"genre":"Funk / American","name":"Funk (16ths + ghosts)","bars":[[{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":98,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Funk / American","name":"Motown","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]}]],"bpm":124,"swing":0,"feel":-6,"feelName":"on top"},{"genre":"Funk / American","name":"New Orleans Second Line","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]}]],"bpm":92,"swing":33,"feel":12,"feelName":"loose, behind"},{"genre":"Funk / American","name":"Gospel","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":88,"swing":33,"feel":8,"feelName":"behind"},{"genre":"Funk / American","name":"Zydeco","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":138,"swing":0,"feel":-8,"feelName":"on top"},{"genre":"French","name":"Yé-yé","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":130,"swing":33,"feel":0,"feelName":"bouncy swing"}];
 let sessionCompleted=false, pendingLevel=null, applyingCfg=false;
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
+function startStyle(idx){
+  const g=STYLES[idx]; if(!g) return;
+  styleMode=true; randomMode=true; styleBars=g.bars; styleIdx=0; styleName=g.name;
+  autoAdv = g.bars.length>1;
+  bpm=g.bpm; if($('bpm')){$('bpm').value=bpm;} if($('bpmVal')) $('bpmVal').textContent=bpm; beatDur=60/bpm; barDur=4*beatDur;
+  swing=g.swing||0; feelMs=g.feel||0;
+  if($('swingSeg')) segActivate('swingSeg','sw',(swing<=16?'0':swing<=49?'33':swing<=83?'66':'100'));
+  if($('swingVal')) $('swingVal').textContent={0:'straight',33:'soft',66:'medium'}[swing]||'straight';
+  maxBars=8; segActivate('lenSeg','n','8');
+  clearPending();
+  if(typeof generateBar==='function') generateBar();
+  if(typeof renderNotation==='function') renderNotation();
+  if(typeof updateSetupBtn==='function') updateSetupBtn();
+  const sh=$('rhythmSheet'); if(sh) sh.style.display='none';
+  if(window.showScreen) showScreen('play');
+}
+function renderStyleList(){
+  const wrap=$('styleLadder'); if(!wrap) return; wrap.innerHTML=''; let genre='';
+  STYLES.forEach((g,i)=>{
+    if(g.genre!==genre){ genre=g.genre; const h=document.createElement('div'); h.className='tier'; h.textContent=genre; wrap.appendChild(h); }
+    const btn=document.createElement('button'); btn.className='lvl';
+    btn.innerHTML='<span class="lname">'+g.name+'</span><span class="lstars" style="color:var(--muted);font-size:11px;white-space:nowrap">'+g.bpm+' bpm · '+g.feelName+'</span>';
+    btn.onclick=()=>startStyle(i);
+    wrap.appendChild(btn);
+  });
+}
+
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
 function swungBeats(posBeats){
   if(swing>0){                                    // delay the off-beats in any mode / subdivision
@@ -686,6 +720,7 @@ const CELLS=[
   {dif:4,notes:[{s:0,d:2},{s:3,d:1}],rests:[{s:2,d:1}]},                // 8th · [and rest] · a
 ];
 function makeBar(){
+  if(styleMode && styleBars.length){ const cells=styleBars[styleIdx%styleBars.length]; styleIdx++; return {cells, onsets:onsetsOf(cells)}; }
   let pool=CELLS.filter(c=>c.dif<=genDiff && c.dif>=genDiffMin);
   if(!pool.length) pool=CELLS.filter(c=>c.dif<=genDiff);
   let cells,onsets,tries=0;
@@ -1142,7 +1177,7 @@ function registerBar(barStart){
     let gapBeats=4;                                   // window = half the space around THIS note
     if(i>0) gapBeats=Math.min(gapBeats, pos[i]-pos[i-1]);
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
-    const win=Math.min(0.10, Math.max(0.04, gapBeats*beatDur*0.35));
+    const win=Math.min(0.10, Math.max(0.038, gapBeats*beatDur*0.30));
     expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
     if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
       const o=ac.createOscillator(),g=ac.createGain();
@@ -1447,7 +1482,7 @@ function finalScores(){
   if((hits+missed)===0||deltas.length<3) return null;
   const bias=mean(deltas), sd=std(deltas);
   const cov=hits/Math.max(1,hits+missed);
-  const covGate=Math.max(0, Math.min(1, (cov-0.2)/0.35));   // full credit at ~55%+ of notes hit; ~0 below ~20% (kills random)
+  const covGate=Math.max(0, Math.min(1, (cov-0.35)/0.45));   // Center/Evenness need most notes actually hit — patchy/random can't fluke a high feel score
   return { cen:Math.round(centerScore(bias)*covGate), evn:Math.round(evennessScore(sd)*covGate), rhy:rhythmScore()||0 };
 }
 function starsFor(f){   // one star per scoring category met
@@ -1616,6 +1651,7 @@ let climbMode=true, selectedLevel=null, proView=false;
 function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
   const swName={0:'straight',33:'soft swing',66:'med swing',100:'hard swing'}[swing]||(swing>0?('swing '+swing):'straight');
   const DN={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
+  if(styleMode){ b.textContent='\u2699 \uD83C\uDF0D '+(styleName||'Styles')+' \u00b7 '+bpm+' bpm'+(swing>0?' \u00b7 '+swName:'')+(feelMs<0?' \u00b7 on top':feelMs>0?' \u00b7 behind':''); return; }
   if(climbMode){ const lv=pendingLevel||selectedLevel||(typeof resumeLevelId==='function'?resumeLevelId():1);
     const extra = (feelMs<0?' \u00b7 push ahead':feelMs>0?' \u00b7 lay back':'') + (swing>0?' \u00b7 '+swName:'');
     b.textContent='\u2699 Challenge \u00b7 Lv '+lv+' \u00b7 '+DN[diffMode]+' \u00b7 '+bpm+' bpm'+extra; return; }
@@ -1624,18 +1660,20 @@ function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
   b.textContent='\u2699 Freeplay \u00b7 '+bpm+' bpm \u00b7 '+(nv||'')+' \u00b7 '+swName;
 }
 function applyMode(m){
-  climbMode=(m==='climb'); const isRandom=(m==='random'); segActivate('modeSeg','m',m);
-  randomMode=isRandom;
+  climbMode=(m==='climb'); const isRandom=(m==='random'), isStyle=(m==='style'); segActivate('modeSeg','m',m);
+  randomMode=isRandom||isStyle; styleMode=isStyle; if(!isStyle){ styleBars=[]; }
   const fh=$('freeHint'); if(fh){ fh.style.display=climbMode?'none':'block';
-    fh.textContent = isRandom ? 'Random — fresh generated rhythms. Tap New rhythm, or turn on New one every bar.'
-                              : 'Freeplay — build a rhythm below and hit Play. Nothing scored against the challenge.'; }
-  const fc=$('freeControls'); if(fc) fc.style.display=climbMode?'none':'block';
+    fh.textContent = isStyle ? 'Styles — pick a groove and play along; scored on how tight you lock to the feel.'
+                     : isRandom ? 'Random — fresh generated rhythms. Tap New rhythm, or turn on New one every bar.'
+                                : 'Freeplay — build a rhythm below and hit Play. Nothing scored against the challenge.'; }
+  const fc=$('freeControls'); if(fc) fc.style.display=(climbMode||isStyle)?'none':'block';
   const cc=$('climbControls'); if(cc) cc.style.display=climbMode?'block':'none';
+  const sc=$('styleControls'); if(sc){ sc.style.display=isStyle?'block':'none'; if(isStyle && typeof renderStyleList==='function') renderStyleList(); }
   if(climbMode){ segActivate('climbDiffSeg','dm',diffMode); if(typeof renderLadder==='function') renderLadder(); }
-  const nvr=$('noteValueRow'); if(nvr) nvr.style.display=(!climbMode && !isRandom)?'block':'none';
+  const nvr=$('noteValueRow'); if(nvr) nvr.style.display=(!climbMode && !isRandom && !isStyle)?'block':'none';
   const rr=$('randomRow'); if(rr) rr.style.display=isRandom?'block':'none';
   if(!climbMode) clearPending();
-  if(isRandom && typeof generateBar==='function') generateBar();
+  if(isRandom && !isStyle && typeof generateBar==='function') generateBar();
   if(!climbMode && typeof renderNotation==='function') renderNotation();
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
