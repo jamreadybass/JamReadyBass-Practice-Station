@@ -184,7 +184,6 @@
           </label>
         </div>
       </div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="240" value="90"></div>
       <div class="ctrl" style="margin-bottom:14px"><label>Swing <span class="val" id="swingVal" style="text-transform:none">straight</span></label>
         <div class="seg" id="swingSeg">
           <button data-sw="0" class="active">Off</button>
@@ -200,23 +199,6 @@
           <button data-f="25">Lay back</button>
         </div>
       </div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Session length (measures)</label>
-        <div class="seg" id="lenSeg">
-          <button data-n="4">4</button>
-          <button data-n="8" class="active">8</button>
-          <button data-n="16">16</button>
-          <button data-n="32">32</button>
-          <button data-n="0">∞</button>
-        </div>
-      </div>
-          <div class="ctrl" style="margin-bottom:14px"><label>Timing difficulty — how tight the pocket is</label>
-            <div class="seg" id="diffModeSeg">
-              <button data-dm="easy">Easy</button>
-              <button data-dm="medium" class="active">Medium</button>
-              <button data-dm="hard">Hard</button>
-              <button data-dm="pro">Pro</button>
-            </div>
-          </div>
         </div>
       </div>
       <div id="climbControls" style="display:none;margin-top:8px">
@@ -243,7 +225,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 120</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 121</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -295,8 +277,31 @@
       <button class="primary big" id="playBtn">▶ Play</button>
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
-    <div class="ctrl" style="margin-top:12px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
-    <div class="ctrl" style="margin-top:10px"><label>Downbeat accent <span class="val" id="dbVal">40</span> — soft / off left, strong accent right</label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
+    <details id="playAdjust" style="margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px">
+      <summary style="cursor:pointer;font-size:13px;color:var(--amber);font-weight:700">Adjust — tempo · difficulty · length · click</summary>
+      <div style="margin-top:14px">
+        <div class="ctrl" style="margin-bottom:14px"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="240" value="90"></div>
+        <div class="ctrl" style="margin-bottom:14px"><label>Difficulty — how tight the pocket is</label>
+          <div class="seg" id="diffModeSeg">
+            <button data-dm="easy">Easy</button>
+            <button data-dm="medium" class="active">Medium</button>
+            <button data-dm="hard">Hard</button>
+            <button data-dm="pro">Pro</button>
+          </div>
+        </div>
+        <div class="ctrl" style="margin-bottom:14px"><label>Session length (measures)</label>
+          <div class="seg" id="lenSeg">
+            <button data-n="4">4</button>
+            <button data-n="8" class="active">8</button>
+            <button data-n="16">16</button>
+            <button data-n="32">32</button>
+            <button data-n="0">∞</button>
+          </div>
+        </div>
+        <div class="ctrl" style="margin-bottom:14px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+        <div class="ctrl"><label>Downbeat accent <span class="val" id="dbVal">40</span> — soft / off left, strong accent right</label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
+      </div>
+    </details>
     <div id="calibPrompt" class="warn" style="display:none">
       <b>Calibrate first?</b> Play ~16 steady quarter notes locked to the <b>click</b> — ignore the highway; you're playing to the sound. This measures your device's audio delay so your notes land in the right slot. Re-do it if you change headphones.
       <div class="transport" style="margin-top:8px">
@@ -548,7 +553,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 120 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 121 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
