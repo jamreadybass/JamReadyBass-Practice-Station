@@ -158,67 +158,6 @@
       <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700">Rhythm setup</div>
       <button id="rhythmSheetClose" class="primary" style="padding:9px 18px">Done</button>
     </div>
-      <div id="freeHint" class="climb-summary" style="display:none">Freeplay — build a rhythm below and hit Play. Nothing is scored against the challenge.</div>
-      <div id="freeControls" style="display:none;margin-top:14px">
-        <div class="panel" style="margin-bottom:0">
-          <h2>Set your rhythm</h2>
-<div class="ctrl" id="noteValueRow" style="margin-bottom:14px"><label>Note value</label>
-        <div class="seg" id="subdivSeg">
-          <button data-s="whole">Whole</button>
-          <button data-s="half">Half</button>
-          <button data-s="quarter" class="active">Quarter</button>
-          <button data-s="eighth">Eighth</button>
-          <button data-s="sixteenth">16th</button>
-        </div>
-      </div>
-      <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
-        <div class="seg" id="diffSeg">
-          <button data-d="1">Basic</button>
-          <button data-d="2" class="active">Sixteenths</button>
-          <button data-d="3">Syncopated</button>
-        </div>
-        <div class="transport" style="margin-top:10px">
-          <button id="newRhythmBtn">🎲 New rhythm</button>
-          <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)">
-            <input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar
-          </label>
-        </div>
-      </div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Swing <span class="val" id="swingVal" style="text-transform:none">straight</span></label>
-        <div class="seg" id="swingSeg">
-          <button data-sw="0" class="active">Off</button>
-          <button data-sw="33">Soft</button>
-          <button data-sw="66">Medium</button>
-          <button data-sw="100">Hard</button>
-        </div>
-      </div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Feel — where you aim relative to the beat</label>
-        <div class="seg" id="feelSeg">
-          <button data-f="-25">Push ahead</button>
-          <button data-f="0" class="active">On the beat</button>
-          <button data-f="25">Lay back</button>
-        </div>
-      </div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Tempo <span class="val" id="bpmSVal">90</span> bpm</label><input type="range" id="bpmS" min="50" max="240" value="90"></div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Timing difficulty — how tight the pocket is</label>
-        <div class="seg" id="diffModeSegS">
-          <button data-dm="easy">Easy</button>
-          <button data-dm="medium" class="active">Medium</button>
-          <button data-dm="hard">Hard</button>
-          <button data-dm="pro">Pro</button>
-        </div>
-      </div>
-      <div class="ctrl" style="margin-bottom:14px"><label>Session length (measures)</label>
-        <div class="seg" id="lenSegS">
-          <button data-n="4">4</button>
-          <button data-n="8" class="active">8</button>
-          <button data-n="16">16</button>
-          <button data-n="32">32</button>
-          <button data-n="0">∞</button>
-        </div>
-      </div>
-        </div>
-      </div>
       <div id="climbControls" style="display:none;margin-top:8px">
         <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button id="resetProgBtn3" class="danger" style="font-size:12px;padding:6px 12px">Reset challenge progress</button></div>
         <div class="ctrl" style="margin-bottom:12px"><label>Difficulty — Easy 1&#9733; &middot; Medium 2&#9733; &middot; Hard/Pro 3&#9733; to advance</label>
@@ -243,7 +182,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 122</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 123</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -296,25 +235,27 @@
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
     <details id="playAdjust" style="margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px">
-      <summary style="cursor:pointer;font-size:13px;color:var(--amber);font-weight:700">Adjust — tempo · difficulty · length · click</summary>
+      <summary style="cursor:pointer;font-size:13px;color:var(--amber);font-weight:700">Adjust settings</summary>
       <div style="margin-top:14px">
-        <div class="ctrl" style="margin-bottom:14px"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="240" value="90"></div>
-        <div class="ctrl" style="margin-bottom:14px"><label>Difficulty — how tight the pocket is</label>
-          <div class="seg" id="diffModeSeg">
-            <button data-dm="easy">Easy</button>
-            <button data-dm="medium" class="active">Medium</button>
-            <button data-dm="hard">Hard</button>
-            <button data-dm="pro">Pro</button>
-          </div>
+        <div class="ctrl" id="noteValueRow" style="margin-bottom:14px;display:none"><label>Note value</label>
+          <div class="seg" id="subdivSeg"><button data-s="whole">Whole</button><button data-s="half">Half</button><button data-s="quarter" class="active">Quarter</button><button data-s="eighth">Eighth</button><button data-s="sixteenth">16th</button></div>
         </div>
-        <div class="ctrl" style="margin-bottom:14px"><label>Session length (measures)</label>
-          <div class="seg" id="lenSeg">
-            <button data-n="4">4</button>
-            <button data-n="8" class="active">8</button>
-            <button data-n="16">16</button>
-            <button data-n="32">32</button>
-            <button data-n="0">∞</button>
-          </div>
+        <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
+          <div class="seg" id="diffSeg"><button data-d="1">Basic</button><button data-d="2" class="active">Sixteenths</button><button data-d="3">Syncopated</button></div>
+          <div class="transport" style="margin-top:10px"><button id="newRhythmBtn">🎲 New rhythm</button><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar</label></div>
+        </div>
+        <div class="ctrl" id="adjTempo" style="margin-bottom:14px"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label><input type="range" id="bpm" min="50" max="240" value="90"></div>
+        <div class="ctrl" id="adjSwing" style="margin-bottom:14px"><label>Swing <span class="val" id="swingVal" style="text-transform:none">straight</span></label>
+          <div class="seg" id="swingSeg"><button data-sw="0" class="active">Off</button><button data-sw="33">Soft</button><button data-sw="66">Medium</button><button data-sw="100">Hard</button></div>
+        </div>
+        <div class="ctrl" id="adjFeel" style="margin-bottom:14px"><label>Feel — where you aim relative to the beat</label>
+          <div class="seg" id="feelSeg"><button data-f="-25">Push ahead</button><button data-f="0" class="active">On the beat</button><button data-f="25">Lay back</button></div>
+        </div>
+        <div class="ctrl" id="adjDiff" style="margin-bottom:14px"><label>Difficulty — how tight the pocket is</label>
+          <div class="seg" id="diffModeSeg"><button data-dm="easy">Easy</button><button data-dm="medium" class="active">Medium</button><button data-dm="hard">Hard</button><button data-dm="pro">Pro</button></div>
+        </div>
+        <div class="ctrl" id="adjLen" style="margin-bottom:14px"><label>Session length (measures)</label>
+          <div class="seg" id="lenSeg"><button data-n="4">4</button><button data-n="8" class="active">8</button><button data-n="16">16</button><button data-n="32">32</button><button data-n="0">∞</button></div>
         </div>
         <div class="ctrl" style="margin-bottom:14px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
         <div class="ctrl"><label>Downbeat accent <span class="val" id="dbVal">40</span> — soft / off left, strong accent right</label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
@@ -571,7 +512,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 122 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 123 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1735,13 +1676,18 @@ function applyMode(m){
   if(climbMode){ segActivate('climbDiffSeg','dm',diffMode); if(typeof renderLadder==='function') renderLadder(); }
   const nvr=$('noteValueRow'); if(nvr) nvr.style.display=(!climbMode && !isRandom && !isStyle)?'block':'none';
   const rr=$('randomRow'); if(rr) rr.style.display=isRandom?'block':'none';
+  const fpRand=(!climbMode && !isStyle);   // Freeplay or Random
+  ['adjSwing','adjFeel'].forEach(id=>{const el=$(id); if(el) el.style.display=fpRand?'block':'none';});
+  ['adjTempo','adjDiff','adjLen'].forEach(id=>{const el=$(id); if(el) el.style.display=(fpRand||isStyle)?'block':'none';});
   if(!climbMode) clearPending();
   if(isRandom && !isStyle && typeof generateBar==='function') generateBar();
   if(!climbMode && typeof renderNotation==='function') renderNotation();
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
-$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; applyMode(b.dataset.m); const sh=$('rhythmSheet'); if(sh) sh.style.display='flex'; });
+$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; const m=b.dataset.m; applyMode(m); const sh=$('rhythmSheet');
+  if(m==='style'||m==='climb'){ if(sh) sh.style.display='flex'; }
+  else { if(sh) sh.style.display='none'; const pa=$('playAdjust'); if(pa) pa.open=true; } });
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
 $('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
