@@ -243,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 118</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 119</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -296,7 +296,7 @@
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
     <div class="ctrl" style="margin-top:12px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
-    <div class="ctrl" style="margin-top:10px"><label>Downbeat accent <span class="val" id="dbVal">50</span> — how much beat 1 stands out (flat left, strong accent right)</label><input type="range" id="downbeat" min="0" max="100" value="50"></div>
+    <div class="ctrl" style="margin-top:10px"><label>Downbeat accent <span class="val" id="dbVal">40</span> — soft / off left, strong accent right</label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
     <div id="calibPrompt" class="warn" style="display:none">
       <b>Calibrate first?</b> Play ~16 steady quarter notes locked to the <b>click</b> — ignore the highway; you're playing to the sound. This measures your device's audio delay so your notes land in the right slot. Re-do it if you change headphones.
       <div class="transport" style="margin-top:8px">
@@ -521,7 +521,7 @@ let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], hpFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
 let clickTimes=[];
-let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true, downbeatLevel=50;
+let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true, downbeatLevel=40;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0, calibOffsetVis=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false, roomCheckedThisSession=false, autoCenteredSession=false;
 let deltas=[], hits=0, missed=0, extra=0, hitLog=[];
@@ -547,7 +547,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 118 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 119 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1132,7 +1132,7 @@ function scheduleClick(t,accent){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
     const o=ac.createOscillator(),g=ac.createGain();
     o.frequency.value=accent?1600:1100;
-    const peak=clickVol*(accent? (0.36 + 0.30*(downbeatLevel/100)) : 0.36);   // downbeat accent: 0 = flat (same as other beats), 100 = strong accent
+    const peak=clickVol*(accent? (0.06 + 0.60*(downbeatLevel/100)) : 0.36);   // downbeat: 0 = near-silent (won't mask), ~50 = same as other beats, 100 = strong accent
     if(filterClick){
       // Speaker mode: pure sine + smooth raised-cosine (Hann) envelope = a soft beep with
       // no sharp transient, so almost nothing survives the notch to trip the onset detector.
