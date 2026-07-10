@@ -243,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 112</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 114</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -295,6 +295,7 @@
       <button class="primary big" id="playBtn">▶ Play</button>
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
+    <div class="ctrl" style="margin-top:12px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
     <div id="calibPrompt" class="warn" style="display:none">
       <b>Calibrate first?</b> Play ~16 steady quarter notes locked to the <b>click</b> — ignore the highway; you're playing to the sound. This measures your device's audio delay so your notes land in the right slot. Re-do it if you change headphones.
       <div class="transport" style="margin-top:8px">
@@ -418,7 +419,6 @@
         </div>
         <div class="row" style="margin-top:14px">
           <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">6</span></label><input type="range" id="sens" min="1" max="10" value="6"></div>
-          <div class="ctrl"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
           <div class="ctrl"><label>Downbeat volume <span class="val" id="dbVal">100</span> — lower if beat 1 is too loud vs the subdivisions</label><input type="range" id="downbeat" min="0" max="100" value="100"></div>
         </div>
         <div style="margin-top:16px">
@@ -547,7 +547,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 112 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 114 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -657,13 +657,14 @@ const SUBDIV={whole:[0],half:[0,2],quarter:[0,1,2,3],
   eighth:[0,.5,1,1.5,2,2.5,3,3.5],
   sixteenth:[0,.25,.5,.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]};
 let randomMode=false, genDiff=2, genDiffMin=1, autoAdv=false, currentBar=null, nextBar=null, genOnsets=[];
-let styleMode=false, styleBars=[], styleIdx=0, styleName='';
+let styleMode=false, styleBars=[], styleIdx=0, styleName='', styleClick24=false;
 const STYLES=[{"genre":"Afro-Cuban / Latin","name":"Son / Salsa Tumbao","bars":[[{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":0,"d":4}],"rests":[]}],[{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":178,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Afro-Cuban / Latin","name":"Cha-cha-chá","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":122,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Afro-Cuban / Latin","name":"Bolero","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":80,"swing":0,"feel":16,"feelName":"laid back"},{"genre":"Afro-Cuban / Latin","name":"Cumbia","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":96,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Afro-Cuban / Latin","name":"Merengue","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":140,"swing":0,"feel":-10,"feelName":"on top"},{"genre":"Brazilian","name":"Bossa Nova","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":132,"swing":0,"feel":8,"feelName":"relaxed"},{"genre":"Brazilian","name":"Samba","bars":[[{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":130,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Brazilian","name":"Baião","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":104,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"One Drop","bars":[[{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":74,"swing":0,"feel":22,"feelName":"deep behind"},{"genre":"Reggae / Caribbean","name":"Steppers","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":78,"swing":0,"feel":14,"feelName":"behind"},{"genre":"Reggae / Caribbean","name":"Ska","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":150,"swing":33,"feel":0,"feelName":"bouncy swing"},{"genre":"Reggae / Caribbean","name":"Rocksteady","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":66,"swing":0,"feel":20,"feelName":"behind"},{"genre":"Reggae / Caribbean","name":"Reggaeton / Dembow","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":3,"d":1}],"rests":[{"s":0,"d":3}]}]],"bpm":94,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"Mento","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":106,"swing":0,"feel":6,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"Calypso","bars":[[{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":124,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Reggae / Caribbean","name":"Dub","bars":[[{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[],"rests":[{"s":0,"d":4}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":70,"swing":0,"feel":24,"feelName":"deep behind"},{"genre":"African / World","name":"Afrobeat","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":112,"swing":0,"feel":0,"feelName":"centered"},{"genre":"African / World","name":"Highlife","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]}]],"bpm":116,"swing":0,"feel":-8,"feelName":"on top"},{"genre":"African / World","name":"Soukous","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]}]],"bpm":132,"swing":0,"feel":-6,"feelName":"on top"},{"genre":"Funk / American","name":"Funk (16ths + ghosts)","bars":[[{"notes":[{"s":0,"d":3},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":98,"swing":0,"feel":0,"feelName":"centered"},{"genre":"Funk / American","name":"Motown","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":1},{"s":3,"d":1}],"rests":[]}]],"bpm":124,"swing":0,"feel":-6,"feelName":"on top"},{"genre":"Funk / American","name":"New Orleans Second Line","bars":[[{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]},{"notes":[{"s":0,"d":2},{"s":3,"d":1}],"rests":[{"s":2,"d":1}]}]],"bpm":92,"swing":33,"feel":12,"feelName":"loose, behind"},{"genre":"Funk / American","name":"Gospel","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":88,"swing":33,"feel":8,"feelName":"behind"},{"genre":"Funk / American","name":"Zydeco","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":138,"swing":0,"feel":-8,"feelName":"on top"},{"genre":"Funk / American","name":"Hip-Hop (Boom Bap)","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":2,"d":2}],"rests":[{"s":0,"d":2}]}]],"bpm":86,"swing":0,"feel":26,"feelName":"laid back"},{"genre":"Funk / American","name":"Walking Swing","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":138,"swing":33,"feel":6,"feelName":"walking swing"},{"genre":"French","name":"Yé-yé","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":130,"swing":33,"feel":0,"feelName":"bouncy swing"},{"genre":"Rock / Blues / Country","name":"Rock (Driving 8ths)","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":128,"swing":0,"feel":-6,"feelName":"driving"},{"genre":"Rock / Blues / Country","name":"Blues Shuffle","bars":[[{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]},{"notes":[{"s":0,"d":2},{"s":2,"d":2}],"rests":[]}]],"bpm":96,"swing":66,"feel":10,"feelName":"shuffle, behind"},{"genre":"Rock / Blues / Country","name":"Country Train Beat","bars":[[{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]},{"notes":[{"s":0,"d":4}],"rests":[]}]],"bpm":140,"swing":0,"feel":-8,"feelName":"on top, driving"}];
 let sessionCompleted=false, pendingLevel=null, applyingCfg=false;
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function startStyle(idx){
   const g=STYLES[idx]; if(!g) return;
   styleMode=true; randomMode=true; styleBars=g.bars; styleIdx=0; styleName=g.name;
+  styleClick24 = (g.swing>0) || (g.genre.indexOf('Latin')<0 && g.genre.indexOf('Brazilian')<0);   // swing/backbeat -> click 2&4; clave-based Latin/Brazilian keep the straight click
   autoAdv = g.bars.length>1;
   bpm=g.bpm; if($('bpm')){$('bpm').value=bpm;} if($('bpmVal')) $('bpmVal').textContent=bpm; beatDur=60/bpm; barDur=4*beatDur;
   swing=g.swing||0; feelMs=g.feel||0;
@@ -1107,7 +1108,12 @@ function scheduler(){
       setTimeout(()=>stopTransport(false), Math.max(250,(endTime-ac.currentTime)*1000+150));
       return;
     }
-    scheduleClick(nextBeatTime, realBeat>=0 && realBeat%4===0);
+    const bib = realBeat>=0 ? realBeat%4 : -1;   // beat-in-bar: 0=one,1=two,2=three,3=four
+    if(styleClick24 && realBeat>=0){
+      if(bib===1 || bib===3) scheduleClick(nextBeatTime, bib===1);   // backbeat click: 2 & 4 only, light accent on 2
+    } else {
+      scheduleClick(nextBeatTime, realBeat>=0 && bib===0);
+    }
     if(realBeat<0){ const n=countInBeats+realBeat+1; flashCountIn(n); }
     else { $('countin').textContent=''; }
     if(mode==='play' && realBeat>=0 && realBeat%4===0){ registerBar(nextBeatTime); }
@@ -1664,7 +1670,7 @@ function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
 }
 function applyMode(m){
   climbMode=(m==='climb'); const isRandom=(m==='random'), isStyle=(m==='style'); segActivate('modeSeg','m',m);
-  randomMode=isRandom||isStyle; styleMode=isStyle; if(!isStyle){ styleBars=[]; }
+  randomMode=isRandom||isStyle; styleMode=isStyle; if(!isStyle){ styleBars=[]; styleClick24=false; }
   const fh=$('freeHint'); if(fh){ fh.style.display=climbMode?'none':'block';
     fh.textContent = isStyle ? 'Styles — pick a groove and play along; scored on how tight you lock to the feel.'
                      : isRandom ? 'Random — fresh generated rhythms. Tap New rhythm, or turn on New one every bar.'
