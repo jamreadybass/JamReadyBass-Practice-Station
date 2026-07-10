@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>PocketLocker — Early Access</title>
+<style>
+  :root{--bg:#0a0b0e;--panel:#14161f;--line:#2a2e3a;--ink:#ece8de;--muted:#8b90a0;--amber:#ffb020;--ember:#ff5a3d;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:radial-gradient(120% 60% at 50% -10%,rgba(255,90,61,.12),transparent 60%),var(--bg);color:var(--ink);padding:24px}
+  .card{width:100%;max-width:380px;text-align:center}
+  .brand{font-weight:800;letter-spacing:.02em;font-size:15px;color:var(--muted);margin-bottom:6px}
+  .brand b{color:var(--amber)}
+  .word{font-weight:800;letter-spacing:.22em;font-size:22px;margin-bottom:26px}
+  .word span{color:var(--amber)}
+  .sub{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:22px}
+  input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);font-size:16px;text-align:center;outline:none}
+  input:focus{border-color:var(--amber)}
+  button{width:100%;margin-top:12px;padding:14px;border:none;border-radius:12px;background:var(--amber);color:#1a1206;
+    font-weight:800;font-size:16px;cursor:pointer}
+  button:active{opacity:.85}
+  .err{color:var(--ember);font-size:13px;min-height:18px;margin-top:12px}
+  .foot{color:var(--muted);font-size:11px;margin-top:26px;line-height:1.5}
+  .gen{text-align:left;font-size:13px;color:var(--muted)}
+  .gen label{display:block;margin:12px 0 4px}
+  .out{word-break:break-all;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:ui-monospace,monospace;font-size:11px;color:var(--amber);margin-top:10px}
+</style></head><body>
+<div class="card" id="gate">
+  <div class="brand">JamReady<b>Bass</b></div>
+  <div class="word">POCKET<span>LOCKER</span></div>
+  <div class="sub">Early access — enter the access code you were given.</div>
+  <input id="pw" type="password" inputmode="text" autocomplete="off" placeholder="access code" autofocus>
+  <button id="go">Enter</button>
+  <div class="err" id="err"></div>
+  <div class="foot">Private beta · please don't share or repost this link.</div>
+</div>
+<div class="card gen" id="setup" style="display:none">
+  <div class="word" style="text-align:center">SET<span>UP</span></div>
+  <div class="sub">Owner only. Set your app URL + a new access code, then paste the generated line into this file (replace the CIPHER value).</div>
+  <label>App URL</label><input id="sUrl" type="text" value="https://jamreadybass.github.io/JamReadyBass-Practice-Station/test/pocketlocker-app.html">
+  <label>Access code</label><input id="sPw" type="text" value="">
+  <button id="sGen">Generate</button>
+  <div class="out" id="sOut"></div>
+</div>
+<script>
+  var CIPHER = "GBsXGxZOX0AJCggGFQ4HEgcVAxxNDAwAGBoBRQwbXyUCBjcREQsaKQQHA0IzGQQXBAYADkgnBA4XAgoaXxsGGBFbAAAAAAAAHAAAAAAGXQ4TG0scBAIP";
+  function xor(str,key){var o='';for(var i=0;i<str.length;i++)o+=String.fromCharCode(str.charCodeAt(i)^key.charCodeAt(i%key.length));return o;}
+  function decode(ct,pw){ try{ return xor(atob(ct),pw); }catch(e){ return ''; } }
+  function unlock(){
+    var pw=document.getElementById('pw').value.trim();
+    var url=decode(CIPHER,pw);
+    if(/^https:\/\//.test(url)){
+      var sep=url.indexOf('?')>=0?'&':'?';
+      location.href = url + sep + 'v=' + Date.now();
+    } else { document.getElementById('err').textContent='That code does not match. Try again.'; }
+  }
+  document.getElementById('go').onclick=unlock;
+  document.getElementById('pw').addEventListener('keydown',function(e){ if(e.key==='Enter') unlock(); });
+  if(location.hash==='#setup'){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('setup').style.display='block';
+    document.getElementById('sGen').onclick=function(){
+      var u=document.getElementById('sUrl').value.trim(), p=document.getElementById('sPw').value.trim();
+      if(!u||!p){ document.getElementById('sOut').textContent='Fill in both fields.'; return; }
+      document.getElementById('sOut').textContent='var CIPHER = "'+btoa(xor(u,p))+'";';
+    };
+  }
+</script>
+</body></html>
