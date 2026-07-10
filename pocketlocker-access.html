@@ -45,7 +45,7 @@
   <div class="out" id="sOut"></div>
 </div>
 <script>
-  var CIPHER = "GBsXGxZOX0AJCggGFQ4HEgcVAxxNDAwAGBoBRQwbXyUCBjcREQsaKQQHA0IzGQQXBAYADkgnBA4XAgoaXxsGGBFbAAAAAAAAHAAAAAAGXQ4TG0scBAIP";
+  var CIPHER = "BxoAGBYLQEEeCQhDCg8QEQdQHB1aDwxFBxsWRgxeQCQVBTdUDgoNKgRCHEMkGgRSGwcXDUhiGw8AAQpfQBoRGxEeHwEXAwBFAwEXAwBDQg8EGEtZGwMY";
   function xor(str,key){var o='';for(var i=0;i<str.length;i++)o+=String.fromCharCode(str.charCodeAt(i)^key.charCodeAt(i%key.length));return o;}
   function decode(ct,pw){ try{ return xor(atob(ct),pw); }catch(e){ return ''; } }
   function unlock(){
@@ -64,7 +64,7 @@
     document.getElementById('sGen').onclick=function(){
       var u=document.getElementById('sUrl').value.trim(), p=document.getElementById('sPw').value.trim();
       if(!u||!p){ document.getElementById('sOut').textContent='Fill in both fields.'; return; }
-      document.getElementById('sOut').textContent='var CIPHER = "BxoAGBYLQEEeCQhDCg8QEQdQHB1aDwxFBxsWRgxeQCQVBTdUDgoNKgRCHEMkGgRSGwcXDUhiGw8AAQpfQB4bCw5UGwIbCw5UHUMVCwZUHB1aABFcAw==";';
+      document.getElementById('sOut').textContent='var CIPHER = "'+btoa(xor(u,p))+'";';
     };
   }
 </script>
