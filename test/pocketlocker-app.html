@@ -243,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 119</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 120</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -355,6 +355,7 @@
           <label class="chk"><input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> Tick the subdivisions out loud (hear the e-and-a between beats)</label>
           <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
           <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
+          <label class="chk"><input type="checkbox" id="ecChk" style="accent-color:var(--amber)"> Cancel speaker echo — for a laptop mic that hears the click through the speakers (may soften detection a touch; leave off for an interface or MIDI)</label>
           <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
           <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--amber)"> Light mode — switch the app to a light theme (default is dark)</label>
         </div>
@@ -519,7 +520,7 @@ let running=false;
 let params={threshFactor:3.5,refractory:0.07,floor:1.3e-5,riseK:1.5,eSpeed:0.06};
 let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
-let notchFilters=[], hpFilters=[], detTap=null, filterClick=true; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
+let notchFilters=[], hpFilters=[], detTap=null, filterClick=true, echoCancel=false; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
 let clickTimes=[];
 let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true, downbeatLevel=40;
 let mode='idle';            // idle | calibrate | play
@@ -537,7 +538,7 @@ $('startBtn').onclick=async()=>{
   try{
     ac=new (window.AudioContext||window.webkitAudioContext)();
     await ac.resume();
-    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:echoCancel,noiseSuppression:echoCancel,autoGainControl:false}});
     src=ac.createMediaStreamSource(micStream);
     detTap=buildNotchChain(src);
     try{
@@ -547,7 +548,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 119 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 120 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -596,7 +597,7 @@ async function switchInput(deviceId){
     try{ notchFilters.forEach(bq=>{ try{bq.disconnect();}catch(_){} }); hpFilters.forEach(f=>{ try{f.disconnect();}catch(_){} }); }catch(e){}
     try{ if(detTap) detTap.disconnect(); }catch(e){}
     try{ if(micStream) micStream.getTracks().forEach(t=>t.stop()); }catch(e){}
-    micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:deviceId},echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:deviceId},echoCancellation:echoCancel,noiseSuppression:echoCancel,autoGainControl:false}});
     src=ac.createMediaStreamSource(micStream);
     detTap=buildNotchChain(src);
     try{ const lc = ($('lowCut') && +$('lowCut').value) || (prog.det && prog.det.lowcut) || 150; setLowCut(lc); }catch(e){}
@@ -607,6 +608,24 @@ async function switchInput(deviceId){
     const rs=$('roomStatus'); if(rs){ rs.style.display='block'; rs.textContent='Switched input — measuring room…'; }
     setTimeout(()=>measureRoom(true), 300);
   }catch(err){ showErr("Couldn't switch to that input: "+err.message); refreshInputs(); }
+}
+async function reacquireMic(){   // re-open the mic in place with the current echo-cancel setting
+  if(!ac || !micStream) return;
+  try{
+    try{ if(src) src.disconnect(); }catch(e){}
+    try{ notchFilters.forEach(bq=>{try{bq.disconnect();}catch(_){}}); hpFilters.forEach(f=>{try{f.disconnect();}catch(_){}}); }catch(e){}
+    try{ if(detTap) detTap.disconnect(); }catch(e){}
+    try{ micStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+    const con={echoCancellation:echoCancel,noiseSuppression:echoCancel,autoGainControl:false};
+    if(currentInputId) con.deviceId={exact:currentInputId};
+    micStream=await navigator.mediaDevices.getUserMedia({audio:con});
+    src=ac.createMediaStreamSource(micStream);
+    detTap=buildNotchChain(src);
+    try{ const lc=($('lowCut')&&+$('lowCut').value)||(prog.det&&prog.det.lowcut)||150; setLowCut(lc); }catch(e){}
+    if(node) detTap.connect(node); else if(spNode) detTap.connect(spNode);
+    const rs=$('roomStatus'); if(rs){ rs.style.display='block'; rs.textContent=(echoCancel?'Echo cancel on — ':'Echo cancel off — ')+'measuring room…'; }
+    setTimeout(()=>measureRoom(true), 300);
+  }catch(err){ showErr("Couldn't re-open the mic: "+err.message); }
 }
 async function initInputs(){
   await refreshInputs();
@@ -1337,6 +1356,7 @@ $('hwNudgeMinus') && ($('hwNudgeMinus').onclick=()=>nudgeHw(-5));
 $('hwNudgePlus') && ($('hwNudgePlus').onclick=()=>nudgeHw(5));
 $('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); if(visualBeat && $('filterClickChk') && $('filterClickChk').checked){ $('filterClickChk').checked=false; setFilterClick(false); } if(visualBeat){ if(typeof killPending==='function') killPending(); if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } } else if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); } const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } if(typeof fmtOff==='function') fmtOff(); });
 $('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); if(e.target.checked && $('visualBeatChk') && $('visualBeatChk').checked){ $('visualBeatChk').checked=false; visualBeat=false; prog.visualBeat=false; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=false; cvs.style.opacity=1; } if(typeof fmtOff==='function') fmtOff(); } });
+$('ecChk') && ($('ecChk').onchange=e=>{ echoCancel=e.target.checked; prog.ec=echoCancel; saveProg(); if(typeof reacquireMic==='function') reacquireMic(); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if($('riseThresh')) params.riseK=+$('riseThresh').value;
@@ -1614,6 +1634,7 @@ if(typeof fmtOff==='function') fmtOff();
 if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').value=hwNudgeMs;$('hwnudgeVal').textContent=hwNudgeMs;} }
 if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
 if(prog.theme==='light'){ document.documentElement.setAttribute('data-theme','light'); if($('lightModeChk'))$('lightModeChk').checked=true; }
+if(prog.ec){ echoCancel=true; if($('ecChk'))$('ecChk').checked=true; }
 if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filterClickChk').checked=false; }
 
 ['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
