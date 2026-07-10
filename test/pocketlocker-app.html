@@ -243,7 +243,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 114</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 115</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -296,6 +296,7 @@
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
     <div class="ctrl" style="margin-top:12px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+    <div class="ctrl" style="margin-top:10px"><label>Downbeat volume <span class="val" id="dbVal">100</span> — lower if beat 1 is too loud</label><input type="range" id="downbeat" min="0" max="100" value="100"></div>
     <div id="calibPrompt" class="warn" style="display:none">
       <b>Calibrate first?</b> Play ~16 steady quarter notes locked to the <b>click</b> — ignore the highway; you're playing to the sound. This measures your device's audio delay so your notes land in the right slot. Re-do it if you change headphones.
       <div class="transport" style="margin-top:8px">
@@ -419,7 +420,6 @@
         </div>
         <div class="row" style="margin-top:14px">
           <div class="ctrl"><label>Sensitivity <span class="val" id="sensVal">6</span></label><input type="range" id="sens" min="1" max="10" value="6"></div>
-          <div class="ctrl"><label>Downbeat volume <span class="val" id="dbVal">100</span> — lower if beat 1 is too loud vs the subdivisions</label><input type="range" id="downbeat" min="0" max="100" value="100"></div>
         </div>
         <div style="margin-top:16px">
           <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Highway sync <span class="val" id="hwnudgeVal">0</span> ms</label>
@@ -547,7 +547,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 114 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 115 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
