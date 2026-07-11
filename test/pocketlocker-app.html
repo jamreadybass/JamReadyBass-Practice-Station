@@ -187,7 +187,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 129</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 130</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -264,6 +264,7 @@
         </div>
         <div class="ctrl" style="margin-bottom:14px"><label>Click level <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
         <div class="ctrl"><label>Downbeat accent <span class="val" id="dbVal">40</span> — soft / off left, strong accent right</label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
+        <div class="ctrl"><label>Rest click <span class="val" id="restVal">25</span> — quiet on beats with no written note, left = quieter</label><input type="range" id="restClick" min="0" max="100" value="25"></div>
       </div>
     </details>
     <div id="calibPrompt" class="warn" style="display:none">
@@ -491,7 +492,7 @@ let lastLevel={e:0,thresh:1}, lastFlash=0;
 let hwNudgeMs=0, visualBeat=false, hwLastBeat=null, beatPulses=[];
 let notchFilters=[], hpFilters=[], detTap=null, filterClick=true, echoCancel=false; const CLICK_FREQS=[1100,1600,2200,3300,4800,5500];
 let clickTimes=[];
-let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true, downbeatLevel=40;
+let subdiv='quarter', bpm=90, swing=0, feelMs=0, clickVol=0.5, guide=true, downbeatLevel=40, restLevel=25;
 let mode='idle';            // idle | calibrate | play
 let calibSamples=[], calibOffset=0, calibOffsetVis=0, calibrated=false, calibPromptDismissed=false, calibratedThisSession=false, roomCheckedThisSession=false, autoCenteredSession=false;
 let deltas=[], hits=0, missed=0, extra=0, hitLog=[];
@@ -517,7 +518,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 129 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 130 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1097,14 +1098,15 @@ function scheduler(){
       return;
     }
     const bib = realBeat>=0 ? realBeat%4 : -1;   // beat-in-bar: 0=one,1=two,2=three,3=four
+    if(mode==='play' && realBeat>=0 && realBeat%4===0){ registerBar(nextBeatTime); }   // update currentBar first so beat 0's note-check below is accurate
+    const restBeat = realBeat>=0 && !beatHasNoteAt(bib);
     if(styleClick24 && realBeat>=0){
-      if(bib===1 || bib===3) scheduleClick(nextBeatTime, true);   // backbeat click: 2 & 4 only, both scale with downbeat slider equally
+      if(bib===1 || bib===3) scheduleClick(nextBeatTime, true, restBeat);   // backbeat click: 2 & 4 only, both scale with downbeat slider equally
     } else {
-      scheduleClick(nextBeatTime, realBeat>=0 && bib===0);
+      scheduleClick(nextBeatTime, realBeat>=0 && bib===0, restBeat);
     }
     if(realBeat<0){ const n=countInBeats+realBeat+1; flashCountIn(n); }
     else { $('countin').textContent=''; }
-    if(mode==='play' && realBeat>=0 && realBeat%4===0){ registerBar(nextBeatTime); }
     if(mode==='calibrate' && realBeat>=0){ registerCalibBeat(nextBeatTime); }
     beatIndex++; nextBeatTime+=beatDur;
   }
@@ -1115,12 +1117,13 @@ let clickBus=null;
 function clickOut(){ if(ac && !clickBus){ clickBus=ac.createGain(); clickBus.gain.value=1; clickBus.connect(ac.destination); } return clickBus||ac.destination; }
 let pending=[];
 function killPending(){ for(const o of pending){ try{o.stop();}catch(e){} } pending=[]; }
-function scheduleClick(t,accent){
+function beatHasNoteAt(bib){ if(bib<0 || !currentBar || !currentBar[bib]) return true; return currentBar[bib].notes.some(n=>n.s===0); }
+function scheduleClick(t,accent,restBeat){
   if(clickVol>0 && (!visualBeat || mode==='calibrate')){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
     const o=ac.createOscillator(),g=ac.createGain();
     o.frequency.value=accent?1600:1100;
-    const peak=clickVol*(accent? (0.60*(downbeatLevel/100)) : 0.36);   // downbeat: 0 = fully off, ~50 = same as other beats, 100 = strong accent
+    const peak=clickVol*(restBeat? (0.36*(restLevel/100)) : accent? (0.60*(downbeatLevel/100)) : 0.36);   // rest beat: scales with rest-click slider; downbeat: 0 = fully off, ~50 = same as other beats, 100 = strong accent
     if(filterClick){
       // Speaker mode: pure sine + smooth raised-cosine (Hann) envelope = a soft beep with
       // no sharp transient, so almost nothing survives the notch to trip the onset detector.
@@ -1321,8 +1324,10 @@ $('bpmS') && ($('bpmS').oninput=e=>setBpm(e.target.value));
 $('swingSeg') && $('swingSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; swing=+b.dataset.sw; segActivate('swingSeg','sw',b.dataset.sw); const sv=$('swingVal'); if(sv) sv.textContent={0:'straight',33:'soft',66:'medium',100:'hard'}[swing]||('swing '+swing); if(!applyingCfg) clearPending(); if(typeof updateSetupBtn==='function') updateSetupBtn();});
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
 $('downbeat') && ($('downbeat').oninput=e=>{downbeatLevel=+e.target.value;$('dbVal').textContent=e.target.value;});
+$('restClick') && ($('restClick').oninput=e=>{restLevel=+e.target.value;$('restVal').textContent=e.target.value;});
 if($('vol')){ $('vol').value=Math.round(clickVol*100); $('volVal').textContent=Math.round(clickVol*100); }
 if($('downbeat')){ $('downbeat').value=downbeatLevel; $('dbVal').textContent=downbeatLevel; }
+if($('restClick')){ $('restClick').value=restLevel; $('restVal').textContent=restLevel; }
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); });
