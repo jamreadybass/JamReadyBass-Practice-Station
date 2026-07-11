@@ -188,12 +188,26 @@
       </div>
   </div>
 </div>
+
+<div id="onboardWizard" style="position:fixed;inset:0;z-index:300;display:none;background:var(--bg);flex-direction:column">
+  <div style="flex:1;overflow:auto;display:flex;flex-direction:column;justify-content:center;padding:28px 24px;max-width:440px;margin:0 auto;width:100%;box-sizing:border-box">
+    <div id="obStepBody"></div>
+  </div>
+  <div style="padding:8px 24px calc(28px + env(safe-area-inset-bottom,0px));max-width:440px;margin:0 auto;width:100%;box-sizing:border-box">
+    <div id="obDots" style="display:flex;gap:6px;justify-content:center;margin-bottom:16px"></div>
+    <div style="display:flex;gap:10px">
+      <button id="obBack" style="flex:0 0 auto">Back</button>
+      <button id="obNext" class="primary" style="flex:1">Continue</button>
+    </div>
+    <button id="obSkip" style="display:block;margin:14px auto 0;background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px">Skip setup</button>
+  </div>
+</div>
 <div class="appbar">
   <a class="brand" href="https://www.jamreadybass.com/practice-station" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass Practice Station">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 138</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 139</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -326,6 +340,7 @@
 
   <section id="screenSettings" class="screen">
     <div class="panel" id="setupPanel">
+      <div class="transport" style="margin-bottom:14px"><button id="rerunWizardBtn" style="flex:1">↺ Run setup wizard again</button></div>
       <details>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Options</summary>
         <div style="margin-top:10px">
@@ -524,7 +539,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 138 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 139 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1432,6 +1447,87 @@ function defaultProg(){ return {levels:{}, unlocked:1, calib:null, sessions:0}; 
 let prog=(function(){ try{const p=JSON.parse(localStorage.getItem(PKEY)); return (p&&p.levels)?p:defaultProg();}catch(e){return defaultProg();} })();
 if(prog.diffMode){ if(DIFFS[prog.diffMode]) diffMode=prog.diffMode; }
 function saveProg(){ try{localStorage.setItem(PKEY,JSON.stringify(prog));}catch(e){} }
+// ---- first-run onboarding wizard ----
+const OB_STEPS=['welcome','mic','instrument','calibrate','modes'];
+let obIdx=0, obPoll=null;
+function obDotHtml(){ return OB_STEPS.map((_,i)=>'<div style="width:7px;height:7px;border-radius:50%;background:'+(i===obIdx?'var(--amber)':'var(--line)')+'"></div>').join(''); }
+function obClearPoll(){ if(obPoll){ clearInterval(obPoll); obPoll=null; } }
+function obRender(){
+  obClearPoll();
+  const step=OB_STEPS[obIdx];
+  $('obDots').innerHTML=obDotHtml();
+  $('obBack').style.visibility = obIdx===0 ? 'hidden' : 'visible';
+  $('obNext').textContent = (step==='modes') ? 'Finish' : 'Continue';
+  $('obNext').onclick = obNext;
+  const body=$('obStepBody');
+  if(step==='welcome'){
+    body.innerHTML=
+      '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Welcome</div>'+
+      '<h2 style="margin:0 0 12px;font-size:26px">Let’s get your pocket dialed in.</h2>'+
+      '<p class="help">PocketLocker listens to your bass and scores how tight you sit in the pocket. This takes about a minute: enable the mic, tell it your instrument, and calibrate your rig once. You can redo any of this later from Setup.</p>';
+  } else if(step==='mic'){
+    body.innerHTML=
+      '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Step 1 of 3</div>'+
+      '<h2 style="margin:0 0 12px;font-size:24px">Enable the mic</h2>'+
+      '<p class="help">Headphones are best — they keep the click from bleeding into the mic. PocketLocker checks your room automatically once it’s on.</p>'+
+      '<button class="primary big" id="obMicBtn" style="width:100%;margin-top:14px">Enable mic &amp; click</button>'+
+      '<div id="obMicStatus" style="font-size:12px;color:var(--muted);margin-top:10px;min-height:16px"></div>';
+    $('obNext').textContent = running ? 'Continue' : 'Skip for now';
+    $('obMicBtn').onclick=()=>{
+      $('obMicStatus').textContent='Requesting mic access…'; $('obMicStatus').style.color='var(--muted)';
+      $('startBtn').click();
+      obPoll=setInterval(()=>{
+        if(running){ obClearPoll(); $('obMicStatus').textContent='✓ Mic is live.'; $('obMicStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
+        else if($('errBox') && $('errBox').style.display==='block'){ obClearPoll(); $('obMicStatus').textContent=$('errBox').textContent; $('obMicStatus').style.color='var(--red)'; }
+      },200);
+    };
+  } else if(step==='instrument'){
+    body.innerHTML=
+      '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Step 2 of 3</div>'+
+      '<h2 style="margin:0 0 12px;font-size:24px">What are you playing?</h2>'+
+      '<p class="help">One tap sets sensible detection defaults for your instrument — fine-tune later under Setup → Advanced if you need to.</p>'+
+      '<div class="seg" id="obInstrSeg" style="margin-top:14px"><button data-instr="4">4-string</button><button data-instr="5">5-string</button></div>';
+    $('obInstrSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+      applyInstrumentPreset(b.dataset.instr);
+      [...$('obInstrSeg').children].forEach(x=>x.classList.toggle('active', x===b));
+    });
+  } else if(step==='calibrate'){
+    body.innerHTML=
+      '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Step 3 of 3</div>'+
+      '<h2 style="margin:0 0 12px;font-size:24px">Calibrate your rig</h2>'+
+      '<p class="help">Every device delays sound a little. Play about 16 steady quarter notes locked to the click — ignore any visuals, just play to the sound. This finds your device’s timing offset.</p>'+
+      (running ? '<button class="primary big" id="obCalibBtn" style="width:100%;margin-top:14px">Calibrate now</button>' : '<div class="warn" style="margin-top:14px;font-size:12px">Enable the mic first (go back a step) to calibrate — or skip this and calibrate later from Setup.</div>')+
+      '<div id="obCalibStatus" style="font-size:12px;color:var(--muted);margin-top:10px;min-height:16px"></div>';
+    if(running){
+      $('obNext').textContent='Skip for now';
+      $('obCalibBtn').onclick=()=>{
+        $('obCalibStatus').textContent='Play ~16 steady quarter notes to the click…'; $('obCalibStatus').style.color='var(--muted)';
+        calibSamples=[]; calibOffset=0; startTransport(true);
+        obPoll=setInterval(()=>{
+          if(calibrated){ obClearPoll(); $('obCalibStatus').textContent='✓ Calibrated.'; $('obCalibStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
+        },200);
+      };
+    }
+  } else if(step==='modes'){
+    const card=(t,d)=>'<div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px"><b style="color:var(--amber);font-size:13px">'+t+'</b><div class="help" style="margin-top:4px;font-size:12px">'+d+'</div></div>';
+    body.innerHTML=
+      '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Almost there</div>'+
+      '<h2 style="margin:0 0 12px;font-size:24px">Four ways to practice</h2>'+
+      card('Challenge','A leveled ladder of rhythms — clear one to unlock the next, across four difficulties.')+
+      card('Freeplay','Build your own rhythm and play against a click, no scoring pressure.')+
+      card('Random','Auto-generated syncopation at a difficulty you pick — good for sight-reading practice.')+
+      card('Styles','30 real bass grooves — Motown, Reggae, Samba, and more — scored against the style’s feel.');
+  }
+}
+function obNext(){ obClearPoll(); if(obIdx<OB_STEPS.length-1){ obIdx++; obRender(); } else { obFinish(); } }
+function obBack(){ obClearPoll(); if(obIdx>0){ obIdx--; obRender(); } }
+function obFinish(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; if(window.showScreen) showScreen('play'); }
+function obSkip(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; }
+function obShow(){ obIdx=0; const w=$('onboardWizard'); if(w) w.style.display='flex'; obRender(); }
+if($('obBack')) $('obBack').onclick=obBack;
+if($('obSkip')) $('obSkip').onclick=obSkip;
+if($('rerunWizardBtn')) $('rerunWizardBtn').onclick=obShow;
+if(!prog.onboarded){ setTimeout(obShow,50); }
 // build 82 one-time migration: old default Min gap was mistakenly 90ms; correct a saved 90 -> 70 exactly once.
 if(!prog.migRef70){ if(prog.det && +prog.det.ref===90){ prog.det.ref=70; } prog.migRef70=1; saveProg(); }
 
