@@ -187,7 +187,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 128</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 129</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -517,7 +517,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 128 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 129 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1120,7 +1120,7 @@ function scheduleClick(t,accent){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
     const o=ac.createOscillator(),g=ac.createGain();
     o.frequency.value=accent?1600:1100;
-    const peak=clickVol*(accent? (0.06 + 0.60*(downbeatLevel/100)) : 0.36);   // downbeat: 0 = near-silent (won't mask), ~50 = same as other beats, 100 = strong accent
+    const peak=clickVol*(accent? (0.60*(downbeatLevel/100)) : 0.36);   // downbeat: 0 = fully off, ~50 = same as other beats, 100 = strong accent
     if(filterClick){
       // Speaker mode: pure sine + smooth raised-cosine (Hann) envelope = a soft beep with
       // no sharp transient, so almost nothing survives the notch to trip the onset detector.
@@ -1321,6 +1321,8 @@ $('bpmS') && ($('bpmS').oninput=e=>setBpm(e.target.value));
 $('swingSeg') && $('swingSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; swing=+b.dataset.sw; segActivate('swingSeg','sw',b.dataset.sw); const sv=$('swingVal'); if(sv) sv.textContent={0:'straight',33:'soft',66:'medium',100:'hard'}[swing]||('swing '+swing); if(!applyingCfg) clearPending(); if(typeof updateSetupBtn==='function') updateSetupBtn();});
 $('vol').oninput=e=>{clickVol=e.target.value/100;$('volVal').textContent=e.target.value;};
 $('downbeat') && ($('downbeat').oninput=e=>{downbeatLevel=+e.target.value;$('dbVal').textContent=e.target.value;});
+if($('vol')){ $('vol').value=Math.round(clickVol*100); $('volVal').textContent=Math.round(clickVol*100); }
+if($('downbeat')){ $('downbeat').value=downbeatLevel; $('dbVal').textContent=downbeatLevel; }
 $('sens').oninput=e=>{$('sensVal').textContent=e.target.value;pushParams();};
 $('ref').oninput=e=>{$('refVal').textContent=e.target.value;pushParams();};
 $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); });
