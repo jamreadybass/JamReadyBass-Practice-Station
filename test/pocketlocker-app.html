@@ -187,7 +187,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 131</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 132</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -517,7 +517,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 131 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 132 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1133,10 +1133,10 @@ function fireClickVoice(t,peak,freq){
   pending.push(o);if(pending.length>256)pending.shift();
 }
 function scheduleClick(t,accent){
-  if(clickVol>0 && (!visualBeat || mode==='calibrate')){
+  if(!visualBeat || mode==='calibrate'){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
-    fireClickVoice(t, clickVol*0.36, 1100);                              // base click: pure rhythm layer, plays every beat always
-    if(accent && accentLevel>0) fireClickVoice(t, clickVol*0.60*(accentLevel/100), 1600);   // accent layer: additive, only on accented beats
+    if(clickVol>0) fireClickVoice(t, clickVol*0.36, 1100);                    // base click: pure rhythm layer, independent volume
+    if(accent && accentLevel>0) fireClickVoice(t, 0.60*(accentLevel/100), 1600);   // accent layer: additive, fully independent volume
   }
 }
 let curBarStart=0;
