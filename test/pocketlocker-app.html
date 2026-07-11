@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 141</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 142</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -539,7 +539,8 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 141 · app'; $('statusBadge').className='badge live';
+    playOpenMotif();
+    $('statusBadge').textContent='live · build 142 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1158,6 +1159,26 @@ function scheduler(){
 }
 let clickBus=null;
 function clickOut(){ if(ac && !clickBus){ clickBus=ac.createGain(); clickBus.gain.value=1; clickBus.connect(ac.destination); } return clickBus||ac.destination; }
+function playNote(freq,tOffset,dur,peak){
+  if(!ac) return;
+  const t=ac.currentTime+tOffset;
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type='sine'; o.frequency.value=freq;
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(clickOut()); o.start(t); o.stop(t+dur+0.05);
+}
+function playOpenMotif(){   // short root-third-fifth rise, played once when audio first comes online
+  if(!ac) return; const v=0.16;
+  playNote(196.00,0,0.32,v);      // G3
+  playNote(261.63,0.13,0.32,v);   // C4
+  playNote(329.63,0.26,0.44,v);   // E4
+}
+function playSuccessChime(stars){   // tiered by result quality — richer chime for a cleaner run, not a live streak
+  if(!ac) return; const v=0.18;
+  if(stars<=1){ playNote(523.25,0,0.38,v); }
+  else if(stars===2){ playNote(523.25,0,0.24,v); playNote(659.25,0.12,0.42,v); }
+  else { playNote(523.25,0,0.18,v); playNote(659.25,0.10,0.18,v); playNote(783.99,0.20,0.52,v*1.1); }
+}
 let pending=[];
 function killPending(){ for(const o of pending){ try{o.stop();}catch(e){} } pending=[]; }
 function fireClickVoice(t,peak,freq){
@@ -1666,6 +1687,7 @@ function countUp(id, target, suffix, duration){
 }
 function showScorePop(f, stars, opts){
   opts=opts||{}; const pop=$('scorePop'); if(!pop||!f) return;
+  if(!opts.free && stars>=1) playSuccessChime(stars);
   $('spStars').innerHTML = opts.free ? '' : starsHtml(stars||0,3,'#ffb020','#3a3e48');
   $('spTitle').textContent = opts.title || (stars>=3?'Perfect run!':stars>=1?'Nice!':'Keep at it');
   $('spTitle').style.color = (stars>=1||opts.free)?'var(--amber)':'var(--muted)';
