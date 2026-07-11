@@ -187,7 +187,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 127</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 128</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -517,7 +517,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 127 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 128 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1173,7 +1173,8 @@ function registerBar(barStart){
     if(i<pos.length-1) gapBeats=Math.min(gapBeats, pos[i+1]-pos[i]);
     const win=Math.min(0.10, Math.max(0.032, gapBeats*beatDur*0.24));
     expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
-    if(guide && !visualBeat && (p%1!==0)){ // soft tick on the subdivisions between beats
+    const beatCovered = styleClick24 ? ([1,3].includes(Math.round(p)%4)) : true;   // does the main beat click already sound here?
+    if(guide && !visualBeat && (p%1!==0 || !beatCovered)){ // soft tick on subdivisions, plus on-beat notes the main click skips (e.g. beats 1 & 3 in backbeat styles)
       const o=ac.createOscillator(),g=ac.createGain();
       o.frequency.value=2200;o.type='sine';
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(clickVol*0.22,t+0.001);
