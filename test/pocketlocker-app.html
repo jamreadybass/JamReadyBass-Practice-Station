@@ -47,6 +47,10 @@
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   @keyframes fadeOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
   @keyframes rspin{to{transform:rotate(360deg)}}
+  #perfectFlash{position:fixed;inset:0;z-index:250;pointer-events:none;opacity:0;
+    background:radial-gradient(120% 85% at 50% 50%, transparent 55%, rgba(255,176,32,.22) 100%)}
+  #perfectFlash.go{animation:pflash .38s ease-out}
+  @keyframes pflash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
   #rhythmSheet{background:rgba(8,9,12,0);backdrop-filter:blur(0px);transition:background .22s ease,backdrop-filter .22s ease}
   #rhythmSheet.open{background:rgba(8,9,12,.72);backdrop-filter:blur(4px)}
   #rhythmSheetPanel{transform:translateY(100%);transition:transform .26s cubic-bezier(.16,1,.3,1)}
@@ -189,6 +193,7 @@
   </div>
 </div>
 
+<div id="perfectFlash"></div>
 <div id="onboardWizard" style="position:fixed;inset:0;z-index:300;display:none;background:var(--bg);flex-direction:column">
   <div style="flex:1;overflow:auto;display:flex;flex-direction:column;justify-content:center;padding:28px 24px;max-width:440px;margin:0 auto;width:100%;box-sizing:border-box">
     <div id="obStepBody"></div>
@@ -207,7 +212,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 142</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 143</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -540,7 +545,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 142 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 143 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1015,6 +1020,13 @@ function drawHighway(){
     ctx.fillStyle=gg;ctx.globalAlpha=(isMissVisual?0.5:(playing?1:0.82))*fadeMul;ctx.beginPath();ctx.arc(x,gy,grad,0,7);ctx.fill();ctx.restore();
     ctx.globalAlpha=fadeMul;ctx.strokeStyle='rgba(20,16,10,0.5)';ctx.lineWidth=1*DPR;ctx.beginPath();ctx.arc(x,gy,grad,0,7);ctx.stroke();
     ctx.fillStyle='rgba(255,250,240,'+(0.85*fadeMul)+')';ctx.beginPath();ctx.arc(x,gy,2.1*DPR,0,7);ctx.fill();
+    if(resolved && resolved.kind==='hit' && resolved.perfect){
+      const RING_MS=340, rAge=nowMs-resolved.t;
+      if(rAge<RING_MS){ const rp=rAge/RING_MS, ringR=rad*(1+1.3*rp);
+        ctx.globalAlpha=(1-rp)*0.8; ctx.strokeStyle=resolved.col; ctx.lineWidth=2*DPR;
+        ctx.beginPath(); ctx.arc(x,gy,ringR,0,7); ctx.stroke();
+      }
+    }
     ctx.globalAlpha=1;
   }
 
@@ -1286,11 +1298,13 @@ function handleOnset(t){
     deltas.push(delta); hits++; hitLog.push({d:delta, b:(best.beat!=null?best.beat:0)});
     const r=rating(Math.abs(delta));
     const gemCol=hitColorFor(delta);
+    const isPerfect = r.w==='Perfect';
     setNoteColor(best.idx, r.c);
     const key=Math.round(best.time*1000);
     hwHits.set(key, gemCol);
-    hwResolved.set(key, {kind:'hit', t:performance.now(), col:gemCol});
+    hwResolved.set(key, {kind:'hit', t:performance.now(), col:gemCol, perfect:isPerfect});
     hwFlashes.push({time:best.time, col:gemCol, word:r.w, t:performance.now(), delta:delta});
+    if(isPerfect) triggerPerfectFlash();
     renderScore();
   } else {
     const tcl = t - curOffset()/1000;
@@ -1673,6 +1687,7 @@ function svgStar(filled){ return filled
   : '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-0.15em"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.5 1.4 6.5L12 16.9 6 20.2l1.4-6.5-4.9-4.5 6.6-.7z"/></svg>'; }
 function starsHtml(filled,total,fillColor,emptyColor){ let h=''; for(let i=0;i<total;i++){ h+='<span style="color:'+(i<filled?(fillColor||'currentColor'):(emptyColor||'currentColor'))+'">'+svgStar(i<filled)+'</span>'; } return h; }
 const LOCK_SVG='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+function triggerPerfectFlash(){ const el=$('perfectFlash'); if(!el) return; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }
 function countUp(id, target, suffix, duration){
   suffix=suffix||''; duration=duration||420;
   const el=$(id); if(!el) return;
