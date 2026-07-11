@@ -213,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 144</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 145</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -546,7 +546,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 144 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 145 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -693,6 +693,7 @@ function startStyle(idx){
   const g=STYLES[idx]; if(!g) return;
   styleMode=true; randomMode=true; styleBars=g.bars; styleIdx=0; styleName=g.name;
   pulsePattern = g.pulse;   // '1234' | '13' | '24' — which beats the pulse click sounds on
+  renderSavedScore((prog.lastScores&&prog.lastScores.styles&&prog.lastScores.styles[g.name])||null);
   autoAdv = g.bars.length>1;
   bpm=g.bpm; if($('bpm')){$('bpm').value=bpm;} if($('bpmVal')) $('bpmVal').textContent=bpm; beatDur=60/bpm; barDur=4*beatDur;
   swing=g.swing||0; feelMs=g.feel||0;
@@ -1140,7 +1141,15 @@ function stopTransport(silent){
   $('stopBtn').textContent='■ Stop';
   if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent='';
     if(sessionCompleted && pendingLevel!=null) evaluateLevel(pendingLevel);
-    else if(sessionCompleted){ const _f=finalScores(); if(_f) showScorePop(_f,0,{free:true,title:'Nice run!',msg:'Freeplay — not scored against the challenge.',nextLabel:'Done'}); } }
+    else if(sessionCompleted){ const _f=finalScores(); if(_f){
+      prog.lastScores=prog.lastScores||{};
+      let msg='Freeplay — not scored against the challenge.';
+      if(styleMode && styleName){ prog.lastScores.styles=prog.lastScores.styles||{}; prog.lastScores.styles[styleName]=_f; msg='Styles — scored on how tight you lock to the feel, not saved to a ladder.'; }
+      else if(randomMode){ prog.lastScores.random=_f; msg='Random — auto-generated rhythm, not scored against the challenge.'; }
+      else { prog.lastScores.free=_f; }
+      saveProg();
+      showScorePop(_f,0,{free:true,title:'Nice run!',msg:msg,nextLabel:'Done'});
+    } } }
   if(!silent) mode='idle';
 }
 let paused=false;
@@ -1363,6 +1372,14 @@ function updateTimingReadout(){
     return '<div style="flex:1;text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:'+col+'">'+(m>0?'+':'')+m+'</div><div style="font-size:10px;color:var(--muted)">beat '+(i+1)+'</div><div style="font-size:9px;color:#4a4e5a">n='+a.length+'</div></div>'; });
   $('trBeats').innerHTML=cells.join('');
   box.style.display='block';
+}
+function renderSavedScore(f){
+  if(!f){ ['cen','evn'].forEach(k=>{$(k+'Num').textContent='—';$(k+'Num').style.color='';$(k+'Grade').textContent='play to score';$(k+'Grade').style.color='';$(k+'Bar').style.width='0';});
+    $('rhyNum').textContent='—';$('rhyNum').style.color='';$('rhyGrade').textContent='right notes';$('rhyGrade').style.color='';$('rhyBar').style.width='0'; return; }
+  const cg=centerGrade(f.cen,0), eg=evennessGrade(f.evn), rg=rhythmGrade(f.rhy);
+  $('cenNum').textContent=f.cen;$('cenNum').style.color=cg.c;$('cenGrade').textContent=cg.w;$('cenGrade').style.color=cg.c;$('cenBar').style.width=f.cen+'%';$('cenBar').style.background=cg.c;
+  $('evnNum').textContent=f.evn;$('evnNum').style.color=eg.c;$('evnGrade').textContent=eg.w;$('evnGrade').style.color=eg.c;$('evnBar').style.width=f.evn+'%';$('evnBar').style.background=eg.c;
+  $('rhyNum').textContent=f.rhy+'%';$('rhyNum').style.color=rg.c;$('rhyGrade').textContent=rg.w;$('rhyGrade').style.color=rg.c;$('rhyBar').style.width=f.rhy+'%';$('rhyBar').style.background=rg.c;
 }
 function renderScore(){ updateTimingReadout();
   const rhy = rhythmScore();
@@ -1664,6 +1681,7 @@ function loadLevel(id){
   applyMode('climb');       // enter climb first (this alone forces randomMode=false)
   applyConfig(levelCfg(id, diffMode));   // pattern scales with the chosen difficulty tier
   renderClimbNow();
+  renderSavedScore((prog.levels[id]||{}).best||null);
   const b=$('levelBanner');
   b.textContent='Level '+id+' \u00b7 '+L.name+'  loaded \u2014 '+(calibrated?'':'calibrate first, then ')+'press \u25B6 Play rhythm';
   b.style.display='block';
@@ -1901,6 +1919,8 @@ function applyMode(m){
   ['adjSwing','adjFeel'].forEach(id=>{const el=$(id); if(el) el.style.display=fpRand?'block':'none';});
   ['adjTempo','adjDiff','adjLen'].forEach(id=>{const el=$(id); if(el) el.style.display=(fpRand||isStyle)?'block':'none';});
   if(!climbMode) clearPending();
+  if(m==='free') renderSavedScore((prog.lastScores&&prog.lastScores.free)||null);
+  else if(m==='random') renderSavedScore((prog.lastScores&&prog.lastScores.random)||null);
   if(isRandom && !isStyle && typeof generateBar==='function') generateBar();
   if(!climbMode && typeof renderNotation==='function') renderNotation();
   prog.mode=m; saveProg();
