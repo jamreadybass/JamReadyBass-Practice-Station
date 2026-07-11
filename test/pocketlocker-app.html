@@ -18,6 +18,15 @@
     --ink:#2c2415; --muted:#7d7158; --amber-dim:#efe0bd;
     --amber:#8c5a00; --ember:#93250f; --green:#0c6b41; --green-lt:#357029; --ember-lt:#a8460f; --red:#a8241c; --blue:#1a6fa8;
   }
+  :root{ --accent:var(--amber); }
+  html[data-accent="ember"]{ --accent:#ff5a3d; }
+  html[data-accent="teal"]{ --accent:#3ddcc0; }
+  html[data-accent="blue"]{ --accent:#58b6ff; }
+  html[data-accent="violet"]{ --accent:#b088ff; }
+  html[data-theme="light"][data-accent="ember"]{ --accent:#93250f; }
+  html[data-theme="light"][data-accent="teal"]{ --accent:#0a6e5c; }
+  html[data-theme="light"][data-accent="blue"]{ --accent:#1a6fa8; }
+  html[data-theme="light"][data-accent="violet"]{ --accent:#6633b8; }
   html[data-theme="light"] .appbar{ background:linear-gradient(180deg, rgba(253,246,232,.97), rgba(253,246,232,.84)); }
   html[data-theme="light"] .bottomnav{ background:linear-gradient(0deg, rgba(253,246,232,.98), rgba(253,246,232,.9)); }
   html[data-theme="light"] .score-bar{ background:#e7dcc4; }
@@ -35,7 +44,7 @@
   .brand span{color:var(--amber)}
   .brand:hover{color:var(--ink)}.brand:hover span{filter:brightness(1.12)}
   .badgebar{display:flex;justify-content:center;padding:8px 18px 0}
-  .wordmark span{color:var(--amber)}
+  .wordmark span{color:var(--accent)}
   .iconbtn{width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;
     font-size:19px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;min-height:44px}
   .iconbtn:hover{border-color:var(--amber);color:var(--amber)}
@@ -67,18 +76,19 @@
   .ctrl{display:flex;flex-direction:column;gap:6px;min-width:120px;flex:1}
   .ctrl label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .ctrl .val{font-family:var(--mono);color:var(--amber);font-size:13px}
-  input[type=range]{width:100%;accent-color:var(--amber)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
   .help{font-size:13px;color:var(--muted);line-height:1.6}
   .help b{color:var(--ink)}
   .chk{display:flex;gap:9px;align-items:center;min-height:44px;margin-top:4px;padding:4px 0;font-size:13px;color:var(--muted);line-height:1.4}
   button{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:11px;border:1px solid var(--line);
     background:var(--panel2);color:var(--ink);padding:12px 16px;cursor:pointer;transition:.12s;min-height:44px;box-sizing:border-box}
-  button:hover{border-color:var(--amber);color:var(--amber)}
+  button:hover{border-color:var(--accent);color:var(--accent)}
   button:disabled{opacity:.4;cursor:not-allowed}
-  button.primary{background:linear-gradient(180deg,#ffc24d,var(--amber));color:#1a1205;border-color:var(--amber);box-shadow:0 4px 18px rgba(255,176,32,.28)}
+  button.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 60%,white),var(--accent));color:#14161f;border-color:var(--accent);box-shadow:0 4px 18px color-mix(in srgb,var(--accent) 28%,transparent)}
   button.primary:hover{filter:brightness(1.06);color:#1a1205}
   button.primary.big{padding:15px 22px;font-size:16px;font-weight:800;letter-spacing:.02em;border-radius:13px}
-  button.active{border-color:var(--amber);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+  button.active{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  #accentSwatches button.active{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
   button.danger:hover{border-color:var(--red);color:var(--red)}
   .seg{display:flex;gap:8px;flex-wrap:wrap}
   .seg button{flex:1;min-width:80px}
@@ -135,8 +145,8 @@
   .bottomnav button{flex:1;border:none;background:none;border-radius:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 0 14px;font-size:11px;font-weight:700;letter-spacing:.04em}
   .bottomnav button span{font-size:18px;line-height:1}
   .bottomnav button:hover{color:var(--ink)}
-  .bottomnav button.active{color:var(--amber)}
-  .bottomnav button.active span{filter:drop-shadow(0 0 8px rgba(255,176,32,.6))}
+  .bottomnav button.active{color:var(--accent)}
+  .bottomnav button.active span{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--accent) 60%,transparent))}
   @media (orientation:landscape) and (max-height:600px){
     .badgebar{display:none}
     #hw{height:clamp(110px,32vh,200px)}
@@ -150,7 +160,7 @@
   .jump{color:var(--amber);cursor:pointer;border-bottom:1px dotted var(--amber)}
   .jump:active{opacity:.7}
 </style>
-<script>try{var _p=JSON.parse(localStorage.getItem('pocketlocker.progress.v1'));if(_p&&_p.theme==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<script>try{var _p=JSON.parse(localStorage.getItem('pocketlocker.progress.v1'));if(_p&&_p.theme==='light')document.documentElement.setAttribute('data-theme','light');if(_p&&_p.accent&&_p.accent!=='amber')document.documentElement.setAttribute('data-accent',_p.accent);}catch(e){}</script>
 </head>
 <body>
 <div id="grainOverlay"></div>
@@ -171,7 +181,23 @@
     <button class="primary big" id="spNext" style="width:100%">Continue</button>
     <button id="spReplay" style="width:100%;margin-top:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;font-weight:600;cursor:pointer;display:none">Replay this level</button>
     <button id="spShare" style="width:100%;margin-top:10px;background:none;color:var(--muted);border:1px solid var(--line);border-radius:12px;padding:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14"/></svg>Share this run</button>
+    <button id="spReview" style="width:100%;margin-top:10px;background:none;color:var(--muted);border:1px solid var(--line);border-radius:12px;padding:11px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Rewind &amp; review</button>
     <div style="font-size:11px;color:var(--muted);margin-top:12px">tap outside to stay on this level</div>
+  </div>
+</div>
+
+<div id="reviewModal" style="position:fixed;inset:0;z-index:220;display:none;align-items:center;justify-content:center;background:rgba(8,9,12,.9);backdrop-filter:blur(6px);padding:20px">
+  <div style="max-width:420px;width:100%;max-height:calc(100dvh - 32px);overflow:auto;background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.55)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:800;color:var(--amber)">Rewind &amp; review</div>
+      <button id="reviewClose" style="padding:6px 12px;font-size:12px">Close</button>
+    </div>
+    <div id="reviewDetail" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;min-height:64px">
+      <div style="font-size:12px;color:var(--muted)">Tap any note below to see its timing</div>
+    </div>
+    <div id="reviewStrip" style="display:flex;gap:5px;overflow-x:auto;padding-bottom:8px"></div>
+    <button id="reviewGhostBtn" class="primary" style="width:100%;margin-top:14px">▶ Play back my run</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center">Your recorded notes play back as soft tones under a fresh click, so you can hear your pocket against the reference.</div>
   </div>
 </div>
 
@@ -220,7 +246,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 147</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 148</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -269,8 +295,18 @@
 
     <div class="transport playbar">
       <button id="calibBtn">Calibrate</button>
+      <button id="warmupBtn">Warm-up</button>
       <button class="primary big" id="playBtn">▶ Play</button>
       <button id="stopBtn" disabled>■ Stop</button>
+    </div>
+    <div id="dailyGrooveBanner" class="panel" style="display:none;padding:12px 16px;margin-bottom:12px;background:linear-gradient(160deg,rgba(255,176,32,.10),var(--panel2));cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div>
+          <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-weight:700">Today's groove</div>
+          <div id="dailyGrooveName" style="font-size:15px;font-weight:700;margin-top:2px">—</div>
+        </div>
+        <div style="color:var(--amber);font-size:13px;font-weight:700;white-space:nowrap">Play &rarr;</div>
+      </div>
     </div>
     <div class="panel" id="quickAdjust" style="padding:14px 16px;margin-bottom:12px">
       <div class="ctrl" id="adjTempo" style="margin-bottom:12px"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label>
@@ -280,7 +316,7 @@
         </div>
       </div>
       <div class="ctrl" style="margin-bottom:12px"><label>Pulse click <span class="val" id="volVal">50</span> — the style's feel (1-2-3-4, 1&amp;3, or 2&amp;4)</label><input type="range" id="vol" min="0" max="100" value="50"></div>
-      <div class="ctrl"><label style="display:flex;justify-content:space-between;align-items:center"><span>Notation click <span class="val" id="dbVal">40</span> — every written note</span><label style="display:flex;gap:6px;align-items:center;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)"><input type="checkbox" id="guideChk" checked style="accent-color:var(--amber)"> on</label></label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
+      <div class="ctrl"><label style="display:flex;justify-content:space-between;align-items:center"><span>Notation click <span class="val" id="dbVal">40</span> — every written note</span><label style="display:flex;gap:6px;align-items:center;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)"><input type="checkbox" id="guideChk" checked style="accent-color:var(--accent)"> on</label></label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
     </div>
     <details id="playAdjust" style="margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px">
       <summary style="cursor:pointer;font-size:13px;color:var(--amber);font-weight:700">Session settings</summary>
@@ -290,7 +326,7 @@
         </div>
         <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
           <div class="seg" id="diffSeg"><button data-d="1">Basic</button><button data-d="2" class="active">Sixteenths</button><button data-d="3">Syncopated</button></div>
-          <div class="transport" style="margin-top:10px"><button id="newRhythmBtn"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>New rhythm</button><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar</label></div>
+          <div class="transport" style="margin-top:10px"><button id="newRhythmBtn"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>New rhythm</button><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="autoAdvChk" style="accent-color:var(--accent)"> New one every bar</label></div>
         </div>
         <div class="ctrl" id="adjSwing" style="margin-bottom:14px"><label>Swing <span class="val" id="swingVal" style="text-transform:none">straight</span></label>
           <div class="seg" id="swingSeg"><button data-sw="0" class="active">Off</button><button data-sw="33">Soft</button><button data-sw="66">Medium</button><button data-sw="100">Hard</button></div>
@@ -362,11 +398,23 @@
       <details>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Options</summary>
         <div style="margin-top:10px">
-          <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--amber)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
-          <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--amber)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
-          <label class="chk"><input type="checkbox" id="ecChk" style="accent-color:var(--amber)"> Cancel speaker echo — for a laptop mic that hears the click through the speakers (may soften detection a touch; leave off for an interface or MIDI)</label>
-          <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--amber)"> Pro view — hide the gems, lock in by click + landing lines only</label>
-          <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--amber)"> Light mode — switch the app to a light theme (default is dark)</label>
+          <label class="chk"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--accent)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
+          <div class="ctrl" style="margin-top:12px"><label>Click tone</label>
+            <div class="seg" id="clickToneSeg"><button data-tone="classic" class="active">Classic</button><button data-tone="woodblock">Woodblock</button><button data-tone="rimshot">Rimshot</button></div>
+          </div>
+          <div class="ctrl" style="margin-top:12px"><label>Accent color</label>
+            <div id="accentSwatches" style="display:flex;gap:10px;margin-top:6px">
+              <button type="button" data-accent="amber" class="active" title="Amber" style="width:36px;height:36px;padding:0;border-radius:50%;background:#ffb020;border:2px solid var(--line)"></button>
+              <button type="button" data-accent="ember" title="Ember" style="width:36px;height:36px;padding:0;border-radius:50%;background:#ff5a3d;border:2px solid var(--line)"></button>
+              <button type="button" data-accent="teal" title="Teal" style="width:36px;height:36px;padding:0;border-radius:50%;background:#3ddcc0;border:2px solid var(--line)"></button>
+              <button type="button" data-accent="blue" title="Blue" style="width:36px;height:36px;padding:0;border-radius:50%;background:#58b6ff;border:2px solid var(--line)"></button>
+              <button type="button" data-accent="violet" title="Violet" style="width:36px;height:36px;padding:0;border-radius:50%;background:#b088ff;border:2px solid var(--line)"></button>
+            </div>
+          </div>
+          <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--accent)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
+          <label class="chk"><input type="checkbox" id="ecChk" style="accent-color:var(--accent)"> Cancel speaker echo — for a laptop mic that hears the click through the speakers (may soften detection a touch; leave off for an interface or MIDI)</label>
+          <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--accent)"> Pro view — hide the gems, lock in by click + landing lines only</label>
+          <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--accent)"> Light mode — switch the app to a light theme (default is dark)</label>
         </div>
       </details>
       <div style="margin-top:14px">
@@ -403,13 +451,13 @@
             <summary style="cursor:pointer;font-size:12px;color:var(--amber);font-weight:700;padding:6px 0">Advanced — manual tuning</summary>
             <div style="font-size:11px;color:var(--muted);margin:8px 0 8px">Tune these while watching the count until each note flashes once:</div>
             <label style="font-size:11px;color:var(--muted)">Trigger threshold <b id="riseVal" style="color:var(--amber)">1.70</b> — raise to stop ringing over-triggers</label>
-            <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.7" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <input type="range" id="riseThresh" min="1.2" max="2.6" step="0.05" value="1.7" style="width:100%;accent-color:var(--accent);margin:2px 0 10px">
             <label style="font-size:11px;color:var(--muted)">Low-cut <b id="lowVal" style="color:var(--amber)">195</b> Hz — lower for more low-string response, raise if low notes over-trigger</label>
-            <input type="range" id="lowCut" min="60" max="240" step="5" value="195" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <input type="range" id="lowCut" min="60" max="240" step="5" value="195" style="width:100%;accent-color:var(--accent);margin:2px 0 10px">
             <label style="font-size:11px;color:var(--muted)">Ring rejection <b id="ringVal" style="color:var(--amber)">0.16</b> — raise to stop ringing re-triggers (lets you lower Low-cut to hear soft notes)</label>
-            <input type="range" id="ringRej" min="0.04" max="0.22" step="0.01" value="0.16" style="width:100%;accent-color:var(--amber);margin:2px 0 10px">
+            <input type="range" id="ringRej" min="0.04" max="0.22" step="0.01" value="0.16" style="width:100%;accent-color:var(--accent);margin:2px 0 10px">
             <label style="font-size:11px;color:var(--muted)">Min gap <b id="gapVal2" style="color:var(--amber)">70</b> ms — minimum time between notes</label>
-            <input type="range" id="minGap2" min="40" max="250" step="5" value="70" style="width:100%;accent-color:var(--amber);margin:2px 0 6px">
+            <input type="range" id="minGap2" min="40" max="250" step="5" value="70" style="width:100%;accent-color:var(--accent);margin:2px 0 6px">
             <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Tip: for ringing low notes, nudge Trigger threshold up and Low-cut up. If fast notes get missed, ease them back down.</div>
             <button id="detDefaults" style="padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;margin-right:8px">Reset detection</button>
             </details>
@@ -435,7 +483,7 @@
           <label style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)">Highway sync <span class="val" id="hwnudgeVal">0</span> ms</label>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
             <button id="hwNudgeMinus" style="min-width:54px;padding:11px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer">−5</button>
-            <input type="range" id="hwnudge" min="-150" max="150" value="0" style="flex:1;accent-color:var(--amber)">
+            <input type="range" id="hwnudge" min="-150" max="150" value="0" style="flex:1;accent-color:var(--accent)">
             <button id="hwNudgePlus" style="min-width:54px;padding:11px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer">+5</button>
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px">Only needed with Bluetooth (it delays the sound). If gems cross the pocket <i>before</i> you hear the click, nudge right until they line up. Never affects your score.</div>
@@ -497,6 +545,10 @@
       <div style="font-size:13px;color:var(--muted)">No sessions logged yet. Play a few runs and your streak, trend, and history will show up here.</div>
     </div>
     <div id="progContent" style="display:none">
+      <div id="progTodayPanel" class="panel" style="display:none">
+        <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Today</div>
+        <div id="progTodayText" style="font-size:14px;color:var(--ink);line-height:1.5"></div>
+      </div>
       <div class="panel" style="display:flex;gap:16px">
         <div style="flex:1;text-align:center">
           <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Current streak</div>
@@ -521,6 +573,10 @@
       <div class="panel">
         <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Last sessions</div>
         <div id="progBars" style="display:flex;gap:4px;align-items:flex-end;height:80px"></div>
+      </div>
+      <div class="panel">
+        <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Achievements</div>
+        <div id="progBadges" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       </div>
       <div id="progTipPanel" class="panel" style="display:none;background:linear-gradient(160deg,rgba(255,176,32,.10),transparent)">
         <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:6px">Worth trying</div>
@@ -596,7 +652,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 147 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 148 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1153,11 +1209,11 @@ function drawStrip(){
 }
 
 // ---- Transport ----
-function startTransport(forCalib){
+function startTransport(forCalib, warmup){
   if(!running)return;
   stopTransport(true);
   beatDur=60/bpm; barDur=4*beatDur;
-  mode=forCalib?'calibrate':'play';
+  mode=warmup?'warmup':(forCalib?'calibrate':'play');
   sessionCompleted=false;
   if(clickBus){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(visualBeat?0:1,ac.currentTime); }
   if(!forCalib){
@@ -1175,8 +1231,9 @@ function startTransport(forCalib){
   nextBeatTime=ac.currentTime+0.25;
   firstBarTime=nextBeatTime+countInBeats*beatDur;
   hwBarMap.clear(); hwRestMap.clear(); hwFlashes=[]; hwHits.clear(); hwResolved.clear(); hwLastBeat=null; beatPulses=[]; clickTimes=[];
-  $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
-  $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
+  $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true; if($('warmupBtn'))$('warmupBtn').disabled=true;
+  $('stopBtn').textContent = forCalib ? '■ Done' : (warmup ? '■ End warm-up' : '■ Stop');
+  if(warmup && $('countin')) $('countin').textContent='warming up \u2014 just settle into the tempo, nothing scored';
   const _np=document.getElementById('notePanel'); if(_np) try{ _np.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
   schedId=setInterval(scheduler,25);
   requestAnimationFrame(drawPlayhead);
@@ -1187,9 +1244,11 @@ function stopTransport(silent){
   if(schedId){clearInterval(schedId);schedId=null;}
   if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } killPending();
   $('playhead') && $('playhead').setAttribute('opacity','0');
-  $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
+  $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false; if($('warmupBtn'))$('warmupBtn').disabled=false;
   $('stopBtn').textContent='■ Stop';
   if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent='';
+    lastRunLog = expected.filter(e=>e.idx>=0).map(e=>({time:e.time, hit:!!e.hit, delta:e.delta!=null?e.delta:null, ratingWord:e.ratingWord||null, col:e.col||null}));
+    lastRunMeta = {bpm:bpm, pulsePattern:pulsePattern};
     if(sessionCompleted && pendingLevel!=null) evaluateLevel(pendingLevel);
     else if(sessionCompleted){ const _f=finalScores(); if(_f){
       prog.lastScores=prog.lastScores||{};
@@ -1263,6 +1322,8 @@ function playSuccessChime(stars){   // tiered by result quality — richer chime
 }
 let pending=[];
 function killPending(){ for(const o of pending){ try{o.stop();}catch(e){} } pending=[]; }
+let clickTone='classic';
+const CLICK_TONES={ classic:{pulse:1100,notation:2200}, woodblock:{pulse:760,notation:1500}, rimshot:{pulse:1450,notation:2600} };
 function fireClickVoice(t,peak,freq){
   const o=ac.createOscillator(),g=ac.createGain();
   o.frequency.value=freq;
@@ -1286,7 +1347,7 @@ function fireClickVoice(t,peak,freq){
 function scheduleClick(t,pulseOn){
   if(pulseOn && clickVol>0 && (!visualBeat || mode==='calibrate')){
     clickTimes.push(t); if(clickTimes.length>64) clickTimes.shift();
-    fireClickVoice(t, clickVol*0.36, 1100);
+    fireClickVoice(t, clickVol*0.36, CLICK_TONES[clickTone].pulse);
   }
 }
 let curBarStart=0;
@@ -1333,7 +1394,7 @@ function registerBar(barStart){
     expected.push({time:t,hit:false,idx:i,win,pitch:null,beat:p});
     if(guide && accentLevel>0 && !visualBeat){ // notation click: one consistent tick on every written note, independent of the pulse click
       const o=ac.createOscillator(),g=ac.createGain();
-      o.frequency.value=2200;o.type='sine';
+      o.frequency.value=CLICK_TONES[clickTone].notation;o.type='sine';
       const peak=0.55*(accentLevel/100);
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+0.001);
       g.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
@@ -1369,6 +1430,7 @@ function handleOnset(t){
     const r=rating(Math.abs(delta));
     const gemCol=hitColorFor(delta);
     const isPerfect = r.w==='Perfect';
+    best.delta=delta; best.ratingWord=r.w; best.col=gemCol; best.actualTime=tc;
     setNoteColor(best.idx, r.c);
     const key=Math.round(best.time*1000);
     hwHits.set(key, gemCol);
@@ -1546,6 +1608,7 @@ function applyDetSaved(){ if(!prog.det){ if(typeof applyInstrumentPreset==='func
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK,eSpeed:params.eSpeed});
   if(d.lowcut) setLowCut(d.lowcut); }
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
+$('warmupBtn') && ($('warmupBtn').onclick=()=>{startTransport(false,true);});
 function curOffset(){ return visualBeat ? calibOffsetVis : calibOffset; }
 function fmtOff(){ const b=$('offVal'); if(!b) return; const o=curOffset(); b.textContent=(visualBeat?'muted':'click')+' offset '+(o>0?'+':'')+Math.round(o)+'ms'; }
 function addOffset(ms){ if(visualBeat) calibOffsetVis+=ms; else calibOffset+=ms; calibrated=true; prog.calib=Math.round(calibOffset); prog.calibVis=Math.round(calibOffsetVis); saveProg(); fmtOff(); }
@@ -1620,11 +1683,36 @@ function computeAdaptiveTip(history){
   if(min===avgRhy && avgRhy<75) return 'Rhythm accuracy has been your softest metric lately \u2014 dropping to an easier Challenge difficulty can help nail the pattern first.';
   return null;
 }
+function computeTodaySummary(history){
+  const today=fmtDate(new Date());
+  const todays=history.filter(h=>h.date===today);
+  if(!todays.length) return null;
+  const modes=new Set(todays.map(h=>h.mode));
+  const refs=new Set(todays.filter(h=>h.ref).map(h=>h.ref));
+  const scores=todays.map(avgScore);
+  const half=Math.ceil(scores.length/2);
+  const firstHalf=scores.slice(0,half), secondHalf=scores.slice(half);
+  const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+  let trendWord='holding steady';
+  if(secondHalf.length && firstHalf.length){
+    const d=avg(secondHalf)-avg(firstHalf);
+    trendWord = d>2?'improving as you went':d<-2?'dipping toward the end':'holding steady';
+  }
+  return { count:todays.length, modeCount:modes.size, refCount:refs.size, trendWord, avg:Math.round(avg(scores)) };
+}
 function renderProgressScreen(){
   const history=(prog.history||[]);
   const empty=$('progEmpty'), content=$('progContent');
   if(!history.length){ if(empty) empty.style.display='block'; if(content) content.style.display='none'; return; }
   if(empty) empty.style.display='none'; if(content) content.style.display='block';
+  const today=computeTodaySummary(history), todayPanel=$('progTodayPanel');
+  if(todayPanel){
+    if(today){
+      todayPanel.style.display='block';
+      const styleWord = today.refCount>0 ? (today.refCount+' style'+(today.refCount>1?'s':'')) : (today.modeCount+' mode'+(today.modeCount>1?'s':''));
+      $('progTodayText').textContent=today.count+' session'+(today.count>1?'s':'')+' across '+styleWord+' today \u2014 average '+today.avg+', '+today.trendWord+'.';
+    } else todayPanel.style.display='none';
+  }
   const st=computeStreak(history);
   if($('progStreakNum')) $('progStreakNum').textContent=st.current;
   if($('progLongestNum')) $('progLongestNum').textContent=st.longest;
@@ -1646,8 +1734,37 @@ function renderProgressScreen(){
     bars.innerHTML=recent.map(h=>{ const v=Math.max(4,avgScore(h)); const col=v>=75?cssVar('--green'):v>=55?cssVar('--amber'):cssVar('--ember');
       return '<div title="'+Math.round(avgScore(h))+'" style="flex:1;height:'+v+'%;background:'+col+';border-radius:3px 3px 0 0;min-width:6px"></div>'; }).join('');
   }
+  const badgesEl=$('progBadges');
+  if(badgesEl){
+    const badges=computeBadges();
+    badgesEl.innerHTML=badges.map(b=>{
+      const on=b.earned;
+      return '<div title="'+b.desc+'" style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid '+(on?'var(--accent)':'var(--line)')+';background:'+(on?'color-mix(in srgb,var(--accent) 14%,transparent)':'transparent')+';opacity:'+(on?'1':'.45')+';font-size:11px;font-weight:700;color:'+(on?'var(--accent)':'var(--muted)')+'">'+
+        (on?'<svg width="0.9em" height="0.9em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+
+        b.name+'</div>';
+    }).join('');
+  }
   const tip=computeAdaptiveTip(history), tipPanel=$('progTipPanel');
   if(tipPanel){ if(tip){ tipPanel.style.display='block'; $('progTipText').textContent=tip; } else tipPanel.style.display='none'; }
+}
+function computeBadges(){
+  const history=prog.history||[];
+  const total=history.length;
+  const badges=[{name:'First Steps',desc:'Play your first session',earned:total>=1}];
+  const styleNames=new Set(history.filter(h=>h.mode==='style').map(h=>h.ref));
+  badges.push({name:'Style Explorer',desc:'Play all 30 styles at least once',earned:styleNames.size>=30});
+  ['easy','medium','hard','pro'].forEach(dm=>{
+    const need=needStars(dm);
+    const swept=typeof LEVELS!=='undefined' && LEVELS.every(L=>{ const rec=prog.levels[L.id]; return rec && rec.byDiff && (rec.byDiff[dm]||0)>=need; });
+    badges.push({name:dm.charAt(0).toUpperCase()+dm.slice(1)+' Sweep',desc:'Clear all levels on '+dm,earned:!!swept});
+  });
+  const st=computeStreak(history);
+  badges.push({name:'Week Warrior',desc:'7-day practice streak',earned:st.longest>=7});
+  badges.push({name:'Committed',desc:'30-day practice streak',earned:st.longest>=30});
+  badges.push({name:'Century',desc:'100 sessions logged',earned:total>=100});
+  const perfect=Object.values(prog.levels||{}).some(r=>r && r.stars>=3);
+  badges.push({name:'Perfectionist',desc:'Earn 3 stars on any level',earned:perfect});
+  return badges;
 }
 let prog=(function(){ try{const p=JSON.parse(localStorage.getItem(PKEY)); return (p&&p.levels)?p:defaultProg();}catch(e){return defaultProg();} })();
 if(prog.diffMode){ if(DIFFS[prog.diffMode]) diffMode=prog.diffMode; }
@@ -1736,6 +1853,23 @@ if($('obBack')) $('obBack').onclick=obBack;
 if($('obSkip')) $('obSkip').onclick=obSkip;
 if($('rerunWizardBtn')) $('rerunWizardBtn').onclick=obShow;
 if($('spShare')) $('spShare').onclick=shareRunImage;
+if($('spReview')) $('spReview').onclick=function(){ const pop=$('scorePop'); if(pop) pop.style.display='none'; openReviewModal(); };
+if($('reviewClose')) $('reviewClose').onclick=function(){ $('reviewModal').style.display='none'; };
+if($('reviewModal')) $('reviewModal').addEventListener('click',function(e){ if(e.target===this) this.style.display='none'; });
+if($('reviewGhostBtn')) $('reviewGhostBtn').onclick=playGhostRun;
+function dailyGrooveIndex(){
+  const d=new Date();
+  const seed=d.getFullYear()*372+(d.getMonth()+1)*31+d.getDate();
+  return ((seed%STYLES.length)+STYLES.length)%STYLES.length;
+}
+function renderDailyGrooveBanner(){
+  const banner=$('dailyGrooveBanner'); if(!banner) return;
+  const idx=dailyGrooveIndex(), g=STYLES[idx]; if(!g) return;
+  if($('dailyGrooveName')) $('dailyGrooveName').textContent=g.name;
+  banner.style.display='block';
+  banner.onclick=function(){ applyMode('style'); startStyle(idx); hideRhythmSheet(); if(window.showScreen) showScreen('play'); };
+}
+renderDailyGrooveBanner();
 if(!prog.onboarded){ setTimeout(obShow,50); }
 // build 82 one-time migration: old default Min gap was mistakenly 90ms; correct a saved 90 -> 70 exactly once.
 if(!prog.migRef70){ if(prog.det && +prog.det.ref===90){ prog.det.ref=70; } prog.migRef70=1; saveProg(); }
@@ -1873,7 +2007,37 @@ function countUp(id, target, suffix, duration){
   }
   requestAnimationFrame(tick);
 }
-let lastPopResult=null;
+let lastPopResult=null, lastRunLog=[], lastRunMeta=null;
+function openReviewModal(){
+  const modal=$('reviewModal'); if(!modal || !lastRunLog.length) return;
+  const strip=$('reviewStrip');
+  strip.innerHTML=lastRunLog.map((n,i)=>{
+    const col=n.hit?(n.col||cssVar('--green')):'#5a5a5a';
+    return '<div class="reviewPill" data-i="'+i+'" style="flex:0 0 auto;width:14px;height:14px;border-radius:50%;background:'+col+';cursor:pointer;opacity:'+(n.hit?1:.6)+'"></div>';
+  }).join('');
+  [...strip.children].forEach(el=>el.addEventListener('click',()=>selectReviewNote(+el.dataset.i)));
+  $('reviewDetail').innerHTML='<div style="font-size:12px;color:var(--muted)">Tap any note above to see its timing</div>';
+  modal.style.display='flex';
+}
+function selectReviewNote(i){
+  const n=lastRunLog[i]; if(!n) return;
+  const detail=$('reviewDetail');
+  if(!n.hit){ detail.innerHTML='<div style="font-size:15px;font-weight:800;color:var(--muted)">Missed</div><div style="font-size:12px;color:var(--muted);margin-top:4px">No onset detected for this note</div>'; return; }
+  const ms=Math.round(n.delta), sign=ms>0?'+':''; const col=n.col||cssVar('--green');
+  detail.innerHTML='<div style="font-size:26px;font-weight:800;color:'+col+'">'+sign+ms+'ms</div><div style="font-size:13px;color:var(--muted);margin-top:4px">'+(n.ratingWord||'')+(ms<0?' \u2014 early':ms>0?' \u2014 late':' \u2014 dead on')+'</div>';
+}
+function playGhostRun(){
+  if(!ac || !lastRunLog.length || !lastRunMeta) return;
+  const startT=ac.currentTime+0.2, bd=60/lastRunMeta.bpm, pat=lastRunMeta.pulsePattern;
+  const lastTime=Math.max.apply(null, lastRunLog.map(n=>n.time));
+  const totalBeats=Math.ceil(lastTime/bd)+4;
+  for(let b=0;b<totalBeats;b++){
+    const bib=b%4;
+    const on = pat==='24'?(bib===1||bib===3) : pat==='13'?(bib===0||bib===2) : true;
+    if(on) fireClickVoice(startT+b*bd, clickVol*0.36, CLICK_TONES[clickTone].pulse);
+  }
+  lastRunLog.forEach(n=>{ if(n.hit && n.delta!=null){ const t=startT+n.time+(n.delta/1000); fireClickVoice(t, 0.30, 740); } });
+}
 function shareRunImage(){
   const r=lastPopResult; if(!r) return;
   const W=800,H=1000, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
@@ -1929,6 +2093,7 @@ function showScorePop(f, stars, opts){
   lastPopResult={f:f, stars:stars, title:opts.title||(stars>=3?'Perfect run!':stars>=1?'Nice!':'Keep at it'), free:!!opts.free};
   if(!opts.free && stars>=1) playSuccessChime(stars);
   const nb=$('spNewBest'); if(nb){ nb.style.display=opts.newBest?'inline-block':'none'; if(opts.newBest){ nb.style.animation='none'; void nb.offsetWidth; nb.style.animation='spop .4s cubic-bezier(.2,1.1,.3,1)'; } }
+  const revBtn=$('spReview'); if(revBtn) revBtn.style.display=(lastRunLog&&lastRunLog.length)?'flex':'none';
   $('spStars').innerHTML = opts.free ? '' : starsHtml(stars||0,3,cssVar('--amber'),cssVar('--muted'));
   $('spTitle').textContent = opts.title || (stars>=3?'Perfect run!':stars>=1?'Nice!':'Keep at it');
   $('spTitle').style.color = (stars>=1||opts.free)?'var(--amber)':'var(--muted)';
@@ -2148,6 +2313,14 @@ $('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.close
   else { hideRhythmSheet(); const pa=$('playAdjust'); if(pa) pa.open=true; } });
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
+$('clickToneSeg') && $('clickToneSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  clickTone=b.dataset.tone; prog.clickTone=clickTone; saveProg();
+  [...$('clickToneSeg').children].forEach(x=>x.classList.toggle('active', x===b)); });
+$('accentSwatches') && $('accentSwatches').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  const acc=b.dataset.accent;
+  if(acc==='amber') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent',acc);
+  prog.accent=acc; saveProg();
+  [...$('accentSwatches').children].forEach(x=>x.classList.toggle('active', x===b)); });
 $('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
 // clickable help terms -> jump to the actual control
 function jumpTo(elId){
@@ -2162,6 +2335,8 @@ function jumpTo(elId){
 }
 document.addEventListener('click', e=>{ const j=e.target.closest('[data-jump]'); if(j){ e.preventDefault(); jumpTo(j.dataset.jump); } });
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
+if(prog.clickTone && CLICK_TONES[prog.clickTone]){ clickTone=prog.clickTone; if($('clickToneSeg')) segActivate('clickToneSeg','tone',clickTone); }
+if(prog.accent && $('accentSwatches')) segActivate('accentSwatches','accent',prog.accent);
 document.addEventListener('keydown',function(e){
   if(e.code!=='Space' && e.key!==' ') return;
   const t=(e.target&&e.target.tagName||'').toLowerCase();
