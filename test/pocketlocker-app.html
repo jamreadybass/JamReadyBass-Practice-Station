@@ -8,7 +8,7 @@
   :root{
     --bg:#0a0b0e; --panel:#14161f; --panel2:#1b1e29; --line:#2a2e3a;
     --ink:#ece8de; --muted:#8b90a0; --amber:#ffb020; --ember:#ff5a3d; --amber-dim:#5a3f12;
-    --green:#46d39a; --red:#ff5a52; --blue:#58b6ff;
+    --green:#46d39a; --green-lt:#7ad39a; --ember-lt:#ff8a3d; --red:#ff5a52; --blue:#58b6ff;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --appw:520px;
@@ -16,6 +16,7 @@
   html[data-theme="light"]{
     --bg:#f6ecd9; --panel:#fdf6e8; --panel2:#f1e6d1; --line:#e2d4b6;
     --ink:#2c2415; --muted:#7d7158; --amber-dim:#efe0bd;
+    --amber:#8c5a00; --ember:#93250f; --green:#0c6b41; --green-lt:#357029; --ember-lt:#a8460f; --red:#a8241c; --blue:#1a6fa8;
   }
   html[data-theme="light"] .appbar{ background:linear-gradient(180deg, rgba(253,246,232,.97), rgba(253,246,232,.84)); }
   html[data-theme="light"] .bottomnav{ background:linear-gradient(0deg, rgba(253,246,232,.98), rgba(253,246,232,.9)); }
@@ -35,8 +36,8 @@
   .brand:hover{color:var(--ink)}.brand:hover span{filter:brightness(1.12)}
   .badgebar{display:flex;justify-content:center;padding:8px 18px 0}
   .wordmark span{color:var(--amber)}
-  .iconbtn{width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;
-    font-size:19px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}
+  .iconbtn{width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;
+    font-size:19px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;min-height:44px}
   .iconbtn:hover{border-color:var(--amber);color:var(--amber)}
   .badge{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
   .badge.live{color:var(--green);border-color:#1e3b30}
@@ -65,9 +66,9 @@
   input[type=range]{width:100%;accent-color:var(--amber)}
   .help{font-size:13px;color:var(--muted);line-height:1.6}
   .help b{color:var(--ink)}
-  .chk{display:flex;gap:9px;align-items:flex-start;margin-top:11px;font-size:13px;color:var(--muted);line-height:1.4}
+  .chk{display:flex;gap:9px;align-items:center;min-height:44px;margin-top:4px;padding:4px 0;font-size:13px;color:var(--muted);line-height:1.4}
   button{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:11px;border:1px solid var(--line);
-    background:var(--panel2);color:var(--ink);padding:12px 16px;cursor:pointer;transition:.12s}
+    background:var(--panel2);color:var(--ink);padding:12px 16px;cursor:pointer;transition:.12s;min-height:44px;box-sizing:border-box}
   button:hover{border-color:var(--amber);color:var(--amber)}
   button:disabled{opacity:.4;cursor:not-allowed}
   button.primary{background:linear-gradient(180deg,#ffc24d,var(--amber));color:#1a1205;border-color:var(--amber);box-shadow:0 4px 18px rgba(255,176,32,.28)}
@@ -116,7 +117,7 @@
   .lvl .ln{font-family:var(--mono);font-weight:800;color:var(--amber);min-width:20px}
   .lvl.locked .ln{color:var(--muted)}
   .lvl .lname{flex:1}
-  .lvl .lstars{font-size:13px;letter-spacing:1px;color:#46d39a}
+  .lvl .lstars{font-size:13px;letter-spacing:1px;color:var(--green)}
   .lvl.locked .lstars,.lvl:not(.cleared) .lstars{color:var(--muted)}
   #levelBanner{display:none;margin-top:14px;font-family:var(--mono);font-size:13px;color:var(--amber);background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.3);border-radius:11px;padding:11px 13px}
   #levelResult{display:none;margin-top:10px;font-family:var(--mono);font-size:13px;font-weight:700;line-height:1.5}
@@ -212,7 +213,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 143</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 144</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -545,7 +546,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 143 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 144 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1026,6 +1027,15 @@ function drawHighway(){
         ctx.globalAlpha=(1-rp)*0.8; ctx.strokeStyle=resolved.col; ctx.lineWidth=2*DPR;
         ctx.beginPath(); ctx.arc(x,gy,ringR,0,7); ctx.stroke();
       }
+    } else if(resolved && resolved.kind==='hit' && resolved.delta!=null){
+      // non-color direction cue: a small pale chevron beside the gem, pointing toward early (left) or late (right)
+      const dir=resolved.delta<0?-1:1, mx=x+dir*(grad+6*DPR), my=gy, s=4.5*DPR;
+      ctx.globalAlpha=0.92*fadeMul; ctx.fillStyle='rgba(255,250,240,0.95)';
+      ctx.beginPath();
+      if(dir<0){ ctx.moveTo(mx+s,my-s); ctx.lineTo(mx-s,my); ctx.lineTo(mx+s,my+s); }
+      else { ctx.moveTo(mx-s,my-s); ctx.lineTo(mx+s,my); ctx.lineTo(mx-s,my+s); }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(20,16,10,0.6)'; ctx.lineWidth=1*DPR; ctx.stroke();
     }
     ctx.globalAlpha=1;
   }
@@ -1302,7 +1312,7 @@ function handleOnset(t){
     setNoteColor(best.idx, r.c);
     const key=Math.round(best.time*1000);
     hwHits.set(key, gemCol);
-    hwResolved.set(key, {kind:'hit', t:performance.now(), col:gemCol, perfect:isPerfect});
+    hwResolved.set(key, {kind:'hit', t:performance.now(), col:gemCol, perfect:isPerfect, delta:delta});
     hwFlashes.push({time:best.time, col:gemCol, word:r.w, t:performance.now(), delta:delta});
     if(isPerfect) triggerPerfectFlash();
     renderScore();
@@ -1318,7 +1328,7 @@ function finalizeMissed(){ for(const e of expected){ if(!e.hit && e.idx>=0) miss
 function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
 function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;}
 function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
-function rating(absd){const k=curDiff().rate;if(absd<=15*k)return{w:'Perfect',c:'#46d39a'};if(absd<=35*k)return{w:'Great',c:'#7ad39a'};if(absd<=60*k)return{w:'Good',c:'#ffb020'};if(absd<=100*k)return{w:'Loose',c:'#ff8a3d'};return{w:'Miss',c:'#ff5a52'};}
+function rating(absd){const k=curDiff().rate;if(absd<=15*k)return{w:'Perfect',c:cssVar('--green')};if(absd<=35*k)return{w:'Great',c:cssVar('--green-lt')};if(absd<=60*k)return{w:'Good',c:cssVar('--amber')};if(absd<=100*k)return{w:'Loose',c:cssVar('--ember-lt')};return{w:'Miss',c:cssVar('--red')};}
 let diffMode='medium';
 const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, hard:{cen:2.1,evn:1.35,rate:0.7}, pro:{cen:2.9,evn:1.8,rate:0.5} };
 function curDiff(){ return DIFFS[diffMode]||DIFFS.medium; }
@@ -1332,9 +1342,9 @@ function centerScore(bias){return Math.max(0,Math.min(100,100-Math.abs(bias)*cur
 function evennessScore(s){return Math.max(0,Math.min(100,100-s*curDiff().evn));}
 function centerGrade(sc,bias){const dir=Math.abs(bias)<6?'':bias>0?' · behind':' · ahead';
   const w=sc>=90?'Dead on':sc>=75?'Centered':sc>=60?'Slightly off':sc>=40?'Off':'Drifting';
-  const c=sc>=75?'#46d39a':sc>=60?'#ffb020':sc>=40?'#ff8a3d':'#ff5a52';return{w:w+dir,c};}
-function evennessGrade(sc){if(sc>=90)return{w:'Locked',c:'#46d39a'};if(sc>=75)return{w:'Tight',c:'#7ad39a'};if(sc>=60)return{w:'Steady',c:'#ffb020'};if(sc>=40)return{w:'Loose',c:'#ff8a3d'};return{w:'Scattered',c:'#ff5a52'};}
-function rhythmGrade(sc){if(sc>=95)return{w:'All there',c:'#46d39a'};if(sc>=85)return{w:'Solid',c:'#7ad39a'};if(sc>=70)return{w:'Some slips',c:'#ffb020'};if(sc>=50)return{w:'Patchy',c:'#ff8a3d'};return{w:'Lost',c:'#ff5a52'};}
+  const c=sc>=75?cssVar('--green'):sc>=60?cssVar('--amber'):sc>=40?cssVar('--ember-lt'):cssVar('--red');return{w:w+dir,c};}
+function evennessGrade(sc){if(sc>=90)return{w:'Locked',c:cssVar('--green')};if(sc>=75)return{w:'Tight',c:cssVar('--green-lt')};if(sc>=60)return{w:'Steady',c:cssVar('--amber')};if(sc>=40)return{w:'Loose',c:cssVar('--ember-lt')};return{w:'Scattered',c:cssVar('--red')};}
+function rhythmGrade(sc){if(sc>=95)return{w:'All there',c:cssVar('--green')};if(sc>=85)return{w:'Solid',c:cssVar('--green-lt')};if(sc>=70)return{w:'Some slips',c:cssVar('--amber')};if(sc>=50)return{w:'Patchy',c:cssVar('--ember-lt')};return{w:'Lost',c:cssVar('--red')};}
 function rhythmScore(){
   const need=hits+missed; if(need===0) return null;
   const cov=hits/need;                                  // did you play the written notes?
@@ -1687,6 +1697,7 @@ function svgStar(filled){ return filled
   : '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-0.15em"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.5 1.4 6.5L12 16.9 6 20.2l1.4-6.5-4.9-4.5 6.6-.7z"/></svg>'; }
 function starsHtml(filled,total,fillColor,emptyColor){ let h=''; for(let i=0;i<total;i++){ h+='<span style="color:'+(i<filled?(fillColor||'currentColor'):(emptyColor||'currentColor'))+'">'+svgStar(i<filled)+'</span>'; } return h; }
 const LOCK_SVG='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name; }
 function triggerPerfectFlash(){ const el=$('perfectFlash'); if(!el) return; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }
 function countUp(id, target, suffix, duration){
   suffix=suffix||''; duration=duration||420;
@@ -1703,14 +1714,16 @@ function countUp(id, target, suffix, duration){
 function showScorePop(f, stars, opts){
   opts=opts||{}; const pop=$('scorePop'); if(!pop||!f) return;
   if(!opts.free && stars>=1) playSuccessChime(stars);
-  $('spStars').innerHTML = opts.free ? '' : starsHtml(stars||0,3,'#ffb020','#3a3e48');
+  $('spStars').innerHTML = opts.free ? '' : starsHtml(stars||0,3,cssVar('--amber'),cssVar('--muted'));
   $('spTitle').textContent = opts.title || (stars>=3?'Perfect run!':stars>=1?'Nice!':'Keep at it');
   $('spTitle').style.color = (stars>=1||opts.free)?'var(--amber)':'var(--muted)';
-  const cell=(id,k,glow,grad)=>'<div style="flex:1"><div id="'+id+'" style="font-family:var(--mono);font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1;background:'+grad+';-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 10px '+glow+'55)">0</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:5px">'+k+'</div></div>';
-  const goodGrad='linear-gradient(180deg,#7ceac1,#46d39a)', warnGrad='linear-gradient(180deg,#ffcb73,#ffb020)';
+  const passIcon='<svg width="0.85em" height="0.85em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.1em;margin-left:3px"><path d="M20 6L9 17l-5-5"/></svg>';
+  const cell=(id,k,glow,grad,pass)=>'<div style="flex:1"><div id="'+id+'" style="font-family:var(--mono);font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1;background:'+grad+';-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 10px '+glow+'55)">0</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:5px">'+k+(pass?'<span style="color:'+cssVar('--green')+'">'+passIcon+'</span>':'')+'</div></div>';
+  const gGood=cssVar('--green'), gWarn=cssVar('--amber');
+  const goodGrad='linear-gradient(180deg,'+blendHex(gGood,'#ffffff',0.4)+','+gGood+')', warnGrad='linear-gradient(180deg,'+blendHex(gWarn,'#ffffff',0.4)+','+gWarn+')';
   const cc=f.cen>=70?goodGrad:warnGrad, ec=f.evn>=70?goodGrad:warnGrad, rc=f.rhy>=75?goodGrad:warnGrad;
-  const ccG=f.cen>=70?'#46d39a':'#ffb020', ecG=f.evn>=70?'#46d39a':'#ffb020', rcG=f.rhy>=75?'#46d39a':'#ffb020';
-  $('spScores').innerHTML=cell('spCenNum','Center',ccG,cc)+cell('spEvnNum','Evenness',ecG,ec)+cell('spRhyNum','Rhythm',rcG,rc);
+  const ccG=f.cen>=70?gGood:gWarn, ecG=f.evn>=70?gGood:gWarn, rcG=f.rhy>=75?gGood:gWarn;
+  $('spScores').innerHTML=cell('spCenNum','Center',ccG,cc,f.cen>=70)+cell('spEvnNum','Evenness',ecG,ec,f.evn>=70)+cell('spRhyNum','Rhythm',rcG,rc,f.rhy>=75);
   $('spMsg').textContent = opts.msg||'';
   const btn=$('spNext'); btn.textContent=opts.nextLabel||'Continue';
   btn.onclick=function(){ pop.style.display='none'; if(opts.onNext) opts.onNext(); };
@@ -1791,7 +1804,7 @@ function renderLadder(){
   const sw=$('sheetLadder'); if(sw) buildLadder(sw,true);
   const cleared=LEVELS.filter(L=>(prog.levels[L.id]||{}).cleared).length;
   const stars=LEVELS.reduce((a,L)=>a+((prog.levels[L.id]||{}).stars||0),0);
-  if($('climbSummary')){ let sum='<b style="color:#46d39a">'+svgStar(true)+' '+stars+'</b> / '+STAR_TOTAL+' stars earned &middot; <b>'+cleared+'</b> / '+LEVELS.length+' levels cleared';
+  if($('climbSummary')){ let sum='<b style="color:'+cssVar('--green')+'">'+svgStar(true)+' '+stars+'</b> / '+STAR_TOTAL+' stars earned &middot; <b>'+cleared+'</b> / '+LEVELS.length+' levels cleared';
     if(prog.calib!=null) sum+=' &middot; calibration saved ('+prog.calib+'ms)'; $('climbSummary').innerHTML=sum; }
   renderClimbNow();
 }
@@ -1855,7 +1868,7 @@ function renderClimbNow(){
   const clearedCount=LEVELS.filter(x=>(prog.levels[x.id]||{}).cleared).length;
   const done=clearedCount>=LEVELS.length;
   const tag=done?'Challenge complete — replay anytime':'Up next';
-  const clr = clearedOn(r,diffMode) ? '<span style="color:#46d39a">cleared</span>' : ('need '+need+' to advance');
+  const clr = clearedOn(r,diffMode) ? '<span style="color:'+cssVar('--green')+'">cleared</span>' : ('need '+need+' to advance');
   $('climbNow').innerHTML='<div class="cn-tag">'+tag+'</div><div class="cn-main"><span class="cn-lvl">Lv '+id+'</span><span class="cn-name">'+L.name+'</span></div><div class="cn-meta"><span class="cn-stars">'+stars+'</span> &middot; '+DNAME[diffMode]+' \u00b7 '+clr+' &middot; '+clearedCount+'/'+LEVELS.length+' cleared</div>';
   $('continueBtn').textContent=(clearedCount>0||st>0||prog.unlocked>1)?'▶ Continue challenge':'▶ Start the challenge';
 }
