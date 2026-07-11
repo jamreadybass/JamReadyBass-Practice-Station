@@ -40,10 +40,12 @@
   .iconbtn:hover{border-color:var(--amber);color:var(--amber)}
   .badge{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
   .badge.live{color:var(--green);border-color:#1e3b30}
-  main{display:block}
+  main{display:block;position:relative}
   .screen{display:none;padding:18px}
   .screen.active{display:block;animation:fade .18s cubic-bezier(.2,.7,.3,1)}
+  .screen.leaving{display:block;position:absolute;top:0;left:0;right:0;pointer-events:none;animation:fadeOut .16s cubic-bezier(.4,0,.7,1) forwards}
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes fadeOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
   @keyframes rspin{to{transform:rotate(360deg)}}
   #rhythmSheet{background:rgba(8,9,12,0);backdrop-filter:blur(0px);transition:background .22s ease,backdrop-filter .22s ease}
   #rhythmSheet.open{background:rgba(8,9,12,.72);backdrop-filter:blur(4px)}
@@ -191,7 +193,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 137</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 138</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -522,7 +524,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 137 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 138 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1829,7 +1831,15 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
   function cap(x){return x.charAt(0).toUpperCase()+x.slice(1);}
   var curScreen='play';
   function showScreen(name, fromPop){
-    document.querySelectorAll('.screen').forEach(function(sec){sec.classList.toggle('active', sec.id==='screen'+cap(name));});
+    var target=document.getElementById('screen'+cap(name));
+    if(!target) return;
+    var prevActive=document.querySelector('.screen.active');
+    if(prevActive && prevActive!==target){
+      prevActive.classList.remove('active');
+      prevActive.classList.add('leaving');
+      setTimeout(function(){ prevActive.classList.remove('leaving'); },160);
+    }
+    document.querySelectorAll('.screen').forEach(function(sec){ if(sec===target) sec.classList.add('active'); else if(sec!==prevActive) sec.classList.remove('active'); });
     document.querySelectorAll('.bottomnav button').forEach(function(b){b.classList.toggle('active', b.dataset.screen===name);});
     var back=document.getElementById('navBack'); if(back) back.style.visibility=(name==='home')?'hidden':'visible';
     window.scrollTo(0,0);
