@@ -42,9 +42,11 @@
   .badge.live{color:var(--green);border-color:#1e3b30}
   main{display:block}
   .screen{display:none;padding:18px}
-  .screen.active{display:block;animation:fade .25s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .screen.active{display:block;animation:fade .18s cubic-bezier(.2,.7,.3,1)}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   @keyframes rspin{to{transform:rotate(360deg)}}
+  #rhythmSheet.open{background:rgba(8,9,12,.72);backdrop-filter:blur(4px)}
+  #rhythmSheet.open #rhythmSheetPanel{transform:translateY(0)}
   @keyframes spop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
   h2{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 14px}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
@@ -157,8 +159,8 @@
   </div>
 </div>
 
-<div id="rhythmSheet" style="position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;background:rgba(8,9,12,.72);backdrop-filter:blur(4px)">
-  <div style="max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;padding:18px 18px 26px;max-height:88vh;overflow:auto">
+<div id="rhythmSheet" style="position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;background:rgba(8,9,12,0);backdrop-filter:blur(0px);transition:background .22s ease,backdrop-filter .22s ease">
+  <div id="rhythmSheetPanel" style="max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;padding:18px 18px 26px;max-height:88vh;overflow:auto;transform:translateY(100%);transition:transform .26s cubic-bezier(.16,1,.3,1)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700">Rhythm setup</div>
       <button id="rhythmSheetClose" class="primary" style="padding:9px 18px">Done</button>
@@ -187,7 +189,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 134</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 135</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -517,7 +519,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 134 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 135 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -657,6 +659,8 @@ STYLES.forEach(g=>{
   else if(PULSE1234.includes(g.name)) g.pulse='1234';
   else g.pulse = g.swing>0 ? '24' : '1234';   // not yet decided; placeholder default until reviewed
 });
+function openRhythmSheet(){ const sh=$('rhythmSheet'); if(!sh) return; sh.style.display='flex'; requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ sh.classList.add('open'); }); }); }
+function hideRhythmSheet(){ const sh=$('rhythmSheet'); if(!sh) return; sh.classList.remove('open'); setTimeout(()=>{ sh.style.display='none'; },260); }
 function positions(){return randomMode ? genOnsets : SUBDIV[subdiv];}
 function startStyle(idx){
   const g=STYLES[idx]; if(!g) return;
@@ -672,7 +676,7 @@ function startStyle(idx){
   if(typeof generateBar==='function') generateBar();
   if(typeof renderNotation==='function') renderNotation();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
-  const sh=$('rhythmSheet'); if(sh) sh.style.display='none';
+  hideRhythmSheet();
   if(window.showScreen) showScreen('play');
 }
 function renderStyleList(){
@@ -961,21 +965,36 @@ function drawHighway(){
   for(const r of rests){ if(r._x>-40 && r._x<W+40) hwRest(ctx, r._x, r.durB, staffY, DPR); }
 
   // ---- highway gems ----
+  const HIT_FADE_MS=260, MISS_FADE_MS=420, MISS_DROP_PX=16;
+  for(const [rk,rv] of hwResolved){ if(nowMs-rv.t>1200) hwResolved.delete(rk); }   // trim old resolution entries
   if(!proView && diffMode!=='pro') for(const n of vis){ const x=n._x, rad=13*DPR, isHold=n.durB>=0.9, down=(n.beat<0.05);
     if(isHold){ const tw=n.durB*pxPerBeat; const tg=ctx.createLinearGradient(x,0,x+tw,0);
       tg.addColorStop(0,'rgba(255,176,32,0.34)');tg.addColorStop(1,'rgba(255,176,32,0.05)');
       ctx.fillStyle=tg;rrectC(ctx,x,hwMid-7*DPR,tw,14*DPR,7*DPR);ctx.fill(); }
-    let hitCol=null;
-    if(playing && n.time!=null){ const k=Math.round(n.time*1000); hitCol=hwHits.get(k)||hwHits.get(k-1)||hwHits.get(k+1)||null; }
-    const missed = playing && n.time!=null && !hitCol && n.time < now-0.16;
+    let hitCol=null, key=null;
+    if(playing && n.time!=null){ key=Math.round(n.time*1000); hitCol=hwHits.get(key)||hwHits.get(key-1)||hwHits.get(key+1)||null; }
+    const nowlyMissed = playing && n.time!=null && !hitCol && n.time < now-0.16;
+    if(nowlyMissed && key!=null && !hwResolved.has(key) && !hwResolved.has(key-1) && !hwResolved.has(key+1)){ hwResolved.set(key, {kind:'miss', t:nowMs}); }
+    const resolved = key!=null ? (hwResolved.get(key)||hwResolved.get(key-1)||hwResolved.get(key+1)) : null;
+    let scaleMul=1, dropY=0, fadeMul=1, skip=false;
+    if(resolved){ const age=nowMs-resolved.t;
+      if(resolved.kind==='hit'){ if(age>=HIT_FADE_MS){ skip=true; } else { const p=age/HIT_FADE_MS; scaleMul=1-0.35*p; fadeMul=1-p; } }
+      else { if(age>=MISS_FADE_MS){ skip=true; } else { const p=age/MISS_FADE_MS; dropY=p*p*MISS_DROP_PX*DPR; fadeMul=1-p; } }
+    }
+    if(skip) continue;
+    const isMissVisual = resolved && resolved.kind==='miss';
     let base=down?'#ff7a4d':'#ffd07a', edge=down?'#ff5a3d':'#ffb020';
-    if(hitCol){base=hitCol;edge=hitCol;} else if(missed){base='#4a3a3a';edge='#5a4040';}
-    ctx.save();ctx.shadowColor=edge;ctx.shadowBlur=(hitCol?22:(playing?13:6))*DPR;
-    const gg=ctx.createRadialGradient(x-rad*0.3,hwMid-rad*0.3,1,x,hwMid,rad);
-    gg.addColorStop(0,missed?'#666':'#fff7e6');gg.addColorStop(0.55,base);gg.addColorStop(1,edge);
-    ctx.fillStyle=gg;ctx.globalAlpha=missed?0.5:(playing?1:0.82);ctx.beginPath();ctx.arc(x,hwMid,rad,0,7);ctx.fill();ctx.restore();
-    ctx.globalAlpha=1;ctx.strokeStyle='rgba(20,16,10,0.5)';ctx.lineWidth=1*DPR;ctx.beginPath();ctx.arc(x,hwMid,rad,0,7);ctx.stroke();
-    ctx.fillStyle='rgba(255,250,240,0.85)';ctx.beginPath();ctx.arc(x,hwMid,2.1*DPR,0,7);ctx.fill();  // exact center = the moment
+    if(resolved && resolved.kind==='hit'){ base=resolved.col; edge=resolved.col; }
+    else if(isMissVisual){ base='#5a5a5a'; edge='#6a6a6a'; }
+    else if(hitCol){ base=hitCol; edge=hitCol; }
+    const gy=hwMid+dropY, grad=rad*scaleMul;
+    ctx.save();ctx.shadowColor=edge;ctx.shadowBlur=(resolved&&resolved.kind==='hit'?22:(playing?13:6))*DPR;
+    const gg=ctx.createRadialGradient(x-grad*0.3,gy-grad*0.3,1,x,gy,grad);
+    gg.addColorStop(0,isMissVisual?'#666':'#fff7e6');gg.addColorStop(0.55,base);gg.addColorStop(1,edge);
+    ctx.fillStyle=gg;ctx.globalAlpha=(isMissVisual?0.5:(playing?1:0.82))*fadeMul;ctx.beginPath();ctx.arc(x,gy,grad,0,7);ctx.fill();ctx.restore();
+    ctx.globalAlpha=fadeMul;ctx.strokeStyle='rgba(20,16,10,0.5)';ctx.lineWidth=1*DPR;ctx.beginPath();ctx.arc(x,gy,grad,0,7);ctx.stroke();
+    ctx.fillStyle='rgba(255,250,240,'+(0.85*fadeMul)+')';ctx.beginPath();ctx.arc(x,gy,2.1*DPR,0,7);ctx.fill();
+    ctx.globalAlpha=1;
   }
 
   // ---- the pocket ----
@@ -1061,7 +1080,7 @@ function startTransport(forCalib){
   if(!forCalib){ deltas=[];hits=0;missed=0;extra=0; striphits=[]; hitLog=[]; }
   nextBeatTime=ac.currentTime+0.25;
   firstBarTime=nextBeatTime+countInBeats*beatDur;
-  hwBarMap.clear(); hwRestMap.clear(); hwFlashes=[]; hwHits.clear(); hwLastBeat=null; beatPulses=[]; clickTimes=[];
+  hwBarMap.clear(); hwRestMap.clear(); hwFlashes=[]; hwHits.clear(); hwResolved.clear(); hwLastBeat=null; beatPulses=[]; clickTimes=[];
   $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
   $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
   const _np=document.getElementById('notePanel'); if(_np) try{ _np.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
@@ -1148,7 +1167,7 @@ function scheduleClick(t,pulseOn){
   }
 }
 let curBarStart=0;
-let firstBarTime=0, hwBarMap=new Map(), hwRestMap=new Map(), hwFlashes=[], hwHits=new Map();
+let firstBarTime=0, hwBarMap=new Map(), hwRestMap=new Map(), hwFlashes=[], hwHits=new Map(), hwResolved=new Map();
 // NOTE MODEL: a note is {pos (beats), dur (beats), pitch}. pitch is null for timing-only
 // exercises (every current mode). A future melodic mode sets pitch (a MIDI number); the
 // highway would map pitch -> vertical position and scoring would gain a pitch-accuracy axis.
@@ -1160,6 +1179,14 @@ function restsOf(cells){ const o=[]; cells.forEach((c,b)=>c.rests.forEach(r=>o.p
 function staticRests(){ return (randomMode && currentBar) ? restsOf(currentBar) : []; }
 function rrectC(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 function hex2rgb(h){h=h.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255);}
+function blendHex(a,b,t){ t=Math.max(0,Math.min(1,t)); const A=hex2rgb(a).split(',').map(Number), B=hex2rgb(b).split(',').map(Number);
+  const r=Math.round(A[0]+(B[0]-A[0])*t), g=Math.round(A[1]+(B[1]-A[1])*t), bl=Math.round(A[2]+(B[2]-A[2])*t);
+  const h=n=>n.toString(16).padStart(2,'0');
+  return '#'+h(r)+h(g)+h(bl); }
+function hitColorFor(deltaMs){ // signed delta: negative=early(cool), 0=center(amber), positive=late(ember)
+  const k=Math.max(-70,Math.min(70,deltaMs))/70;   // -1..1
+  return k<0 ? blendHex('#58b6ff','#ffb020',1+k) : blendHex('#ffb020','#ff5a3d',k);
+}
 function registerBar(barStart){
   if(randomMode && autoAdv){
     if(repCount===0){ if(!nextBar) nextBar=makeBar().cells; }           // first bar = the one shown
@@ -1217,9 +1244,12 @@ function handleOnset(t){
     const delta=(tc-best.time)*1000;   // latency already removed via tc; this is vs the feel target
     deltas.push(delta); hits++; hitLog.push({d:delta, b:(best.beat!=null?best.beat:0)});
     const r=rating(Math.abs(delta));
+    const gemCol=hitColorFor(delta);
     setNoteColor(best.idx, r.c);
-    hwHits.set(Math.round(best.time*1000), r.c);
-    hwFlashes.push({time:best.time, col:r.c, word:r.w, t:performance.now(), delta:delta});
+    const key=Math.round(best.time*1000);
+    hwHits.set(key, gemCol);
+    hwResolved.set(key, {kind:'hit', t:performance.now(), col:gemCol});
+    hwFlashes.push({time:best.time, col:gemCol, word:r.w, t:performance.now(), delta:delta});
     renderScore();
   } else {
     const tcl = t - curOffset()/1000;
@@ -1513,15 +1543,27 @@ function starsFor(f){   // one star per scoring category met
 }
 function bestOf(a,b){ if(!a) return b; return {cen:Math.max(a.cen,b.cen),evn:Math.max(a.evn,b.evn),rhy:Math.max(a.rhy,b.rhy)}; }
 
+function countUp(id, target, suffix, duration){
+  suffix=suffix||''; duration=duration||420;
+  const el=$(id); if(!el) return;
+  const start=performance.now();
+  function tick(now){
+    const p=Math.min(1,(now-start)/duration);
+    const eased=1-Math.pow(1-p,3);   // ease-out cubic, fast start settling in quick
+    el.textContent=Math.round(target*eased)+suffix;
+    if(p<1) requestAnimationFrame(tick); else el.textContent=target+suffix;
+  }
+  requestAnimationFrame(tick);
+}
 function showScorePop(f, stars, opts){
   opts=opts||{}; const pop=$('scorePop'); if(!pop||!f) return;
   const filled='★'.repeat(stars||0), empty='☆'.repeat(3-(stars||0));
   $('spStars').innerHTML = opts.free ? '' : '<span style="color:#ffb020">'+filled+'</span><span style="color:#3a3e48">'+empty+'</span>';
   $('spTitle').textContent = opts.title || (stars>=3?'Perfect run!':stars>=1?'Nice!':'Keep at it');
   $('spTitle').style.color = (stars>=1||opts.free)?'var(--amber)':'var(--muted)';
-  const cell=(k,v,c)=>'<div style="flex:1"><div style="font-family:var(--mono);font-size:26px;font-weight:800;color:'+c+'">'+v+'</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+k+'</div></div>';
+  const cell=(id,k,c)=>'<div style="flex:1"><div id="'+id+'" style="font-family:var(--mono);font-size:26px;font-weight:800;color:'+c+'">0</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+k+'</div></div>';
   const cc=f.cen>=70?'#46d39a':'#ffb020', ec=f.evn>=70?'#46d39a':'#ffb020', rc=f.rhy>=75?'#46d39a':'#ffb020';
-  $('spScores').innerHTML=cell('Center',f.cen,cc)+cell('Evenness',f.evn,ec)+cell('Rhythm',f.rhy+'%',rc);
+  $('spScores').innerHTML=cell('spCenNum','Center',cc)+cell('spEvnNum','Evenness',ec)+cell('spRhyNum','Rhythm',rc);
   $('spMsg').textContent = opts.msg||'';
   const btn=$('spNext'); btn.textContent=opts.nextLabel||'Continue';
   btn.onclick=function(){ pop.style.display='none'; if(opts.onNext) opts.onNext(); };
@@ -1530,6 +1572,9 @@ function showScorePop(f, stars, opts){
   pop.onclick=function(e){ if(e.target===pop){ pop.style.display='none'; } };   // tap the backdrop to dismiss and stay on this level
   pop.style.display='flex';
   const card=$('scorePopCard'); if(card){ card.style.animation='none'; void card.offsetWidth; card.style.animation='spop .34s cubic-bezier(.2,1.1,.3,1)'; }
+  countUp('spCenNum', f.cen, '');
+  countUp('spEvnNum', f.evn, '');
+  countUp('spRhyNum', f.rhy, '%');
 }
 function evaluateLevel(id){
   const L=LEVELS.find(x=>x.id===id); if(!L) return;
@@ -1588,7 +1633,7 @@ function buildLadder(wrap, inSheet){
     const dtag = (!locked && rec.clearedDiff) ? ' <span style="color:var(--amber);font-size:9px;letter-spacing:.1em;font-weight:800">'+DL[rec.clearedDiff]+'</span>' : '';
     btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+dtag+'</span><span class="lstars">'+starCell+'</span>';
     if(!locked) btn.onclick=()=>{ selectedLevel=L.id;
-      if(inSheet){ const sh=$('rhythmSheet'); if(sh) sh.style.display='none'; loadLevel(L.id); if(typeof updateSetupBtn==='function') updateSetupBtn(); if(window.showScreen) showScreen('play'); }
+      if(inSheet){ hideRhythmSheet(); loadLevel(L.id); if(typeof updateSetupBtn==='function') updateSetupBtn(); if(window.showScreen) showScreen('play'); }
       else { const fl=$('climbFull'); if(fl){fl.style.display='none'; $('progressToggle').textContent='View progress \u25BE';} loadLevel(L.id); }
     };
     wrap.appendChild(btn);
@@ -1701,9 +1746,9 @@ function applyMode(m){
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
-$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; const m=b.dataset.m; applyMode(m); const sh=$('rhythmSheet');
-  if(m==='style'||m==='climb'){ if(sh) sh.style.display='flex'; }
-  else { if(sh) sh.style.display='none'; const pa=$('playAdjust'); if(pa) pa.open=true; } });
+$('modeSeg') && $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; const m=b.dataset.m; applyMode(m);
+  if(m==='style'||m==='climb'){ openRhythmSheet(); }
+  else { hideRhythmSheet(); const pa=$('playAdjust'); if(pa) pa.open=true; } });
 $('continueBtn') && ($('continueBtn').onclick=()=>loadLevel(selectedLevel||resumeLevelId()));
 $('proViewChk') && ($('proViewChk').onchange=e=>{ proView=e.target.checked; prog.proView=proView; saveProg(); });
 $('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
@@ -1794,7 +1839,7 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
     var sp=document.getElementById('scorePop');
     if(sp && sp.style.display==='flex'){ sp.style.display='none'; try{history.pushState({plScreen:curScreen},'');}catch(_){ } return; }
     var sh=document.getElementById('rhythmSheet');
-    if(sh && sh.style.display==='flex'){ sh.style.display='none'; if(typeof updateSetupBtn==='function') updateSetupBtn(); try{history.pushState({plScreen:curScreen},'');}catch(_){ } return; }
+    if(sh && sh.style.display==='flex'){ hideRhythmSheet(); if(typeof updateSetupBtn==='function') updateSetupBtn(); try{history.pushState({plScreen:curScreen},'');}catch(_){ } return; }
     showScreen((e.state&&e.state.plScreen)||'play', true);
   });
   document.querySelectorAll('.bottomnav button').forEach(function(b){b.addEventListener('click',function(){showScreen(b.dataset.screen);});});
@@ -1809,8 +1854,8 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
   var sheet=document.getElementById('rhythmSheet');
   var openBtn=document.getElementById('openRhythm');
   var closeBtn=document.getElementById('rhythmSheetClose');
-  if(openBtn&&sheet) openBtn.addEventListener('click',function(){ sheet.style.display='flex'; });
-  function closeSheet(){ if(sheet) sheet.style.display='none'; if(climbMode && pendingLevel==null && typeof loadLevel==='function'){ loadLevel(resumeLevelId()); } if(typeof updateSetupBtn==='function') updateSetupBtn(); }
+  if(openBtn&&sheet) openBtn.addEventListener('click',openRhythmSheet);
+  function closeSheet(){ hideRhythmSheet(); if(climbMode && pendingLevel==null && typeof loadLevel==='function'){ loadLevel(resumeLevelId()); } if(typeof updateSetupBtn==='function') updateSetupBtn(); }
   if(closeBtn) closeBtn.addEventListener('click',closeSheet);
   if(sheet) sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); });
   if(typeof updateSetupBtn==='function') updateSetupBtn();
