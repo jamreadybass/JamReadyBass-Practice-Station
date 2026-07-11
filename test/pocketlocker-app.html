@@ -207,7 +207,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 139</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 140</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -539,7 +539,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 139 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 140 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1495,17 +1495,20 @@ function obRender(){
     body.innerHTML=
       '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Step 3 of 3</div>'+
       '<h2 style="margin:0 0 12px;font-size:24px">Calibrate your rig</h2>'+
-      '<p class="help">Every device delays sound a little. Play about 16 steady quarter notes locked to the click — ignore any visuals, just play to the sound. This finds your device’s timing offset.</p>'+
+      '<p class="help">Every device delays sound a little. Tap the button, wait for a short count-in click, then play about 16 steady quarter notes locked to the click. This finds your device’s timing offset.</p>'+
       (running ? '<button class="primary big" id="obCalibBtn" style="width:100%;margin-top:14px">Calibrate now</button>' : '<div class="warn" style="margin-top:14px;font-size:12px">Enable the mic first (go back a step) to calibrate — or skip this and calibrate later from Setup.</div>')+
-      '<div id="obCalibStatus" style="font-size:12px;color:var(--muted);margin-top:10px;min-height:16px"></div>';
+      '<div id="obCalibStatus" style="font-size:13px;color:var(--muted);margin-top:12px;min-height:16px;font-family:var(--mono)"></div>';
     if(running){
       $('obNext').textContent='Skip for now';
       $('obCalibBtn').onclick=()=>{
-        $('obCalibStatus').textContent='Play ~16 steady quarter notes to the click…'; $('obCalibStatus').style.color='var(--muted)';
-        calibSamples=[]; calibOffset=0; startTransport(true);
+        $('obCalibBtn').disabled=true;
+        $('obCalibStatus').textContent='Count-in playing… get ready.'; $('obCalibStatus').style.color='var(--muted)';
+        calibSamples=[]; calibOffset=0; calibrated=false; startTransport(true);
         obPoll=setInterval(()=>{
-          if(calibrated){ obClearPoll(); $('obCalibStatus').textContent='✓ Calibrated.'; $('obCalibStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
-        },200);
+          if(calibrated){ obClearPoll(); $('obCalibStatus').textContent='✓ Calibrated — offset '+Math.round(calibOffset)+'ms.'; $('obCalibStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
+          else if(calibSamples.length>0){ $('obCalibStatus').textContent='calibrating… '+calibSamples.length+' / 16 taps'; $('obCalibStatus').style.color='var(--amber)'; }
+          else if(mode!=='calibrate'){ obClearPoll(); if($('obCalibBtn')) $('obCalibBtn').disabled=false; $('obCalibStatus').textContent='Stopped early — tap Calibrate now to try again.'; $('obCalibStatus').style.color='var(--muted)'; }
+        },150);
       };
     }
   } else if(step==='modes'){
