@@ -80,7 +80,7 @@
   .countin{font-family:var(--mono);font-size:14px;color:var(--amber);text-align:center;margin-top:10px;min-height:20px;letter-spacing:.08em}
   .score-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
   @media(max-width:460px){.score-cards{grid-template-columns:1fr}}
-  @media(min-width:560px) and (orientation:portrait){
+  @media(min-width:560px){
     body{max-width:100%} .bottomnav{max-width:100%}
     #ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px}
     #ladder .tier{grid-column:1/-1}
@@ -187,7 +187,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 125</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 126</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -517,7 +517,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 125 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 126 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
