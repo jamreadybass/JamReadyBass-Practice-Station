@@ -187,7 +187,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 126</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 127</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -517,7 +517,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 126 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 127 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1098,7 +1098,7 @@ function scheduler(){
     }
     const bib = realBeat>=0 ? realBeat%4 : -1;   // beat-in-bar: 0=one,1=two,2=three,3=four
     if(styleClick24 && realBeat>=0){
-      if(bib===1 || bib===3) scheduleClick(nextBeatTime, bib===1);   // backbeat click: 2 & 4 only, light accent on 2
+      if(bib===1 || bib===3) scheduleClick(nextBeatTime, true);   // backbeat click: 2 & 4 only, both scale with downbeat slider equally
     } else {
       scheduleClick(nextBeatTime, realBeat>=0 && bib===0);
     }
