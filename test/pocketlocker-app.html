@@ -53,7 +53,7 @@
   #rhythmSheet.open #rhythmSheetPanel{transform:translateY(0)}
   @keyframes spop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
   h2{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 14px}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+  .panel{background:linear-gradient(165deg,var(--panel2),var(--panel) 60%);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 1px 0 rgba(255,255,255,.02) inset,0 10px 24px -18px rgba(0,0,0,.5)}
   .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
   .ctrl{display:flex;flex-direction:column;gap:6px;min-width:120px;flex:1}
   .ctrl label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -91,7 +91,7 @@
     #ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px}
     #ladder .tier{grid-column:1/-1}
   }
-  .score-card{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:14px}
+  .score-card{background:linear-gradient(165deg,#20232f,var(--panel2) 65%);border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
   .sc-k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
   .sc-k .u{text-transform:none;letter-spacing:0}
   .sc-num{font-family:var(--mono);font-size:40px;font-weight:800;line-height:1;margin:6px 0 2px;color:var(--muted)}
@@ -205,9 +205,9 @@
 <div class="appbar">
   <a class="brand" href="https://www.jamreadybass.com/practice-station" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass Practice Station">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
-  <button id="navSettings" class="iconbtn" aria-label="Setup">⚙</button>
+  <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 140</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 141</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -237,10 +237,10 @@
     <div class="seg" id="modeSeg" style="margin-bottom:12px">
       <button data-m="climb">Challenge</button>
       <button data-m="free" class="active">Freeplay</button>
-      <button data-m="random">🎲 Random</button>
-      <button data-m="style">🌍 Styles</button>
+      <button data-m="random"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>Random</button>
+      <button data-m="style"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.4 2.6 3.7 5.8 3.7 9s-1.3 6.4-3.7 9c-2.4-2.6-3.7-5.8-3.7-9s1.3-6.4 3.7-9z"/></svg>Styles</button>
     </div>
-    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" class="primary" style="flex:1">⚙ Rhythm setup</button></div>
+    <div class="transport" style="margin-bottom:14px"><button id="openRhythm" class="primary" style="flex:1"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg>Rhythm setup</button></div>
     <div class="panel" id="startPanel">
       <h2>Start audio</h2>
       <button class="primary big" id="startBtn" style="width:100%">Enable mic &amp; click</button>
@@ -272,7 +272,7 @@
         </div>
         <div class="ctrl" id="randomRow" style="margin-bottom:14px;display:none"><label>Random syncopation — difficulty</label>
           <div class="seg" id="diffSeg"><button data-d="1">Basic</button><button data-d="2" class="active">Sixteenths</button><button data-d="3">Syncopated</button></div>
-          <div class="transport" style="margin-top:10px"><button id="newRhythmBtn">🎲 New rhythm</button><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar</label></div>
+          <div class="transport" style="margin-top:10px"><button id="newRhythmBtn"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>New rhythm</button><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="autoAdvChk" style="accent-color:var(--amber)"> New one every bar</label></div>
         </div>
         <div class="ctrl" id="adjSwing" style="margin-bottom:14px"><label>Swing <span class="val" id="swingVal" style="text-transform:none">straight</span></label>
           <div class="seg" id="swingSeg"><button data-sw="0" class="active">Off</button><button data-sw="33">Soft</button><button data-sw="66">Medium</button><button data-sw="100">Hard</button></div>
@@ -340,7 +340,7 @@
 
   <section id="screenSettings" class="screen">
     <div class="panel" id="setupPanel">
-      <div class="transport" style="margin-bottom:14px"><button id="rerunWizardBtn" style="flex:1">↺ Run setup wizard again</button></div>
+      <div class="transport" style="margin-bottom:14px"><button id="rerunWizardBtn" style="flex:1"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;margin-right:5px"><path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3"/><path d="M3 4.5v5h5"/></svg>Run setup wizard again</button></div>
       <details>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Options</summary>
         <div style="margin-top:10px">
@@ -402,7 +402,7 @@
       <details>
         <summary>Sound &amp; timing setup</summary>
         <div style="margin-top:14px">
-          <button id="measureBtn" style="padding:10px 18px;border-radius:8px;border:1px solid var(--amber);background:rgba(255,176,32,.12);color:var(--ink);cursor:pointer;font-family:inherit;font-size:14px">● Measure my room</button>
+          <button id="measureBtn" style="padding:10px 18px;border-radius:8px;border:1px solid var(--amber);background:rgba(255,176,32,.12);color:var(--ink);cursor:pointer;font-family:inherit;font-size:14px"><svg width="0.8em" height="0.8em" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-0.02em;margin-right:5px"><circle cx="12" cy="12" r="9"/></svg>Measure my room</button>
           <div style="font-size:11px;color:var(--muted);margin-top:6px">Tap, then stay silent for ~2 seconds. Sets the detector just above your background noise so it stops counting room sound as notes. <b>Runs automatically when you start.</b></div>
           <div id="roomStatus" style="display:none;font-size:12px;color:var(--green);margin-top:6px;font-family:var(--mono)"></div>
         </div>
@@ -477,7 +477,7 @@
 
 <nav class="bottomnav">
   <button data-screen="play" class="active"><span>▶</span>Play</button>
-  <button data-screen="settings"><span>⚙</span>Setup</button>
+  <button data-screen="settings"><span><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>Setup</button>
 </nav>
 
 <script>
@@ -539,7 +539,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 140 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 141 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1524,7 +1524,7 @@ function obRender(){
 }
 function obNext(){ obClearPoll(); if(obIdx<OB_STEPS.length-1){ obIdx++; obRender(); } else { obFinish(); } }
 function obBack(){ obClearPoll(); if(obIdx>0){ obIdx--; obRender(); } }
-function obFinish(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; if(window.showScreen) showScreen('play'); }
+function obFinish(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; if(window.showScreen) showScreen('play'); if(window.openRhythmSheet) setTimeout(openRhythmSheet,180); }
 function obSkip(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; }
 function obShow(){ obIdx=0; const w=$('onboardWizard'); if(w) w.style.display='flex'; obRender(); }
 if($('obBack')) $('obBack').onclick=obBack;
@@ -1647,6 +1647,11 @@ function starsFor(f){   // one star per scoring category met
 }
 function bestOf(a,b){ if(!a) return b; return {cen:Math.max(a.cen,b.cen),evn:Math.max(a.evn,b.evn),rhy:Math.max(a.rhy,b.rhy)}; }
 
+function svgStar(filled){ return filled
+  ? '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-0.15em"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.5 1.4 6.5L12 16.9 6 20.2l1.4-6.5-4.9-4.5 6.6-.7z"/></svg>'
+  : '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-0.15em"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.5 1.4 6.5L12 16.9 6 20.2l1.4-6.5-4.9-4.5 6.6-.7z"/></svg>'; }
+function starsHtml(filled,total,fillColor,emptyColor){ let h=''; for(let i=0;i<total;i++){ h+='<span style="color:'+(i<filled?(fillColor||'currentColor'):(emptyColor||'currentColor'))+'">'+svgStar(i<filled)+'</span>'; } return h; }
+const LOCK_SVG='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 function countUp(id, target, suffix, duration){
   suffix=suffix||''; duration=duration||420;
   const el=$(id); if(!el) return;
@@ -1661,13 +1666,14 @@ function countUp(id, target, suffix, duration){
 }
 function showScorePop(f, stars, opts){
   opts=opts||{}; const pop=$('scorePop'); if(!pop||!f) return;
-  const filled='★'.repeat(stars||0), empty='☆'.repeat(3-(stars||0));
-  $('spStars').innerHTML = opts.free ? '' : '<span style="color:#ffb020">'+filled+'</span><span style="color:#3a3e48">'+empty+'</span>';
+  $('spStars').innerHTML = opts.free ? '' : starsHtml(stars||0,3,'#ffb020','#3a3e48');
   $('spTitle').textContent = opts.title || (stars>=3?'Perfect run!':stars>=1?'Nice!':'Keep at it');
   $('spTitle').style.color = (stars>=1||opts.free)?'var(--amber)':'var(--muted)';
-  const cell=(id,k,c)=>'<div style="flex:1"><div id="'+id+'" style="font-family:var(--mono);font-size:26px;font-weight:800;color:'+c+'">0</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+k+'</div></div>';
-  const cc=f.cen>=70?'#46d39a':'#ffb020', ec=f.evn>=70?'#46d39a':'#ffb020', rc=f.rhy>=75?'#46d39a':'#ffb020';
-  $('spScores').innerHTML=cell('spCenNum','Center',cc)+cell('spEvnNum','Evenness',ec)+cell('spRhyNum','Rhythm',rc);
+  const cell=(id,k,glow,grad)=>'<div style="flex:1"><div id="'+id+'" style="font-family:var(--mono);font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1;background:'+grad+';-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 10px '+glow+'55)">0</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:5px">'+k+'</div></div>';
+  const goodGrad='linear-gradient(180deg,#7ceac1,#46d39a)', warnGrad='linear-gradient(180deg,#ffcb73,#ffb020)';
+  const cc=f.cen>=70?goodGrad:warnGrad, ec=f.evn>=70?goodGrad:warnGrad, rc=f.rhy>=75?goodGrad:warnGrad;
+  const ccG=f.cen>=70?'#46d39a':'#ffb020', ecG=f.evn>=70?'#46d39a':'#ffb020', rcG=f.rhy>=75?'#46d39a':'#ffb020';
+  $('spScores').innerHTML=cell('spCenNum','Center',ccG,cc)+cell('spEvnNum','Evenness',ecG,ec)+cell('spRhyNum','Rhythm',rcG,rc);
   $('spMsg').textContent = opts.msg||'';
   const btn=$('spNext'); btn.textContent=opts.nextLabel||'Continue';
   btn.onclick=function(){ pop.style.display='none'; if(opts.onNext) opts.onNext(); };
@@ -1732,7 +1738,7 @@ function buildLadder(wrap, inSheet){
     const rec=prog.levels[L.id]||{}, locked=L.id>unlockedFor(diffMode), stars=diffStars(rec,diffMode);
     const btn=document.createElement('button');
     btn.className='lvl'+(locked?' locked':'')+(clearedOn(rec,diffMode)?' cleared':'');
-    const starCell = locked ? '\uD83D\uDD12' : ('\u2605'.repeat(stars)+'\u2606'.repeat(3-stars));
+    const starCell = locked ? LOCK_SVG : starsHtml(stars,3,'var(--amber)','#3a3e48');
     const DL={easy:'EASY',medium:'MED',hard:'HARD',pro:'PRO'};
     const dtag = (!locked && rec.clearedDiff) ? ' <span style="color:var(--amber);font-size:9px;letter-spacing:.1em;font-weight:800">'+DL[rec.clearedDiff]+'</span>' : '';
     btn.innerHTML='<span class="ln">'+L.id+'</span><span class="lname">'+L.name+dtag+'</span><span class="lstars">'+starCell+'</span>';
@@ -1748,7 +1754,7 @@ function renderLadder(){
   const sw=$('sheetLadder'); if(sw) buildLadder(sw,true);
   const cleared=LEVELS.filter(L=>(prog.levels[L.id]||{}).cleared).length;
   const stars=LEVELS.reduce((a,L)=>a+((prog.levels[L.id]||{}).stars||0),0);
-  if($('climbSummary')){ let sum='<b style="color:#46d39a">\u2605 '+stars+'</b> / '+STAR_TOTAL+' stars earned &middot; <b>'+cleared+'</b> / '+LEVELS.length+' levels cleared';
+  if($('climbSummary')){ let sum='<b style="color:#46d39a">'+svgStar(true)+' '+stars+'</b> / '+STAR_TOTAL+' stars earned &middot; <b>'+cleared+'</b> / '+LEVELS.length+' levels cleared';
     if(prog.calib!=null) sum+=' &middot; calibration saved ('+prog.calib+'ms)'; $('climbSummary').innerHTML=sum; }
   renderClimbNow();
 }
@@ -1807,7 +1813,7 @@ function renderClimbNow(){
   if(!$('climbNow')) return;
   const id=selectedLevel||resumeLevelId(), L=LEVELS.find(x=>x.id===id)||LEVELS[0], r=prog.levels[id]||{};
   const st=diffStars(r,diffMode), need=needStars(diffMode);
-  const stars='★'.repeat(st)+'☆'.repeat(3-st);
+  const stars=starsHtml(st,3,'var(--amber)','#3a3e48');
   const DNAME={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
   const clearedCount=LEVELS.filter(x=>(prog.levels[x.id]||{}).cleared).length;
   const done=clearedCount>=LEVELS.length;
