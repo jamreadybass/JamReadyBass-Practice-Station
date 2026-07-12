@@ -247,7 +247,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 159</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 160</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -669,7 +669,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 159 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 160 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1171,6 +1171,7 @@ function stopTransport(silent){
   $('stopBtn').textContent='■ Stop';
   if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent='';
     if(latencyLog.length>1){ console.log('[PocketLocker] outputLatency ms per hit (first→last): '+latencyLog.join(', ')); console.log('[PocketLocker] first='+latencyLog[0]+'ms  last='+latencyLog[latencyLog.length-1]+'ms  min='+Math.min(...latencyLog)+'ms  max='+Math.max(...latencyLog)+'ms'); }
+    if(deltas.length>1){ const dr=deltas.map(x=>Math.round(x)); console.log('[PocketLocker] delta ms per hit, in order played (first→last): '+dr.join(', ')); const half=Math.floor(dr.length/2), firstHalf=dr.slice(0,half), secondHalf=dr.slice(half); console.log('[PocketLocker] first-half avg='+Math.round(mean(firstHalf))+'ms  second-half avg='+Math.round(mean(secondHalf))+'ms  (if second is much higher than first, it is genuinely drifting within the run)'); }
     lastRunLog = expected.filter(e=>e.idx>=0).map(e=>({time:e.time, hit:!!e.hit, delta:e.delta!=null?e.delta:null, ratingWord:e.ratingWord||null, col:e.col||null}));
     lastRunMeta = {bpm:bpm, pulsePattern:pulsePattern};
     if(sessionCompleted && pendingLevel!=null) evaluateLevel(pendingLevel);
