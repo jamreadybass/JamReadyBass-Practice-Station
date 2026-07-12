@@ -62,6 +62,17 @@
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     mix-blend-mode:overlay}
   html:not([data-theme="light"]) #grainOverlay{opacity:.035}
+  #todTint{position:fixed;inset:0;z-index:1;pointer-events:none;transition:background 3s ease}
+  #focusExitBtn{display:none}
+  body.focusMode .appbar{display:none}
+  body.focusMode .badgebar{display:none}
+  body.focusMode .bottomnav{display:none}
+  body.focusMode #quickAdjust{display:none}
+  body.focusMode #dailyGrooveBanner{display:none}
+  body.focusMode #playAdjust{display:none}
+  body.focusMode #calibPrompt{display:none}
+  body.focusMode main{padding-bottom:20px}
+  body.focusMode #focusExitBtn{display:flex}
   #perfectFlash{position:fixed;inset:0;z-index:250;pointer-events:none;opacity:0;
     background:radial-gradient(120% 85% at 50% 50%, transparent 55%, rgba(255,176,32,.22) 100%)}
   #perfectFlash.go{animation:pflash .38s ease-out}
@@ -165,6 +176,7 @@
 </head>
 <body>
 <div id="grainOverlay"></div>
+<div id="todTint"></div>
 <div id="roomOverlay" style="position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(8,9,12,.94);backdrop-filter:blur(5px);text-align:center">
   <div style="max-width:340px;padding:0 24px">
     <div id="roomOverlayRing" style="width:64px;height:64px;margin:0 auto 20px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--amber);animation:rspin 0.9s linear infinite"></div>
@@ -245,9 +257,11 @@
 <div class="appbar">
   <a class="brand" href="https://www.jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
+  <button id="focusModeBtn" class="iconbtn" aria-label="Focus mode" title="Focus mode — hide everything but the highway and score"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 152</span></div>
+<div id="focusExitBtn" style="position:fixed;top:12px;right:12px;z-index:150;width:40px;height:40px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;align-items:center;justify-content:center"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 153</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -343,6 +357,14 @@
         <div class="ctrl" id="adjLen"><label>Session length (measures)</label>
           <div class="seg" id="lenSeg"><button data-n="4">4</button><button data-n="8" class="active">8</button><button data-n="16">16</button><button data-n="32">32</button><button data-n="0">∞</button></div>
         </div>
+        <div class="ctrl" id="adjRamp" style="margin-top:14px">
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);font-weight:600"><input type="checkbox" id="rampChk" style="accent-color:var(--accent)"> Tempo ramp — auto-increase as you go</label>
+          <div id="rampFields" style="display:none;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+            <div><label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Start</label><input type="number" id="rampStartInp" value="70" min="50" max="240" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);box-sizing:border-box"></div>
+            <div><label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">End</label><input type="number" id="rampEndInp" value="100" min="50" max="240" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);box-sizing:border-box"></div>
+            <div><label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Every N bars</label><input type="number" id="rampBarsInp" value="4" min="1" max="32" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);box-sizing:border-box"></div>
+          </div>
+        </div>
       </div>
     </details>
     <div id="calibPrompt" class="warn" style="display:none">
@@ -405,6 +427,7 @@
           <div class="ctrl" style="margin-top:12px"><label>Click tone</label>
             <div class="seg" id="clickToneSeg"><button data-tone="classic" class="active">Classic</button><button data-tone="woodblock">Woodblock</button><button data-tone="rimshot">Rimshot</button></div>
           </div>
+          <div class="ctrl" style="margin-top:12px"><label>Click panning <span class="val" id="clickPanVal">Center</span> — send the click to one ear on headphones</label><input type="range" id="clickPanSlider" min="-100" max="100" value="0"></div>
           <div class="ctrl" style="margin-top:12px"><label>Accent color</label>
             <div id="accentSwatches" style="display:flex;gap:10px;margin-top:6px">
               <button type="button" data-accent="amber" class="active" title="Amber" style="width:36px;height:36px;padding:0;border-radius:50%;background:#ffb020;border:2px solid var(--line)"></button>
@@ -649,6 +672,7 @@ $('startBtn').onclick=async()=>{
     micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:echoCancel,noiseSuppression:echoCancel,autoGainControl:false}});
     src=ac.createMediaStreamSource(micStream);
     detTap=buildNotchChain(src);
+    setupWaveformAnalyser();
     try{
       const blob=new Blob([workletSrc],{type:'application/javascript'});
       await ac.audioWorklet.addModule(URL.createObjectURL(blob));
@@ -657,7 +681,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 152 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 153 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -670,6 +694,11 @@ $('startBtn').onclick=async()=>{
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
 function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<b>Compatibility mode.</b> '+m;}
+let waveAnalyser=null, waveDataArr=null;
+function setupWaveformAnalyser(){
+  if(!ac || !detTap) return;
+  try{ waveAnalyser=ac.createAnalyser(); waveAnalyser.fftSize=512; waveAnalyser.smoothingTimeConstant=0.65; detTap.connect(waveAnalyser); waveDataArr=new Uint8Array(waveAnalyser.frequencyBinCount); }catch(e){}
+}
 function buildNotchChain(input){
   // narrow notches at the click's tones (and odd harmonics) — kills the metronome
   // in the mic without touching the instrument, whose energy sits elsewhere.
@@ -709,6 +738,7 @@ async function switchInput(deviceId){
     micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:deviceId},echoCancellation:echoCancel,noiseSuppression:echoCancel,autoGainControl:false}});
     src=ac.createMediaStreamSource(micStream);
     detTap=buildNotchChain(src);
+    setupWaveformAnalyser();
     try{ const lc = ($('lowCut') && +$('lowCut').value) || (prog.det && prog.det.lowcut) || 150; setLowCut(lc); }catch(e){}
     if(node) detTap.connect(node); else if(spNode) detTap.connect(spNode);
     currentInputId=deviceId; prog.inputId=deviceId; saveProg();
@@ -730,6 +760,7 @@ async function reacquireMic(){   // re-open the mic in place with the current ec
     micStream=await navigator.mediaDevices.getUserMedia({audio:con});
     src=ac.createMediaStreamSource(micStream);
     detTap=buildNotchChain(src);
+    setupWaveformAnalyser();
     try{ const lc=($('lowCut')&&+$('lowCut').value)||(prog.det&&prog.det.lowcut)||150; setLowCut(lc); }catch(e){}
     if(node) detTap.connect(node); else if(spNode) detTap.connect(spNode);
     const rs=$('roomStatus'); if(rs){ rs.style.display='block'; rs.textContent=(echoCancel?'Echo cancel on — ':'Echo cancel off — ')+'measuring room…'; }
@@ -1009,6 +1040,18 @@ function drawHighway(){
   // paper rail
   ctx.fillStyle='#f5f2ea';ctx.fillRect(0,0,W,notBot);
   ctx.fillStyle='rgba(10,8,4,0.22)';ctx.fillRect(0,notBot-1.5*DPR,W,1.5*DPR);
+  // ---- live input waveform (the actual signal PocketLocker is analyzing) ----
+  if(waveAnalyser && waveDataArr && running){
+    waveAnalyser.getByteTimeDomainData(waveDataArr);
+    const bandMid=(notBot+hwTop)/2, bandH=(hwTop-notBot)*0.42;
+    ctx.save(); ctx.strokeStyle='rgba(255,176,32,0.5)'; ctx.lineWidth=1.3*DPR; ctx.beginPath();
+    const step=W/waveDataArr.length;
+    for(let i=0;i<waveDataArr.length;i++){
+      const v=(waveDataArr[i]-128)/128, x=i*step, y=bandMid+v*bandH;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.restore();
+  }
 
   const playing = (!!schedId || paused) && !!ac && firstBarTime>0;
   const hwLat = ac ? ((ac.outputLatency||ac.baseLatency||0)+hwNudgeMs/1000) : 0;
@@ -1217,6 +1260,8 @@ function drawStrip(){
 function startTransport(forCalib, warmup){
   if(!running)return;
   stopTransport(true);
+  rampBarCounter=0;
+  if(!forCalib && !warmup && rampEnabled){ setBpm(rampStart); }
   beatDur=60/bpm; barDur=4*beatDur;
   mode=warmup?'warmup':(forCalib?'calibrate':'play');
   sessionCompleted=false;
@@ -1292,7 +1337,7 @@ function scheduler(){
       return;
     }
     const bib = realBeat>=0 ? realBeat%4 : -1;   // beat-in-bar: 0=one,1=two,2=three,3=four
-    if(mode==='play' && realBeat>=0 && realBeat%4===0){ registerBar(nextBeatTime); }
+    if(mode==='play' && realBeat>=0 && realBeat%4===0){ registerBar(nextBeatTime); if(rampEnabled) applyRampStep(); }
     const pulseOn = realBeat<0 ? true : (pulsePattern==='24' ? (bib===1||bib===3) : pulsePattern==='13' ? (bib===0||bib===2) : true);   // count-in always clicks; playback follows the style's pulse pattern
     scheduleClick(nextBeatTime, pulseOn);
     if(realBeat<0){ const n=countInBeats+realBeat+1; flashCountIn(n); }
@@ -1303,8 +1348,16 @@ function scheduler(){
   const cutoff=ac.currentTime-0.5;
   expected=expected.filter(e=>e.time>cutoff);
 }
-let clickBus=null;
-function clickOut(){ if(ac && !clickBus){ clickBus=ac.createGain(); clickBus.gain.value=1; clickBus.connect(ac.destination); } return clickBus||ac.destination; }
+let clickBus=null, clickPanner=null, clickPan=0;
+function clickOut(){
+  if(ac && !clickBus){
+    clickBus=ac.createGain(); clickBus.gain.value=1;
+    if(ac.createStereoPanner){ clickPanner=ac.createStereoPanner(); clickPanner.pan.value=clickPan; clickBus.connect(clickPanner); clickPanner.connect(ac.destination); }
+    else { clickBus.connect(ac.destination); }
+  }
+  return clickBus||ac.destination;
+}
+function setClickPan(v){ clickPan=Math.max(-1,Math.min(1,v)); if(clickPanner) clickPanner.pan.value=clickPan; }
 function playNote(freq,tOffset,dur,peak){
   if(!ac) return;
   const t=ac.currentTime+tOffset;
@@ -1328,6 +1381,18 @@ function playSuccessChime(stars){   // tiered by result quality — richer chime
 let pending=[];
 function killPending(){ for(const o of pending){ try{o.stop();}catch(e){} } pending=[]; }
 let clickTone='classic';
+let rampEnabled=false, rampStart=70, rampEnd=100, rampBarsPerStep=4, rampStepAmt=5, rampBarCounter=0;
+function applyRampStep(){
+  rampBarCounter++;
+  if(rampBarCounter>=rampBarsPerStep){
+    rampBarCounter=0;
+    const dir = rampEnd>=rampStart ? 1 : -1;
+    if((dir>0 && bpm<rampEnd) || (dir<0 && bpm>rampEnd)){
+      const next=bpm+dir*rampStepAmt;
+      setBpm(dir>0?Math.min(rampEnd,next):Math.max(rampEnd,next));
+    }
+  }
+}
 const CLICK_TONES={ classic:{pulse:1100,notation:2200}, woodblock:{pulse:760,notation:1500}, rimshot:{pulse:1450,notation:2600} };
 function fireClickVoice(t,peak,freq){
   const o=ac.createOscillator(),g=ac.createGain();
@@ -1860,6 +1925,11 @@ function obShow(){ obIdx=0; const w=$('onboardWizard'); if(w) w.style.display='f
 if($('obBack')) $('obBack').onclick=obBack;
 if($('obSkip')) $('obSkip').onclick=obSkip;
 if($('rerunWizardBtn')) $('rerunWizardBtn').onclick=obShow;
+function toggleFocusMode(on){
+  document.body.classList.toggle('focusMode', on);
+}
+$('focusModeBtn') && ($('focusModeBtn').onclick=()=>toggleFocusMode(true));
+$('focusExitBtn') && ($('focusExitBtn').onclick=()=>toggleFocusMode(false));
 if($('spShare')) $('spShare').onclick=shareRunImage;
 if($('spReview')) $('spReview').onclick=function(){ const pop=$('scorePop'); if(pop) pop.style.display='none'; openReviewModal(); };
 if($('reviewClose')) $('reviewClose').onclick=function(){ $('reviewModal').style.display='none'; };
@@ -1877,6 +1947,17 @@ function renderDailyGrooveBanner(){
   banner.style.display='block';
   banner.onclick=function(){ applyMode('style'); startStyle(idx); hideRhythmSheet(); if(window.showScreen) showScreen('play'); };
 }
+function applyTimeOfDayTint(){
+  const el=$('todTint'); if(!el) return;
+  const now=new Date(), h=now.getHours()+now.getMinutes()/60;
+  const angle=((h-2)/24)*2*Math.PI;   // coolest around 2am, warmest around 2pm
+  const coolness=Math.cos(angle);      // 1 at 2am, -1 at 2pm
+  const maxAlpha=0.035;
+  if(coolness>0) el.style.background='rgba(80,140,255,'+(coolness*maxAlpha).toFixed(3)+')';
+  else el.style.background='rgba(255,170,60,'+((-coolness)*maxAlpha*0.6).toFixed(3)+')';
+}
+applyTimeOfDayTint();
+setInterval(applyTimeOfDayTint, 15*60*1000);
 renderDailyGrooveBanner();
 if(!prog.onboarded){ setTimeout(obShow,50); }
 // build 82 one-time migration: old default Min gap was mistakenly 90ms; correct a saved 90 -> 70 exactly once.
@@ -2343,6 +2424,14 @@ $('accentSwatches') && $('accentSwatches').addEventListener('click',e=>{ const b
   prog.accent=acc; saveProg();
   [...$('accentSwatches').children].forEach(x=>x.classList.toggle('active', x===b)); });
 $('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
+$('rampChk') && ($('rampChk').onchange=e=>{ rampEnabled=e.target.checked; if($('rampFields')) $('rampFields').style.display=rampEnabled?'grid':'none'; prog.rampEnabled=rampEnabled; saveProg(); });
+$('rampStartInp') && ($('rampStartInp').oninput=e=>{ rampStart=Math.max(50,Math.min(240,+e.target.value||70)); prog.rampStart=rampStart; saveProg(); });
+$('rampEndInp') && ($('rampEndInp').oninput=e=>{ rampEnd=Math.max(50,Math.min(240,+e.target.value||100)); prog.rampEnd=rampEnd; saveProg(); });
+$('rampBarsInp') && ($('rampBarsInp').oninput=e=>{ rampBarsPerStep=Math.max(1,Math.min(32,+e.target.value||4)); prog.rampBarsPerStep=rampBarsPerStep; saveProg(); });
+$('clickPanSlider') && ($('clickPanSlider').oninput=e=>{
+  const v=+e.target.value; setClickPan(v/100); prog.clickPan=v; saveProg();
+  if($('clickPanVal')) $('clickPanVal').textContent = v===0?'Center':(v<0?('L '+Math.abs(v)+'%'):('R '+v+'%'));
+});
 // clickable help terms -> jump to the actual control
 function jumpTo(elId){
   const el=document.getElementById(elId); if(!el) return;
@@ -2358,6 +2447,14 @@ document.addEventListener('click', e=>{ const j=e.target.closest('[data-jump]');
 if(prog.proView){ proView=true; if($('proViewChk')) $('proViewChk').checked=true; }
 if(prog.clickTone && CLICK_TONES[prog.clickTone]){ clickTone=prog.clickTone; if($('clickToneSeg')) segActivate('clickToneSeg','tone',clickTone); }
 if(prog.accent && $('accentSwatches')) segActivate('accentSwatches','accent',prog.accent);
+if(prog.rampStart!=null) rampStart=prog.rampStart;
+if(prog.rampEnd!=null) rampEnd=prog.rampEnd;
+if(prog.rampBarsPerStep!=null) rampBarsPerStep=prog.rampBarsPerStep;
+if($('rampStartInp')) $('rampStartInp').value=rampStart;
+if($('rampEndInp')) $('rampEndInp').value=rampEnd;
+if($('rampBarsInp')) $('rampBarsInp').value=rampBarsPerStep;
+if(prog.rampEnabled){ rampEnabled=true; if($('rampChk')) $('rampChk').checked=true; if($('rampFields')) $('rampFields').style.display='grid'; }
+if(prog.clickPan!=null){ setClickPan(prog.clickPan/100); if($('clickPanSlider')) $('clickPanSlider').value=prog.clickPan; if($('clickPanVal')) $('clickPanVal').textContent = prog.clickPan===0?'Center':(prog.clickPan<0?('L '+Math.abs(prog.clickPan)+'%'):('R '+prog.clickPan+'%')); }
 document.addEventListener('keydown',function(e){
   if(e.code!=='Space' && e.key!==' ') return;
   const t=(e.target&&e.target.tagName||'').toLowerCase();
