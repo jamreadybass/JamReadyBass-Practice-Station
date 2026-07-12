@@ -247,7 +247,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 160</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 161</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -658,7 +658,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 160 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 161 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1215,9 +1215,8 @@ function drawStrip(){
 }
 
 // ---- Transport ----
-async function startTransport(forCalib, warmup){
+function startTransport(forCalib, warmup){
   if(!running)return;
-  if(ac && ac.state==='suspended'){ try{ await ac.resume(); }catch(e){} }
   stopTransport(true);
   beatDur=60/bpm; barDur=4*beatDur;
   mode=warmup?'warmup':(forCalib?'calibrate':'play');
@@ -1836,11 +1835,11 @@ function obRender(){
       '<div id="obCalibStatus" style="font-size:13px;color:var(--muted);margin-top:12px;min-height:16px;font-family:var(--mono)"></div>';
     if(running){
       $('obNext').textContent='Skip for now';
-      $('obCalibBtn').onclick=async()=>{
+      $('obCalibBtn').onclick=()=>{
         $('obCalibBtn').disabled=true;
         $('obCalibStatus').textContent='Count-in playing… get ready.'; $('obCalibStatus').style.color='var(--muted)';
         calibSamples=[]; calibOffset=0; calibrated=false;
-        await startTransport(true);
+        startTransport(true);
         obPoll=setInterval(()=>{
           if(calibrated){ obClearPoll(); $('obCalibStatus').textContent='✓ Calibrated — offset '+Math.round(calibOffset)+'ms.'; $('obCalibStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
           else if(calibSamples.length>0){ $('obCalibStatus').textContent='finding your pocket… '+calibSamples.length+' / 16 taps'; $('obCalibStatus').style.color='var(--amber)'; }
