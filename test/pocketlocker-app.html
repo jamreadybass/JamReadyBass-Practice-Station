@@ -57,6 +57,7 @@
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   @keyframes fadeOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px)}}
   @keyframes rspin{to{transform:rotate(360deg)}}
+  .inlineSpin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(20,18,12,.25);border-top-color:currentColor;animation:rspin 0.8s linear infinite;vertical-align:-2px;margin-right:7px}
   #grainOverlay{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     mix-blend-mode:overlay}
@@ -242,11 +243,11 @@
   </div>
 </div>
 <div class="appbar">
-  <a class="brand" href="https://www.jamreadybass.com/practice-station" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass Practice Station">JamReady<span>Bass</span></a>
+  <a class="brand" href="https://www.jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 148</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 151</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -315,8 +316,10 @@
           <button id="tapTempoBtn" type="button" style="flex:0 0 auto;padding:0 16px;white-space:nowrap">Tap</button>
         </div>
       </div>
-      <div class="ctrl" style="margin-bottom:12px"><label>Pulse click <span class="val" id="volVal">50</span> — the style's feel (1-2-3-4, 1&amp;3, or 2&amp;4)</label><input type="range" id="vol" min="0" max="100" value="50"></div>
-      <div class="ctrl"><label style="display:flex;justify-content:space-between;align-items:center"><span>Notation click <span class="val" id="dbVal">40</span> — every written note</span><label style="display:flex;gap:6px;align-items:center;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)"><input type="checkbox" id="guideChk" checked style="accent-color:var(--accent)"> on</label></label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ctrl" style="margin-bottom:0"><label title="the style's feel — 1-2-3-4, 1&amp;3, or 2&amp;4">Pulse <span class="val" id="volVal">50</span></label><input type="range" id="vol" min="0" max="100" value="50"></div>
+        <div class="ctrl" style="margin-bottom:0"><label title="a click on every written note" style="display:flex;justify-content:space-between;align-items:center"><span>Notation <span class="val" id="dbVal">40</span></span><label style="display:flex;gap:4px;align-items:center;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)"><input type="checkbox" id="guideChk" checked style="accent-color:var(--accent)"> on</label></label><input type="range" id="downbeat" min="0" max="100" value="40"></div>
+      </div>
     </div>
     <details id="playAdjust" style="margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px">
       <summary style="cursor:pointer;font-size:13px;color:var(--amber);font-weight:700">Session settings</summary>
@@ -638,6 +641,8 @@ let playStartBar=0, repCount=0;
 // ---- Start audio ----
 $('startBtn').onclick=async()=>{
   if(!window.isSecureContext){showErr("Needs a secure context for mic access — open over https (GitHub Pages) or localhost.");return;}
+  const btn=$('startBtn'), origLabel=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="inlineSpin"></span>Waiting on mic permission…';
   try{
     ac=new (window.AudioContext||window.webkitAudioContext)();
     await ac.resume();
@@ -652,7 +657,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 148 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 151 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -661,7 +666,7 @@ $('startBtn').onclick=async()=>{
     if(!roomCheckedThisSession){ roomCheckedThisSession=true; initInputs(); }
     setTimeout(()=>{ if(typeof applyDetSaved==='function') applyDetSaved(); }, 700);
     if(navigator.mediaDevices) navigator.mediaDevices.ondevicechange=refreshInputs;
-  }catch(err){ showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
+  }catch(err){ btn.disabled=false; btn.innerHTML=origLabel; showErr("Couldn't start audio: "+err.message+". If the mic was blocked, allow it in the address bar and reload."); }
 };
 function showErr(m){$('errBox').style.display='block';$('errBox').textContent=m;}
 function showInfo(m){const b=$('infoBox');b.style.display='block';b.innerHTML='<b>Compatibility mode.</b> '+m;}
@@ -1069,7 +1074,7 @@ function drawHighway(){
     ctx.save();ctx.translate(x,staffY);ctx.rotate(-0.3);
     ctx.fillStyle=held?'#f5f2ea':'#16130d';ctx.strokeStyle='#16130d';ctx.lineWidth=1.8*DPR;
     ctx.beginPath();ctx.ellipse(0,0,nhrx,nhry,0,0,7);ctx.fill();if(held)ctx.stroke();ctx.restore();
-    ctx.strokeStyle='rgba(20,18,12,0.9)';ctx.lineWidth=1.6*DPR;ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx,staffY-stem);ctx.stroke();
+    if(n.durB<4){ ctx.strokeStyle='rgba(20,18,12,0.9)';ctx.lineWidth=1.6*DPR;ctx.beginPath();ctx.moveTo(x+nhrx,staffY);ctx.lineTo(x+nhrx,staffY-stem);ctx.stroke(); }
     if(Math.abs(n.durB-0.75)<0.02){ ctx.fillStyle='#16130d';ctx.beginPath();ctx.arc(x+nhrx+6*DPR,staffY-2*DPR,1.8*DPR,0,7);ctx.fill(); }
   }
   // 2) beams within each beat group; a lone short note gets a flag
@@ -1173,7 +1178,7 @@ function drawHighway(){
   hwFlashes=hwFlashes.filter(fl=>nowMs-fl.t<1000);
   const MAG=2.0;   // magnify timing errors modestly so the line reads calmer, closer to reality
   for(const fl of hwFlashes){ const age=nowMs-fl.t; const a=Math.max(0,1-age/1000);
-    let xm=pocketX-((fl.delta||0)/1000)*SPEED*MAG;
+    let xm=pocketX+((fl.delta||0)/1000)*SPEED*MAG;
     xm=Math.max(pocketX-W*0.22, Math.min(pocketX+W*0.22, xm));
     ctx.save();ctx.shadowColor=`rgba(${hex2rgb(fl.col)},${a})`;ctx.shadowBlur=9*DPR;
     ctx.strokeStyle=`rgba(${hex2rgb(fl.col)},${a})`;ctx.lineWidth=3*DPR;
@@ -1240,7 +1245,7 @@ function startTransport(forCalib, warmup){
 }
 function stopTransport(silent){
   if(paused){ paused=false; try{ac.resume();}catch(e){} }
-  if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; calibratedThisSession=true; prog.calib=Math.round(calibOffset); saveProg(); }
+  if(mode==='calibrate' && calibSamples.length>=8){ calibrated=true; calibratedThisSession=true; if(visualBeat){ prog.calibVis=Math.round(calibOffsetVis); } else { prog.calib=Math.round(calibOffset); } saveProg(); }
   if(schedId){clearInterval(schedId);schedId=null;}
   if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } killPending();
   $('playhead') && $('playhead').setAttribute('opacity','0');
@@ -1414,9 +1419,12 @@ function handleOnset(t){
     // match on raw time to measure latency
     let best=null,bd=Infinity;
     for(const e of expected){ if(e.hit)continue; const d=Math.abs(t-e.time); if(d<bd){bd=d;best=e;} }
-    if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw); calibOffset=median(calibSamples);
-      $('countin').textContent='calibrating… '+calibSamples.length+' / 16 taps';
-      if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+calibOffset.toFixed(0)+'ms'; prog.calib=Math.round(calibOffset); saveProg(); setTimeout(()=>stopTransport(false),50); } }
+    if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw);
+      const med=median(calibSamples); if(visualBeat) calibOffsetVis=med; else calibOffset=med;
+      $('countin').textContent='finding your pocket… '+calibSamples.length+' / 16 taps';
+      if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+med.toFixed(0)+'ms';
+        if(visualBeat){ prog.calibVis=Math.round(med); } else { prog.calib=Math.round(med); }
+        saveProg(); setTimeout(()=>stopTransport(false),50); } }
     return;
   }
   // play: remove measured latency BEFORE matching so the right slot is chosen
@@ -1495,13 +1503,13 @@ function renderSavedScore(f){
   $('rhyNum').textContent=f.rhy+'%';$('rhyNum').style.color=rg.c;$('rhyGrade').textContent=rg.w;$('rhyGrade').style.color=rg.c;$('rhyBar').style.width=f.rhy+'%';$('rhyBar').style.background=rg.c;
 }
 function renderScore(){ updateTimingReadout();
-  const rhy = rhythmScore();
-  if(deltas.length>=3){
-    const bias=mean(deltas), s=std(deltas);
-    const cs=centerScore(bias), es=evennessScore(s), cg=centerGrade(cs,bias), eg=evennessGrade(es);
-    $('cenNum').textContent=Math.round(cs);$('cenNum').style.color=cg.c;$('cenGrade').textContent=cg.w;$('cenGrade').style.color=cg.c;$('cenBar').style.width=cs+'%';$('cenBar').style.background=cg.c;
-    $('evnNum').textContent=Math.round(es);$('evnNum').style.color=eg.c;$('evnGrade').textContent=eg.w;$('evnGrade').style.color=eg.c;$('evnBar').style.width=es+'%';$('evnBar').style.background=eg.c;
+  const g=computeGatedScores();
+  if(g){
+    const cg=centerGrade(g.cen,g.bias), eg=evennessGrade(g.evn);
+    $('cenNum').textContent=g.cen;$('cenNum').style.color=cg.c;$('cenGrade').textContent=cg.w;$('cenGrade').style.color=cg.c;$('cenBar').style.width=g.cen+'%';$('cenBar').style.background=cg.c;
+    $('evnNum').textContent=g.evn;$('evnNum').style.color=eg.c;$('evnGrade').textContent=eg.w;$('evnGrade').style.color=eg.c;$('evnBar').style.width=g.evn+'%';$('evnBar').style.background=eg.c;
   }
+  const rhy = rhythmScore();
   if(rhy!==null){const rg=rhythmGrade(rhy);
     $('rhyNum').textContent=rhy+'%';$('rhyNum').style.color=rg.c;
     $('rhyGrade').textContent=rg.w+(missed?' · '+missed+' missed':'');$('rhyGrade').style.color=rg.c;
@@ -1828,7 +1836,7 @@ function obRender(){
         calibSamples=[]; calibOffset=0; calibrated=false; startTransport(true);
         obPoll=setInterval(()=>{
           if(calibrated){ obClearPoll(); $('obCalibStatus').textContent='✓ Calibrated — offset '+Math.round(calibOffset)+'ms.'; $('obCalibStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
-          else if(calibSamples.length>0){ $('obCalibStatus').textContent='calibrating… '+calibSamples.length+' / 16 taps'; $('obCalibStatus').style.color='var(--amber)'; }
+          else if(calibSamples.length>0){ $('obCalibStatus').textContent='finding your pocket… '+calibSamples.length+' / 16 taps'; $('obCalibStatus').style.color='var(--amber)'; }
           else if(mode!=='calibrate'){ obClearPoll(); if($('obCalibBtn')) $('obCalibBtn').disabled=false; $('obCalibStatus').textContent='Stopped early — tap Calibrate now to try again.'; $('obCalibStatus').style.color='var(--muted)'; }
         },150);
       };
@@ -1969,7 +1977,7 @@ function loadLevel(id){
 
 function clearPending(){ if(pendingLevel!=null){ pendingLevel=null; $('levelBanner').style.display='none'; } }
 
-function finalScores(){
+function computeGatedScores(){
   if((hits+missed)===0||deltas.length<3) return null;
   const bias=mean(deltas), sd=std(deltas);
   const cov=hits/Math.max(1,hits+missed);
@@ -1977,7 +1985,11 @@ function finalScores(){
   const consist=Math.max(0, Math.min(1, 1-(sd-14)/26));      // "centered" requires a TIGHT spread — scatter can't fake it with a ~0 average
   const rhy=rhythmScore()||0;
   const feelGate=Math.max(0, Math.min(1, rhy/60));            // no high feel score without playing the notes — low Rhythm tanks Center/Evenness (kills random's selection-bias Evenness)
-  return { cen:Math.round(centerScore(bias)*consist*covGate*feelGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)*feelGate), rhy };
+  return { cen:Math.round(centerScore(bias)*consist*covGate*feelGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)*feelGate), rhy, bias };
+}
+function finalScores(){
+  const g=computeGatedScores(); if(!g) return null;
+  return { cen:g.cen, evn:g.evn, rhy:g.rhy };
 }
 function starsFor(f){   // one star per scoring category met
   let s=0;
@@ -2037,6 +2049,13 @@ function playGhostRun(){
     if(on) fireClickVoice(startT+b*bd, clickVol*0.36, CLICK_TONES[clickTone].pulse);
   }
   lastRunLog.forEach(n=>{ if(n.hit && n.delta!=null){ const t=startT+n.time+(n.delta/1000); fireClickVoice(t, 0.30, 740); } });
+  const btn=$('reviewGhostBtn');
+  if(btn){
+    const origLabel=btn.textContent;
+    btn.disabled=true; btn.innerHTML='<span class="inlineSpin"></span>Playing back your run…';
+    const durationMs=(totalBeats*bd+0.4)*1000;
+    setTimeout(()=>{ btn.disabled=false; btn.textContent=origLabel; },durationMs);
+  }
 }
 function shareRunImage(){
   const r=lastPopResult; if(!r) return;
@@ -2260,13 +2279,13 @@ let climbMode=true, selectedLevel=null, proView=false;
 function updateSetupBtn(){ const b=$('openRhythm'); if(!b) return;
   const swName={0:'straight',33:'soft swing',66:'med swing',100:'hard swing'}[swing]||(swing>0?('swing '+swing):'straight');
   const DN={easy:'Easy',medium:'Medium',hard:'Hard',pro:'Pro'};
-  if(styleMode){ b.textContent='\u2699 \uD83C\uDF0D '+(styleName||'Styles')+' \u00b7 '+bpm+' bpm'+(swing>0?' \u00b7 '+swName:'')+(feelMs<0?' \u00b7 on top':feelMs>0?' \u00b7 behind':''); return; }
+  if(styleMode){ b.textContent=(styleName||'Styles')+' \u00b7 '+bpm+' bpm'+(swing>0?' \u00b7 '+swName:'')+(feelMs<0?' \u00b7 on top':feelMs>0?' \u00b7 behind':''); return; }
   if(climbMode){ const lv=pendingLevel||selectedLevel||(typeof resumeLevelId==='function'?resumeLevelId():1);
     const extra = (feelMs<0?' \u00b7 push ahead':feelMs>0?' \u00b7 lay back':'') + (swing>0?' \u00b7 '+swName:'');
-    b.textContent='\u2699 Challenge \u00b7 Lv '+lv+' \u00b7 '+DN[diffMode]+' \u00b7 '+bpm+' bpm'+extra; return; }
-  if(randomMode){ b.textContent='\u2699 \uD83C\uDFB2 Random \u00b7 '+bpm+' bpm \u00b7 '+swName+' \u00b7 '+DN[diffMode]; return; }
+    b.textContent='Challenge \u00b7 Lv '+lv+' \u00b7 '+DN[diffMode]+' \u00b7 '+bpm+' bpm'+extra; return; }
+  if(randomMode){ b.textContent='Random \u00b7 '+bpm+' bpm \u00b7 '+swName+' \u00b7 '+DN[diffMode]; return; }
   const nv={whole:'Whole',half:'Half',quarter:'Quarter',eighth:'Eighth',sixteenth:'16th'}[subdiv];
-  b.textContent='\u2699 Freeplay \u00b7 '+bpm+' bpm \u00b7 '+(nv||'')+' \u00b7 '+swName;
+  b.textContent='Freeplay \u00b7 '+bpm+' bpm \u00b7 '+(nv||'')+' \u00b7 '+swName;
 }
 function applyMode(m){
   climbMode=(m==='climb'); const isRandom=(m==='random'), isStyle=(m==='style'); segActivate('modeSeg','m',m);
@@ -2285,6 +2304,7 @@ function applyMode(m){
   ['adjSwing','adjFeel'].forEach(id=>{const el=$(id); if(el) el.style.display=fpRand?'block':'none';});
   ['adjTempo','adjDiff','adjLen'].forEach(id=>{const el=$(id); if(el) el.style.display=(fpRand||isStyle)?'block':'none';});
   if(!climbMode) clearPending();
+  const orb=$('openRhythm'); if(orb) orb.style.display=(climbMode||isStyle)?'':'none';
   if(m==='free') renderSavedScore((prog.lastScores&&prog.lastScores.free)||null);
   else if(m==='random') renderSavedScore((prog.lastScores&&prog.lastScores.random)||null);
   if(isRandom && !isStyle && typeof generateBar==='function') generateBar();
@@ -2299,8 +2319,8 @@ document.addEventListener('keydown', e=>{
   if(e.code==='Space'){
     e.preventDefault();
     const playBtn=$('playBtn'), stopBtn=$('stopBtn');
-    if(stopBtn && !stopBtn.disabled) stopBtn.click();
-    else if(playBtn && !playBtn.disabled) playBtn.click();
+    if(stopBtn && !stopBtn.disabled && typeof stopBtn.onclick==='function') stopBtn.onclick();
+    else if(playBtn && !playBtn.disabled && typeof playBtn.onclick==='function') playBtn.onclick();
   } else if(e.code==='ArrowUp' || e.code==='ArrowDown'){
     const bpmEl=$('bpm'), wrap=$('adjTempo'); if(!bpmEl || (wrap && getComputedStyle(wrap).display==='none')) return;   // only when tempo control is visible
     e.preventDefault();
@@ -2380,7 +2400,7 @@ $('lowCut') && ($('lowCut').oninput=e=>{ setLowCut(+e.target.value); deselectPre
 $('instrSeg') && $('instrSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; applyInstrumentPreset(b.dataset.instr); });
 $('ringRej') && ($('ringRej').oninput=e=>{ const r=$('ringVal'); if(r) r.textContent=(+e.target.value).toFixed(2); deselectPreset(); pushParams(); });
 $('minGap2') && ($('minGap2').oninput=e=>{ const g=$('gapVal2'); if(g) g.textContent=e.target.value; if($('ref')){ $('ref').value=e.target.value; const rv=$('refVal'); if(rv) rv.textContent=e.target.value; } deselectPreset(); pushParams(); });
-$('detDefaults') && ($('detDefaults').onclick=()=>{ applyInstrumentPreset('5'); });
+$('detDefaults') && ($('detDefaults').onclick=()=>{ const active=$('instrSeg') && $('instrSeg').querySelector('button.active'); applyInstrumentPreset(active ? active.dataset.instr : '5'); });
 if(prog.roomFloor){ params.floor=prog.roomFloor; }
 
 renderLadder();
