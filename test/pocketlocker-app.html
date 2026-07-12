@@ -247,7 +247,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 161</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 163</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -658,7 +658,7 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 161 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 163 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1305,7 +1305,17 @@ function scheduler(){
   expected=expected.filter(e=>e.time>cutoff);
 }
 let clickBus=null;
-function clickOut(){ if(ac && !clickBus){ clickBus=ac.createGain(); clickBus.gain.value=1; clickBus.connect(ac.destination); } return clickBus||ac.destination; }
+function clickOut(){
+  if(ac && !clickBus){
+    clickBus=ac.createGain(); clickBus.gain.value=1;
+    if(ac.createDynamicsCompressor){
+      const limiter=ac.createDynamicsCompressor();
+      limiter.threshold.value=-6; limiter.knee.value=0; limiter.ratio.value=20; limiter.attack.value=0.001; limiter.release.value=0.05;
+      clickBus.connect(limiter); limiter.connect(ac.destination);
+    } else { clickBus.connect(ac.destination); }
+  }
+  return clickBus||ac.destination;
+}
 function playNote(freq,tOffset,dur,peak){
   if(!ac) return;
   const t=ac.currentTime+tOffset;
@@ -1462,7 +1472,7 @@ function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.
 function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
 function rating(absd){const k=curDiff().rate;if(absd<=15*k)return{w:'Perfect',c:cssVar('--green')};if(absd<=35*k)return{w:'Great',c:cssVar('--green-lt')};if(absd<=60*k)return{w:'Good',c:cssVar('--amber')};if(absd<=100*k)return{w:'Loose',c:cssVar('--ember-lt')};return{w:'Miss',c:cssVar('--red')};}
 let diffMode='medium';
-const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, hard:{cen:2.1,evn:1.35,rate:0.7}, pro:{cen:2.9,evn:1.8,rate:0.5} };
+const DIFFS={ easy:{cen:0.18,evn:0.55,rate:1.6}, medium:{cen:0.30,evn:0.9,rate:1.0}, hard:{cen:0.45,evn:1.35,rate:0.7}, pro:{cen:0.65,evn:1.8,rate:0.5} };
 function curDiff(){ return DIFFS[diffMode]||DIFFS.medium; }
 // stars needed to advance scales with difficulty: Easy 1, Medium 2, Pro 3
 const ADVANCE={easy:1,medium:2,hard:3,pro:3};
@@ -1989,7 +1999,7 @@ function computeGatedScores(){
   const cov=hits/Math.max(1,hits+missed);
   const covGate=Math.max(0, Math.min(1, (cov-0.35)/0.45));   // Center/Evenness need most notes actually hit
   const consistScale=0.9/curDiff().evn;   // wider "tight" tolerance on Easy, tighter on Pro — matches evennessScore's own difficulty scaling instead of one fixed band for every tier
-  const consist=Math.max(0, Math.min(1, 1-(sd-14*consistScale)/(26*consistScale)));   // "centered" requires a TIGHT spread — scatter can't fake it with a ~0 average
+  const consist=Math.max(0, Math.min(1, 1-(sd-30*consistScale)/(50*consistScale)));   // "centered" requires reasonably tight spread — scatter still can't fake it with a ~0 average, but tolerance now reflects real human note-to-note variation instead of an unvalidated guess
   const rhy=rhythmScore()||0;
   const feelGate=Math.max(0, Math.min(1, rhy/60));            // no high feel score without playing the notes — low Rhythm tanks Center/Evenness (kills random's selection-bias Evenness)
   return { cen:Math.round(centerScore(bias)*consist*covGate*feelGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)*feelGate), rhy, bias };
