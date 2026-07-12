@@ -247,7 +247,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 163</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 152</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -388,7 +388,6 @@
           <button id="offMinus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">−5</button>
           <div style="font-family:var(--mono);font-size:14px;min-width:108px;text-align:center" id="offVal">offset 0ms</div>
           <button id="offPlus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">+5</button>
-          <button id="offReset" style="padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-family:inherit;cursor:pointer;font-size:12px">Reset to 0</button>
           <button id="centerBtn" class="primary" style="padding:9px 14px;margin-left:auto">Center from last run</button>
         </div>
       </div>
@@ -658,11 +657,10 @@ $('startBtn').onclick=async()=>{
     pushParams();
     running=true;
     playOpenMotif();
-    $('statusBadge').textContent='live · build 163 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 152 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
-    renderNotation();
     sizeStrip(); requestAnimationFrame(drawStrip);
     if(!roomCheckedThisSession){ roomCheckedThisSession=true; initInputs(); }
     setTimeout(()=>{ if(typeof applyDetSaved==='function') applyDetSaved(); }, 700);
@@ -814,7 +812,6 @@ function startStyle(idx){
   maxBars=8; setLength(8);
   clearPending();
   if(typeof generateBar==='function') generateBar();
-  if(typeof renderNotation==='function') renderNotation();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
   hideRhythmSheet();
   if(window.showScreen) showScreen('play');
@@ -880,105 +877,11 @@ function generateBar(){
   nextBar=(randomMode&&autoAdv)?makeBar().cells:null;
 }
 
-// ---- Notation primitives (shared) ----
-const NX0=60,NX1=660,NY=80,NSTEM=30,NHRX=8,NHRY=5.5,FILL='#23201a',PAPER='#f5f1e6';
-const NX=p=>NX0+(p/4)*(NX1-NX0);
-let noteCount=0, noteFills=[];
-function gHead(x,fill,id){return `<ellipse ${id?`id="${id}" `:''}cx="${x}" cy="${NY}" rx="${NHRX}" ry="${NHRY}" fill="${fill}" stroke="${fill===PAPER?FILL:fill}" stroke-width="1.6" transform="rotate(-18 ${x} ${NY})"/>`;}
-function gStem(x,id,c){return `<line ${id?`id="${id}" `:''}x1="${x+NHRX-1}" y1="${NY-2}" x2="${x+NHRX-1}" y2="${NY-NSTEM}" stroke="${c||FILL}" stroke-width="1.6"/>`;}
-function gDot(x,c){return `<circle cx="${x+NHRX+5}" cy="${NY-3}" r="2.1" fill="${c||FILL}"/>`;}
-function gSustain(x,durBeats,c){           // hold bar showing how long to sustain the note
-  const beatW=(NX1-NX0)/4, w=durBeats*beatW-8;
-  if(durBeats<1.5 || w<12) return '';      // only for genuinely held notes (half, whole, long)
-  return `<rect x="${x+NHRX-1}" y="${NY-3.5}" width="${w}" height="7" rx="3.5" fill="${c||FILL}" opacity="0.22"/>`;
-}
-function gBeam(x1,x2,yy,c){return `<line x1="${x1}" y1="${yy}" x2="${x2}" y2="${yy}" stroke="${c||FILL}" stroke-width="4" stroke-linecap="butt"/>`;}
-function gFlag(x,dbl,c){const col=c||FILL,sx=x+NHRX-1,ty=NY-NSTEM;
-  const flag=oy=>`<path d="M${sx} ${ty+oy} c 9 2 13 8 9 17 c 3 -8 -1 -12 -9 -13 z" fill="${col}"/>`;
-  return flag(0)+(dbl?flag(7):'');}
 // Standard rest glyphs — Bravura (SMuFL) outlines, shared by the static staff (SVG) and the highway (canvas Path2D).
 const REST_D={ q:'M112 55C135 84 156 111 174 141C177 147 183 158 183 161C183 163 183 166 181 167C179 173 173 174 166 174C160 174 148 171 143 170C141 170 138 170 137 170L125 166C50 166 1 233 1 304C1 376 63 446 168 527C180 536 194 540 206 540C216 540 226 537 228 531C229 527 230 524 230 521C230 508 219 497 207 487C189 487 173 448 170 435C166 423 164 410 164 397C164 338 194 292 255 292C297 292 344 308 369 317L370 318C376 320 379 320 382 320C386 320 389 318 389 314C389 297 351 249 336 232C281 166 236 112 236 32C236 30 236 29 236 27L238 17C238 16 238 14 238 13C243 -71 295 -140 333 -199C337 -206 338 -213 338 -220C338 -235 333 -248 333 -248C333 -248 120 -501 95 -526C88 -533 78 -537 69 -537C55 -537 40 -527 40 -507C40 -500 42 -492 46 -484C52 -468 134 -395 134 -291C134 -238 112 -176 48 -108C33 -94 27 -78 27 -66C27 -46 42 -32 42 -32Z', e:'M193 -154C193 -207 150 -251 96 -251C43 -251 0 -207 0 -154C0 -124 17 -98 39 -81C62 -65 89 -56 117 -56C137 -56 157 -60 173 -66C193 -72 206 -78 225 -88C228 -89 230 -89 232 -89C238 -89 239 -84 239 -76C239 -72 239 -66 238 -60C233 -39 130 248 104 343C104 360 137 361 145 361C161 361 181 359 196 347C200 344 341 -161 341 -161C347 -187 354 -210 356 -217C356 -232 341 -239 338 -240C336 -240 331 -240 323 -235C312 -226 240 -140 193 -140Z', s:'M300 -160C300 -215 256 -258 202 -258C148 -258 104 -215 104 -160C104 -101 164 -62 219 -62C258 -62 298 -75 331 -94C336 -95 338 -96 341 -96C346 -96 348 -94 348 -86C348 -63 275 151 265 173C253 200 215 217 194 217C196 212 196 207 196 203C196 148 151 105 98 105C43 105 0 148 0 203C0 262 60 301 115 301C153 301 190 288 223 271C226 271 229 274 229 279L228 281C228 282 228 282 228 282L91 690C91 690 91 691 91 691L89 693C89 706 102 720 134 720C176 720 183 703 189 687L356 138C393 16 420 -81 420 -81C420 -81 456 -207 459 -226C459 -229 461 -230 461 -232C461 -240 449 -246 446 -248C439 -248 435 -245 431 -242C420 -233 348 -147 300 -145Z' };
 const REST_CTR={ q:[135.5,1], e:[123.5,38.5], s:[160,160.5] };   // [cx,cy] bbox centers to place the glyph on the line
 const REST_S={ q:0.034, e:0.032, s:0.025 };                       // per-glyph scale (sixteenth smaller; its long tail reads big on a 1-line staff)
 const REST_P2D=(typeof Path2D!=='undefined')?{q:new Path2D(REST_D.q),e:new Path2D(REST_D.e),s:new Path2D(REST_D.s)}:null;
-function gRest(x,d,c){ const col=c||FILL, k=(d>=4?'q':(d>=2?'e':'s')), C=REST_CTR[k];
-  let out=`<path d="${REST_D[k]}" fill="${col}" transform="translate(${x} ${NY}) scale(${REST_S[k]}) translate(${-C[0]} ${-C[1]})"/>`;
-  if(d===3) out+=`<circle cx="${x+8}" cy="${NY-1}" r="2.1" fill="${col}"/>`;   // dotted-eighth rest dot
-  return out;
-}
-function gStaff(light){const lc=light?'#cfc7b4':'#9a917c',tc=light?'#d9d1bd':'#c3b89c';
-  let s=`<line x1="40" y1="${NY}" x2="680" y2="${NY}" stroke="${lc}" stroke-width="1.5"/>`;
-  for(let b=0;b<4;b++){const bx=NX(b);
-    s+=`<line x1="${bx}" y1="${NY-3}" x2="${bx}" y2="${NY+3}" stroke="${tc}" stroke-width="1"/>`;
-    if(!light) s+=`<text id="bn-${b}" x="${bx}" y="${NY+28}" fill="#9a917c" font-size="13" font-weight="600" font-family="ui-monospace,monospace" text-anchor="middle">${b+1}</text>`;}
-  s+=`<line x1="675" y1="${NY-26}" x2="675" y2="${NY+10}" stroke="${lc}" stroke-width="2"/>`;
-  return s;
-}
-const gPlayhead=`<line id="playhead" x1="${NX0}" y1="${NY-44}" x2="${NX0}" y2="${NY+16}" stroke="#ffb020" stroke-width="2" opacity="0"/>`;
-
-// shared cell drawer; withIds=true tags noteheads/stems for live highlighting + tracks noteFills
-function drawCells(cells,color,withIds){
-  let s='',idx=0;
-  for(let b=0;b<4;b++){
-    const cell=cells[b], beam=[];
-    cell.notes.forEach(n=>{const x=NX(b+n.s/4);
-      s+=gSustain(x,n.d/4,color);
-      s+=gHead(x,color,withIds?'nh-'+idx:''); if(withIds)noteFills.push(color);
-      s+=gStem(x,withIds?'st-'+idx:'',color);
-      if(n.d===3) s+=gDot(x,color);
-      if(n.d>=1&&n.d<=3) beam.push({x,d:n.d});
-      idx++;});
-    cell.rests.forEach(r=>{ const rf=r.d>=4?0.5:0.15; s+=gRest(NX(b+(r.s+r.d*rf)/4), r.d, color); });
-    if(beam.length>=2){
-      const by=NY-NSTEM, x0=beam[0].x+NHRX-1, x1=beam[beam.length-1].x+NHRX-1;
-      s+=gBeam(x0,x1,by,color);
-      for(let i=0;i<beam.length;i++){ if(beam[i].d!==1)continue;
-        const prev=beam[i-1],next=beam[i+1],sx=beam[i].x+NHRX-1;
-        if(next&&next.d===1) s+=gBeam(sx,next.x+NHRX-1,by+6,color);
-        else if(prev&&prev.d===1){ /* drawn by prev */ }
-        else s+=gBeam(sx, prev?sx-11:sx+11, by+6, color);
-      }
-    } else if(beam.length===1){ s+=gFlag(beam[0].x, beam[0].d===1, color); }
-  }
-  return {body:s,count:idx};
-}
-
-function renderNotation(){ if(!document.getElementById('notation'))return; randomMode ? renderRandomMain() : renderUniform(); renderNext(); }
-
-function renderUniform(){
-  const pos=SUBDIV[subdiv],open=(subdiv==='whole'||subdiv==='half'),npb=notesPerBeat();
-  let s=gStaff(); noteFills=[];
-  const DUR={whole:4,half:2,quarter:1,eighth:0.5,sixteenth:0.25}[subdiv];
-  pos.forEach((p,i)=>{const cx=NX(p),fill=open?PAPER:FILL;
-    s+=gSustain(cx,DUR,FILL);
-    s+=gHead(cx,fill,'nh-'+i); noteFills.push(fill);
-    if(subdiv!=='whole') s+=gStem(cx,'st-'+i,FILL);});
-  if(npb>=2){for(let b=0;b<4;b++){const grp=[];pos.forEach((p,i)=>{if(Math.floor(p)===b)grp.push(i);});
-    if(grp.length>=2){const xa=NX(pos[grp[0]])+NHRX-1,xb=NX(pos[grp[grp.length-1]])+NHRX-1,by=NY-NSTEM;
-      s+=gBeam(xa,xb,by); if(npb===4)s+=gBeam(xa,xb,by+6);}}}
-  noteCount=pos.length;
-  $('notation').innerHTML=s+gPlayhead;
-}
-
-function renderRandomMain(){
-  if(!currentBar) generateBar();
-  noteFills=[];
-  const {body,count}=drawCells(currentBar,FILL,true);
-  noteCount=count;
-  $('notation').innerHTML=gStaff()+body+gPlayhead;
-}
-
-function renderNext(){
-  const wrap=$('nextwrap');
-  if(randomMode && autoAdv && nextBar){
-    const {body}=drawCells(nextBar,'#8a8270',false);
-    $('notationNext').innerHTML=gStaff(true)+body;
-    wrap.style.display='block';
-  } else { wrap.style.display='none'; }
-}
-function setNoteColor(i,color){const e=$('nh-'+i);if(e){e.setAttribute('fill',color);e.setAttribute('stroke',color);} const st=$('st-'+i);if(st)st.setAttribute('stroke',color);}
-function clearNoteColors(){for(let i=0;i<noteCount;i++){const e=$('nh-'+i);if(e){e.setAttribute('fill',noteFills[i]||FILL);e.setAttribute('stroke',noteFills[i]===PAPER?FILL:(noteFills[i]||FILL));}const st=$('st-'+i);if(st)st.setAttribute('stroke',FILL);}}
-
 // ---- Timing strip (centered on the beat; time falls down; x = ahead/behind) ----
 let strip=null,sctx=null,DPR=1,striphits=[];
 function sizeStrip(){ DPR=Math.min(window.devicePixelRatio||1,2); const cv=$('hw'); if(!cv)return;
@@ -1305,17 +1208,7 @@ function scheduler(){
   expected=expected.filter(e=>e.time>cutoff);
 }
 let clickBus=null;
-function clickOut(){
-  if(ac && !clickBus){
-    clickBus=ac.createGain(); clickBus.gain.value=1;
-    if(ac.createDynamicsCompressor){
-      const limiter=ac.createDynamicsCompressor();
-      limiter.threshold.value=-6; limiter.knee.value=0; limiter.ratio.value=20; limiter.attack.value=0.001; limiter.release.value=0.05;
-      clickBus.connect(limiter); limiter.connect(ac.destination);
-    } else { clickBus.connect(ac.destination); }
-  }
-  return clickBus||ac.destination;
-}
+function clickOut(){ if(ac && !clickBus){ clickBus=ac.createGain(); clickBus.gain.value=1; clickBus.connect(ac.destination); } return clickBus||ac.destination; }
 function playNote(freq,tOffset,dur,peak){
   if(!ac) return;
   const t=ac.currentTime+tOffset;
@@ -1392,9 +1285,7 @@ function registerBar(barStart){
     if(repCount===0){ if(!nextBar) nextBar=makeBar().cells; }           // first bar = the one shown
     else if(nextBar){ currentBar=nextBar; genOnsets=onsetsOf(currentBar); nextBar=makeBar().cells; }
     else { const c=makeBar(); currentBar=c.cells; genOnsets=c.onsets; nextBar=makeBar().cells; }
-    renderNotation();
   }
-  clearNoteColors();
   curBarStart=barStart;
   { const bi=Math.round((barStart-firstBarTime)/barDur);
     if(randomMode && autoAdv){ hwBarMap.set(bi,notesOf(currentBar)); hwRestMap.set(bi,restsOf(currentBar)); if(nextBar){ hwBarMap.set(bi+1,notesOf(nextBar)); hwRestMap.set(bi+1,restsOf(nextBar)); } }
@@ -1432,11 +1323,10 @@ function handleOnset(t){
     for(const e of expected){ if(e.hit)continue; const d=Math.abs(t-e.time); if(d<bd){bd=d;best=e;} }
     if(best && bd<beatDur*0.5){ const raw=(t-best.time)*1000; best.hit=true; calibSamples.push(raw);
       const med=median(calibSamples); if(visualBeat) calibOffsetVis=med; else calibOffset=med;
-      fmtOff();
       $('countin').textContent='finding your pocket… '+calibSamples.length+' / 16 taps';
       if(calibSamples.length>=16){ $('countin').textContent='✓ calibrated · offset '+med.toFixed(0)+'ms';
         if(visualBeat){ prog.calibVis=Math.round(med); } else { prog.calib=Math.round(med); }
-        saveProg(); fmtOff(); setTimeout(()=>stopTransport(false),50); } }
+        saveProg(); setTimeout(()=>stopTransport(false),50); } }
     return;
   }
   // play: remove measured latency BEFORE matching so the right slot is chosen
@@ -1451,7 +1341,6 @@ function handleOnset(t){
     const gemCol=hitColorFor(delta);
     const isPerfect = r.w==='Perfect';
     best.delta=delta; best.ratingWord=r.w; best.col=gemCol; best.actualTime=tc;
-    setNoteColor(best.idx, r.c);
     const key=Math.round(best.time*1000);
     hwHits.set(key, gemCol);
     hwResolved.set(key, {kind:'hit', t:performance.now(), col:gemCol, perfect:isPerfect, delta:delta});
@@ -1472,7 +1361,7 @@ function median(a){const b=[...a].sort((x,y)=>x-y);const m=b.length>>1;return b.
 function std(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));}
 function rating(absd){const k=curDiff().rate;if(absd<=15*k)return{w:'Perfect',c:cssVar('--green')};if(absd<=35*k)return{w:'Great',c:cssVar('--green-lt')};if(absd<=60*k)return{w:'Good',c:cssVar('--amber')};if(absd<=100*k)return{w:'Loose',c:cssVar('--ember-lt')};return{w:'Miss',c:cssVar('--red')};}
 let diffMode='medium';
-const DIFFS={ easy:{cen:0.18,evn:0.55,rate:1.6}, medium:{cen:0.30,evn:0.9,rate:1.0}, hard:{cen:0.45,evn:1.35,rate:0.7}, pro:{cen:0.65,evn:1.8,rate:0.5} };
+const DIFFS={ easy:{cen:0.85,evn:0.55,rate:1.6}, medium:{cen:1.4,evn:0.9,rate:1.0}, hard:{cen:2.1,evn:1.35,rate:0.7}, pro:{cen:2.9,evn:1.8,rate:0.5} };
 function curDiff(){ return DIFFS[diffMode]||DIFFS.medium; }
 // stars needed to advance scales with difficulty: Easy 1, Medium 2, Pro 3
 const ADVANCE={easy:1,medium:2,hard:3,pro:3};
@@ -1529,12 +1418,10 @@ function renderScore(){ updateTimingReadout();
   // coaching
   if(deltas.length>=6){
     const bias=mean(deltas), s=std(deltas);
-    if(!autoCenteredSession && !calibratedThisSession && mode!=='calibrate' && deltas.length>=12){
+    if(!autoCenteredSession && !calibratedThisSession && mode!=='calibrate'){
       autoCenteredSession=true;
-      const m=median(deltas);
-      if(Math.abs(m)>=8 && Math.abs(m)<=120){ addOffset(m); $('coach').innerHTML='Centered your rig for this session \u2014 timing now reads from here. From now on, Center shows your real tendency.'; }
-      else if(Math.abs(m)>120){ $('coach').innerHTML='Your timing reads ~'+Math.abs(m).toFixed(0)+'ms '+(m>0?'behind':'ahead')+' \u2014 too large to auto-center safely. If that\u2019s real (check cable/interface latency), use <b>Center from last run</b> below to apply it manually.'; }
-      else { $('coach').innerHTML='Your timing looks close to centered already \u2014 no adjustment needed.'; }
+      if(Math.abs(bias)>=8) addOffset(median(deltas));   // soak up rig latency once per session, then hold so your real tendency stays visible
+      $('coach').innerHTML='Centered your rig for this session \u2014 timing now reads from here. From now on, Center shows your real tendency.';
     } else {
       const tgt = feelMs<0?'pushing ahead':feelMs>0?'laying back':'on the beat';
       const cen = Math.abs(bias)<6 ? 'You\u2019re nailing the <b>'+tgt+'</b> feel.'
@@ -1556,12 +1443,12 @@ $('subdivSeg').addEventListener('click',e=>{const b=e.target.closest('button');i
   [...$('subdivSeg').children].forEach(x=>x.classList.toggle('active',x===b));
   if(b.dataset.s==='random'){ randomMode=true; $('randomRow').style.display='block'; generateBar(); }
   else { randomMode=false; subdiv=b.dataset.s; $('randomRow').style.display='none'; }
-  renderNotation();updateSetupBtn();});
+  updateSetupBtn();});
 $('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   genDiff=+b.dataset.d;[...$('diffSeg').children].forEach(x=>x.classList.toggle('active',x===b));
-  generateBar(); renderNotation();});
-$('newRhythmBtn').onclick=()=>{ generateBar(); renderNotation(); };
-$('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; if(randomMode){ if(autoAdv&&!nextBar) nextBar=makeBar().cells; renderNotation(); } };
+  generateBar();});
+$('newRhythmBtn').onclick=()=>{ generateBar(); };
+$('autoAdvChk').onchange=e=>{ autoAdv=e.target.checked; if(randomMode){ if(autoAdv&&!nextBar) nextBar=makeBar().cells; } };
 $('feelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   feelMs=+b.dataset.f;[...$('feelSeg').children].forEach(x=>x.classList.toggle('active',x===b));});
 function setLength(n){ n=+n; maxBars=(n===0)?Infinity:n; segActivate('lenSeg','n',String(n)); segActivate('lenSegS','n',String(n)); }
@@ -1636,7 +1523,6 @@ function fmtOff(){ const b=$('offVal'); if(!b) return; const o=curOffset(); b.te
 function addOffset(ms){ if(visualBeat) calibOffsetVis+=ms; else calibOffset+=ms; calibrated=true; prog.calib=Math.round(calibOffset); prog.calibVis=Math.round(calibOffsetVis); saveProg(); fmtOff(); }
 $('offMinus') && ($('offMinus').onclick=()=>{ addOffset(-5); });
 $('offPlus')  && ($('offPlus').onclick =()=>{ addOffset(5); });
-$('offReset') && ($('offReset').onclick=()=>{ if(visualBeat){ calibOffsetVis=0; prog.calibVis=0; } else { calibOffset=0; prog.calib=0; } saveProg(); fmtOff(); });
 $('centerBtn')&& ($('centerBtn').onclick=()=>{ const c=$('coach');  if(deltas.length){ addOffset(median(deltas)); if(c) c.textContent='Centered your '+(visualBeat?'muted':'click')+' timing on that run — next run reads from here ('+(curOffset()>0?'+':'')+Math.round(curOffset())+'ms). The other mode keeps its own offset.'; }
   else if(c){ c.textContent='Play a run first, then tap Center from last run.'; } });
 document.addEventListener('click', e=>{ if(e.target && e.target.id==='coachRecenter' && deltas.length){ addOffset(median(deltas)); const c=$('coach'); if(c) c.innerHTML='Recentered \u2014 next run reads from here ('+(curOffset()>0?'+':'')+Math.round(curOffset())+'ms).'; } });
@@ -1650,7 +1536,7 @@ $('stopBtn').onclick=()=>{stopTransport(false);};
 $('resetBtn').onclick=()=>{deltas=[];hits=0;missed=0;extra=0;hitLog=[];
   ['cen','evn'].forEach(k=>{$(k+'Num').textContent='—';$(k+'Num').style.color='';$(k+'Grade').textContent='play to score';$(k+'Grade').style.color='';$(k+'Bar').style.width='0';});
   $('rhyNum').textContent='—';$('rhyNum').style.color='';$('rhyGrade').textContent='right notes';$('rhyGrade').style.color='';$('rhyBar').style.width='0';
-  $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';clearNoteColors();striphits=[];};
+  $('coach').innerHTML='Pick a note value, hit Play, and read the rhythm to the click.';striphits=[];};
 
 function flashCountIn(n){$('countin').textContent='count-in… '+n;}
 // ===================== THE CLIMB · progression + progress =====================
@@ -1848,8 +1734,7 @@ function obRender(){
       $('obCalibBtn').onclick=()=>{
         $('obCalibBtn').disabled=true;
         $('obCalibStatus').textContent='Count-in playing… get ready.'; $('obCalibStatus').style.color='var(--muted)';
-        calibSamples=[]; calibOffset=0; calibrated=false;
-        startTransport(true);
+        calibSamples=[]; calibOffset=0; calibrated=false; startTransport(true);
         obPoll=setInterval(()=>{
           if(calibrated){ obClearPoll(); $('obCalibStatus').textContent='✓ Calibrated — offset '+Math.round(calibOffset)+'ms.'; $('obCalibStatus').style.color='var(--green)'; $('obNext').textContent='Continue'; setTimeout(obNext,500); }
           else if(calibSamples.length>0){ $('obCalibStatus').textContent='finding your pocket… '+calibSamples.length+' / 16 taps'; $('obCalibStatus').style.color='var(--amber)'; }
@@ -1870,7 +1755,7 @@ function obRender(){
 }
 function obNext(){ obClearPoll(); if(obIdx<OB_STEPS.length-1){ obIdx++; obRender(); } else { obFinish(); } }
 function obBack(){ obClearPoll(); if(obIdx>0){ obIdx--; obRender(); } }
-function obFinish(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; if(window.showScreen) showScreen('play'); }
+function obFinish(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; if(window.showScreen) showScreen('play'); if(window.openRhythmSheet) setTimeout(openRhythmSheet,180); }
 function obSkip(){ obClearPoll(); prog.onboarded=true; saveProg(); const w=$('onboardWizard'); if(w) w.style.display='none'; }
 function obShow(){ obIdx=0; const w=$('onboardWizard'); if(w) w.style.display='flex'; obRender(); }
 if($('obBack')) $('obBack').onclick=obBack;
@@ -1972,7 +1857,6 @@ function applyConfig(cfg){
   swing=cfg.swing||0; segActivate('swingSeg','sw',(swing<=16?'0':swing<=49?'33':swing<=83?'66':'100')); const _sv=$('swingVal'); if(_sv) _sv.textContent={0:'straight',33:'soft',66:'medium',100:'hard'}[swing]||('swing '+swing);
   feelMs=cfg.feel||0; segActivate('feelSeg','f',String(feelMs));
   setLength(cfg.bars===Infinity?0:(cfg.bars||8));
-  renderNotation();
   applyingCfg=false;
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
@@ -1999,7 +1883,7 @@ function computeGatedScores(){
   const cov=hits/Math.max(1,hits+missed);
   const covGate=Math.max(0, Math.min(1, (cov-0.35)/0.45));   // Center/Evenness need most notes actually hit
   const consistScale=0.9/curDiff().evn;   // wider "tight" tolerance on Easy, tighter on Pro — matches evennessScore's own difficulty scaling instead of one fixed band for every tier
-  const consist=Math.max(0, Math.min(1, 1-(sd-30*consistScale)/(50*consistScale)));   // "centered" requires reasonably tight spread — scatter still can't fake it with a ~0 average, but tolerance now reflects real human note-to-note variation instead of an unvalidated guess
+  const consist=Math.max(0, Math.min(1, 1-(sd-14*consistScale)/(26*consistScale)));   // "centered" requires a TIGHT spread — scatter can't fake it with a ~0 average
   const rhy=rhythmScore()||0;
   const feelGate=Math.max(0, Math.min(1, rhy/60));            // no high feel score without playing the notes — low Rhythm tanks Center/Evenness (kills random's selection-bias Evenness)
   return { cen:Math.round(centerScore(bias)*consist*covGate*feelGate), evn:Math.round(evennessScore(sd)*covGate*(0.55+0.45*consist)*feelGate), rhy, bias };
@@ -2325,7 +2209,6 @@ function applyMode(m){
   if(m==='free') renderSavedScore((prog.lastScores&&prog.lastScores.free)||null);
   else if(m==='random') renderSavedScore((prog.lastScores&&prog.lastScores.random)||null);
   if(isRandom && !isStyle && typeof generateBar==='function') generateBar();
-  if(!climbMode && typeof renderNotation==='function') renderNotation();
   prog.mode=m; saveProg();
   if(typeof updateSetupBtn==='function') updateSetupBtn();
 }
@@ -2333,7 +2216,12 @@ document.addEventListener('keydown', e=>{
   const tag=(document.activeElement&&document.activeElement.tagName)||'';
   const isFormEl=['INPUT','SELECT','TEXTAREA','BUTTON'].includes(tag);
   if(isFormEl) return;   // let native keyboard behavior on focused controls win
-  if(e.code==='ArrowUp' || e.code==='ArrowDown'){
+  if(e.code==='Space'){
+    e.preventDefault();
+    const playBtn=$('playBtn'), stopBtn=$('stopBtn');
+    if(stopBtn && !stopBtn.disabled && typeof stopBtn.onclick==='function') stopBtn.onclick();
+    else if(playBtn && !playBtn.disabled && typeof playBtn.onclick==='function') playBtn.onclick();
+  } else if(e.code==='ArrowUp' || e.code==='ArrowDown'){
     const bpmEl=$('bpm'), wrap=$('adjTempo'); if(!bpmEl || (wrap && getComputedStyle(wrap).display==='none')) return;   // only when tempo control is visible
     e.preventDefault();
     const delta=(e.shiftKey?5:1)*(e.code==='ArrowUp'?1:-1);
