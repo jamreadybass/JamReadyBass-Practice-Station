@@ -2216,12 +2216,7 @@ document.addEventListener('keydown', e=>{
   const tag=(document.activeElement&&document.activeElement.tagName)||'';
   const isFormEl=['INPUT','SELECT','TEXTAREA','BUTTON'].includes(tag);
   if(isFormEl) return;   // let native keyboard behavior on focused controls win
-  if(e.code==='Space'){
-    e.preventDefault();
-    const playBtn=$('playBtn'), stopBtn=$('stopBtn');
-    if(stopBtn && !stopBtn.disabled && typeof stopBtn.onclick==='function') stopBtn.onclick();
-    else if(playBtn && !playBtn.disabled && typeof playBtn.onclick==='function') playBtn.onclick();
-  } else if(e.code==='ArrowUp' || e.code==='ArrowDown'){
+  if(e.code==='ArrowUp' || e.code==='ArrowDown'){
     const bpmEl=$('bpm'), wrap=$('adjTempo'); if(!bpmEl || (wrap && getComputedStyle(wrap).display==='none')) return;   // only when tempo control is visible
     e.preventDefault();
     const delta=(e.shiftKey?5:1)*(e.code==='ArrowUp'?1:-1);
