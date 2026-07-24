@@ -231,7 +231,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 190</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 191</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -673,7 +673,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 190 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 191 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -866,11 +866,15 @@ function startStyle(idx){
 }
 function renderStyleList(){
   const wrap=$('styleLadder'); if(!wrap) return; wrap.innerHTML=''; let genre='';
+  // ?preview reveals unverified styles too (clearly marked) for owner QA — a plain link to
+  // testers never sets this, so they only ever see the confirmed list.
+  const previewMode = /(^|[?&])preview(=|&|$)/.test(location.search);
   STYLES.forEach((g,i)=>{
-    if(!g.verified) return;   // rhythm not yet confirmed against a reference — hidden from the picker until it is
+    if(!g.verified && !previewMode) return;   // rhythm not yet confirmed against a reference — hidden from the picker until it is
     if(g.genre!==genre){ genre=g.genre; const h=document.createElement('div'); h.className='tier'; h.textContent=genre; wrap.appendChild(h); }
     const btn=document.createElement('button'); btn.className='lvl';
-    btn.innerHTML='<span class="lname">'+g.name+'</span><span class="lstars" style="color:var(--muted);font-size:11px;white-space:nowrap">'+g.bpm+' bpm · '+g.feelName+'</span>';
+    const tag = g.verified ? '' : ' <span style="color:var(--amber)">· unverified</span>';
+    btn.innerHTML='<span class="lname">'+g.name+tag+'</span><span class="lstars" style="color:var(--muted);font-size:11px;white-space:nowrap">'+g.bpm+' bpm · '+g.feelName+'</span>';
     btn.onclick=()=>startStyle(i);
     wrap.appendChild(btn);
   });
