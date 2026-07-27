@@ -235,7 +235,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 199</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 200</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -684,7 +684,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 199 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 200 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1965,7 +1965,7 @@ function drawHomeHero(ts){
   const g=STYLES[dailyGrooveIndex()]; if(!g){ return; }
   if($('heroName')) $('heroName').textContent=g.name;
   const bpb=g.beatsPerBar||4, spb=g.slotsPerBeat||4, bar=g.bars[0];
-  const events=visualEventsOf(bar);
+  const events=visualEventsOf(bar), rests=restsOf(bar);
   ctx.clearRect(0,0,W,H);
   const staffY=H*0.42, padX=18*dpr, usableW=W-padX*2;
   const loopBeats=bpb+1.2;                                       // small gap before the loop repeats
@@ -1977,17 +1977,28 @@ function drawHomeHero(ts){
   ctx.strokeStyle='rgba(236,232,222,.18)'; ctx.lineWidth=1*dpr;
   ctx.beginPath(); ctx.moveTo(padX,staffY); ctx.lineTo(W-padX,staffY); ctx.stroke();
   const nhrx=5*dpr, nhry=4*dpr, stem=16*dpr, by=staffY-stem;
-  const drawn=[];
+  const drawn=[], drawnRests=[];
   for(let rep=-1;rep<=1;rep++){
     events.forEach(ev=>{ const x=X(ev.pos+rep*bpb); if(x<-20||x>W+20) return; drawn.push({...ev,_x:x}); });
+    rests.forEach(r=>{ const x=X(r.pos+rep*bpb); if(x<-20||x>W+20) return; drawnRests.push({...r,_x:x}); });
   }
   drawn.sort((a,b)=>a._x-b._x);
+  // rests (reuse the same Bravura glyphs the real staff uses)
+  for(const r of drawnRests){ hwRest(ctx,r._x,r.dur,staffY,dpr); }
+  // noteheads, stems, dots
   ctx.fillStyle='rgba(255,176,32,.9)';
   for(const n of drawn){ ctx.beginPath(); ctx.ellipse(n._x,staffY,nhrx,nhry,0,0,7); ctx.fill();
-    if(n.durB<bpb){ ctx.strokeStyle='rgba(255,176,32,.9)'; ctx.lineWidth=1.3*dpr; ctx.beginPath(); ctx.moveTo(n._x+nhrx,staffY); ctx.lineTo(n._x+nhrx,by); ctx.stroke(); } }
+    if(n.dur<bpb){ ctx.strokeStyle='rgba(255,176,32,.9)'; ctx.lineWidth=1.3*dpr; ctx.beginPath(); ctx.moveTo(n._x+nhrx,staffY); ctx.lineTo(n._x+nhrx,by); ctx.stroke(); }
+    if([0.75,1.5,3].some(v=>Math.abs(n.dur-v)<0.02)){ ctx.beginPath(); ctx.arc(n._x+nhrx+5*dpr,staffY-1.5*dpr,1.5*dpr,0,7); ctx.fill(); } }
+  // tie curves between a tieOut note and the next tieIn note
+  ctx.strokeStyle='rgba(255,176,32,.75)'; ctx.lineWidth=1.2*dpr;
+  for(let i=0;i<drawn.length-1;i++){ const a=drawn[i], b=drawn[i+1];
+    if(a.tieOut && b.tieIn){ const x1=a._x+nhrx+1*dpr, x2=b._x-nhrx-1*dpr, midY=staffY+9*dpr;
+      ctx.beginPath(); ctx.moveTo(x1,staffY+2*dpr); ctx.quadraticCurveTo((x1+x2)/2,midY,x2,staffY+2*dpr); ctx.stroke(); } }
+  // beams within each beat group; a lone short note gets no beam (kept simple/decorative here)
   ctx.strokeStyle='rgba(255,176,32,.55)'; ctx.lineWidth=2*dpr;
   const groups=new Map();
-  for(const n of drawn){ if(!(n.durB>0 && n.durB<1)) continue; const key=Math.floor(n.pos+0.001); if(!groups.has(key)) groups.set(key,[]); groups.get(key).push(n); }
+  for(const n of drawn){ if(!(n.dur>0 && n.dur<1)) continue; const key=Math.floor(n.pos+0.001); if(!groups.has(key)) groups.set(key,[]); groups.get(key).push(n); }
   groups.forEach(grp=>{ if(grp.length<2) return; grp.sort((a,b)=>a._x-b._x); ctx.beginPath(); ctx.moveTo(grp[0]._x+nhrx,by); ctx.lineTo(grp[grp.length-1]._x+nhrx,by); ctx.stroke(); });
   heroRafId=requestAnimationFrame(drawHomeHero);
 }
