@@ -235,7 +235,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 203</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 204</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -677,7 +677,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 203 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 204 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -886,9 +886,12 @@ function renderStyleList(){
 
 function notesPerBeat(){return {whole:0,half:0,quarter:1,eighth:2,sixteenth:4}[subdiv];}
 function swungBeats(posBeats){
-  if(swing>0){                                    // delay the off-beats in any mode / subdivision
+  if(swing>0){                                    // delay off-grid subdivisions in any mode / subdivision
     const base=Math.floor(posBeats), frac=posBeats-base;
-    if(Math.abs(frac-0.5)<1e-6) return base+(0.5+(swing/100)*0.18);
+    const R=0.5+(swing/100)*0.18;                 // swing ratio: 0.5 (straight) up to ~0.68 (hard swing/triplet-ish)
+    if(Math.abs(frac-0.5)<1e-6) return base+R;                        // the "&" — same as before
+    if(Math.abs(frac-0.25)<1e-6) return base+R*R;                     // the "e" — same swing ratio applied within the first half
+    if(Math.abs(frac-0.75)<1e-6) return base+(2*R-R*R);                // the "a" — same ratio applied within the second half
   }
   return posBeats;
 }
