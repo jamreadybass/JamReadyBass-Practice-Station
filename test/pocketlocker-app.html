@@ -235,7 +235,7 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 202</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 203</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -295,15 +295,48 @@
       <button class="primary big" id="playBtn">▶ Play</button>
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
-    <div id="dailyGrooveBanner" class="panel" style="display:none;padding:12px 16px;margin-bottom:12px;background:linear-gradient(160deg,rgba(255,176,32,.10),var(--panel2));cursor:pointer">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <div>
-          <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-weight:700">Today's groove</div>
-          <div id="dailyGrooveName" style="font-size:15px;font-weight:700;margin-top:2px">—</div>
+
+    <div class="panel" id="scorePanel">
+      <h2>Score</h2>
+      <div class="score-cards">
+        <div class="score-card">
+          <div class="sc-k">Center <span class="u">· on the feel</span></div>
+          <div class="sc-num" id="cenNum">—</div>
+          <div class="sc-grade" id="cenGrade">play to score</div>
+          <div class="score-bar"><span id="cenBar"></span></div>
         </div>
-        <div style="color:var(--amber);font-size:13px;font-weight:700;white-space:nowrap">Play &rarr;</div>
+        <div class="score-card">
+          <div class="sc-k">Evenness <span class="u">· repeatable</span></div>
+          <div class="sc-num" id="evnNum">—</div>
+          <div class="sc-grade" id="evnGrade">play to score</div>
+          <div class="score-bar"><span id="evnBar"></span></div>
+        </div>
+        <div class="score-card">
+          <div class="sc-k">Rhythm <span class="u">· right notes</span></div>
+          <div class="sc-num" id="rhyNum">—</div>
+          <div class="sc-grade" id="rhyGrade">right notes</div>
+          <div class="score-bar"><span id="rhyBar"></span></div>
+        </div>
       </div>
+      <div class="coach" id="coach">Pick a level, hit Play, and read the rhythm to the click.</div>
+      <div id="timingReadout" style="display:none;margin-top:10px;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
+        <div style="font-family:var(--mono);font-size:13px"><span style="color:var(--muted)">Timing spread</span> <b id="trSpread" style="color:var(--amber)">–</b> <span style="color:var(--muted)">· avg</span> <b id="trAvg" style="color:var(--ink)">–</b></div>
+        <div style="font-size:11px;color:var(--muted);margin:8px 0 4px">Average placement per beat (spot a drift):</div>
+        <div id="trBeats" style="display:flex;gap:6px"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">If these climb across the bar and reset on beat 1, you’re drifting late then re-anchoring — real, and worth practicing. If they’re scattered, that’s normal variance.</div>
+      </div>
+      <div id="timingRow" style="margin-top:12px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:9px">Notes reading early or late overall? Play a run, then tap <b>Center from last run</b> — it learns your offset from how you actually played. Muted and click keep <b>separate</b> offsets — center each once. Never moves the highway visual.</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button id="offMinus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">−5</button>
+          <div style="font-family:var(--mono);font-size:14px;min-width:108px;text-align:center" id="offVal">offset 0ms</div>
+          <button id="offPlus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">+5</button>
+          <button id="centerBtn" class="primary" style="padding:9px 14px;margin-left:auto">Center from last run</button>
+        </div>
+      </div>
+      <div class="transport" style="margin-top:14px"><button id="resetBtn" class="danger" style="margin-left:auto">Reset score</button></div>
     </div>
+
     <div class="panel" id="quickAdjust" style="padding:14px 16px;margin-bottom:12px">
       <div class="ctrl" id="adjTempo" style="margin-bottom:12px"><label>Tempo <span class="val" id="bpmVal">90</span> bpm</label>
         <div style="display:flex;gap:8px;align-items:center">
@@ -348,46 +381,6 @@
       </div>
     </div>
 
-    <div class="panel" id="scorePanel">
-      <h2>Score</h2>
-      <div class="score-cards">
-        <div class="score-card">
-          <div class="sc-k">Center <span class="u">· on the feel</span></div>
-          <div class="sc-num" id="cenNum">—</div>
-          <div class="sc-grade" id="cenGrade">play to score</div>
-          <div class="score-bar"><span id="cenBar"></span></div>
-        </div>
-        <div class="score-card">
-          <div class="sc-k">Evenness <span class="u">· repeatable</span></div>
-          <div class="sc-num" id="evnNum">—</div>
-          <div class="sc-grade" id="evnGrade">play to score</div>
-          <div class="score-bar"><span id="evnBar"></span></div>
-        </div>
-        <div class="score-card">
-          <div class="sc-k">Rhythm <span class="u">· right notes</span></div>
-          <div class="sc-num" id="rhyNum">—</div>
-          <div class="sc-grade" id="rhyGrade">right notes</div>
-          <div class="score-bar"><span id="rhyBar"></span></div>
-        </div>
-      </div>
-      <div class="coach" id="coach">Pick a level, hit Play, and read the rhythm to the click.</div>
-      <div id="timingReadout" style="display:none;margin-top:10px;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
-        <div style="font-family:var(--mono);font-size:13px"><span style="color:var(--muted)">Timing spread</span> <b id="trSpread" style="color:var(--amber)">–</b> <span style="color:var(--muted)">· avg</span> <b id="trAvg" style="color:var(--ink)">–</b></div>
-        <div style="font-size:11px;color:var(--muted);margin:8px 0 4px">Average placement per beat (spot a drift):</div>
-        <div id="trBeats" style="display:flex;gap:6px"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">If these climb across the bar and reset on beat 1, you’re drifting late then re-anchoring — real, and worth practicing. If they’re scattered, that’s normal variance.</div>
-      </div>
-      <div id="timingRow" style="margin-top:12px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:9px">Notes reading early or late overall? Play a run, then tap <b>Center from last run</b> — it learns your offset from how you actually played. Muted and click keep <b>separate</b> offsets — center each once. Never moves the highway visual.</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button id="offMinus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">−5</button>
-          <div style="font-family:var(--mono);font-size:14px;min-width:108px;text-align:center" id="offVal">offset 0ms</div>
-          <button id="offPlus" style="min-width:52px;padding:9px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;cursor:pointer">+5</button>
-          <button id="centerBtn" class="primary" style="padding:9px 14px;margin-left:auto">Center from last run</button>
-        </div>
-      </div>
-      <div class="transport" style="margin-top:14px"><button id="resetBtn" class="danger" style="margin-left:auto">Reset score</button></div>
-    </div>
   </section>
 
   <section id="screenSettings" class="screen">
@@ -684,7 +677,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 202 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 203 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -2007,14 +2000,6 @@ function stopHeroLoop(){ if(heroRafId!=null){ cancelAnimationFrame(heroRafId); h
 window.addEventListener('resize',()=>sizeHeroHw());
 const heroClickTarget=document.getElementById('heroHero');
 if(heroClickTarget) heroClickTarget.onclick=function(){ const idx=dailyGrooveIndex(); applyMode('style'); startStyle(idx); hideRhythmSheet(); if(window.showScreen) showScreen('play'); };
-function renderDailyGrooveBanner(){
-  const banner=$('dailyGrooveBanner'); if(!banner) return;
-  const idx=dailyGrooveIndex(), g=STYLES[idx]; if(!g) return;
-  if($('dailyGrooveName')) $('dailyGrooveName').textContent=g.name;
-  banner.style.display='block';
-  banner.onclick=function(){ applyMode('style'); startStyle(idx); hideRhythmSheet(); if(window.showScreen) showScreen('play'); };
-}
-renderDailyGrooveBanner();
 if(document.getElementById('screenHome') && document.getElementById('screenHome').classList.contains('active')) startHeroLoop();
 // A link can force the setup wizard open with ?setup or #setup, regardless of any saved
 // prog.onboarded state on that device/browser (e.g. from earlier dev testing) — more reliable
