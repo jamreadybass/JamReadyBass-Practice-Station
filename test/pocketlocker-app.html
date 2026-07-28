@@ -264,7 +264,7 @@
   <button id="fullscreenBtn" class="iconbtn" aria-label="Fullscreen" style="display:none"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 215</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 219</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -314,7 +314,7 @@
     <div class="panel" id="startPanel">
       <h2>Start audio</h2>
       <button class="primary big" id="startBtn" style="width:100%">Enable mic &amp; click</button>
-      <p class="help" style="margin-top:12px">Grant the mic prompt. Headphones are best — they keep the click from bleeding into the mic. PocketLocker calibrates to your room automatically.</p>
+      <p class="help" style="margin-top:12px">Grant the mic prompt. Headphones are best — they keep the click from bleeding into the mic. PocketLocker checks your room automatically.</p>
       <div class="err" id="errBox" style="display:none"></div>
       <div class="warn" id="infoBox" style="display:none"></div>
     </div>
@@ -326,7 +326,6 @@
 
     <div class="transport playbar">
       <button id="calibBtn">Calibrate</button>
-      <button id="warmupBtn">Warm-up</button>
       <button class="primary big" id="playBtn">▶ Play</button>
       <button id="stopBtn" disabled>■ Stop</button>
     </div>
@@ -542,9 +541,9 @@
           <b>1 · Start audio.</b> On the Play tab, tap <b>Enable mic &amp; click</b> and allow the microphone. Headphones (or an interface with headphone monitoring) are best. PocketLocker checks your room automatically.<br><br>
           <b>2 · Set your instrument.</b> Open <b>Setup → Detection test</b> and tap <b>4-string</b> or <b>5-string</b>. That one tap tunes the mic so every note counts once — no phantom hits from ringing strings. (See <b>Dial it in</b> below to fine-tune.)<br><br>
           <b>3 · Calibrate.</b> Hit <b>Play</b>; when it asks, tap <b>Calibrate now</b> and play ~16 steady notes locked to the click. This measures your device's audio delay so your notes land in the right slot. Re-calibrate if you switch headphones or interface.<br><br>
-          <b>4 · Pick a mode.</b> <b>Challenge</b>, <b>Freeplay</b>, or <b>Random</b> — tap one to open its setup box. The amber bar up top always shows your current mode and settings.<br><br>
-          <b>5 · Play the Challenge.</b> Tap <b>Challenge</b>, choose a difficulty (Easy → Medium → Hard → Pro) and any level you've unlocked. Read the staff up top and play each note the instant its gem crosses the amber <b>pocket</b> line. Clear a level to unlock the next; clear all 12 to move up a difficulty.<br><br>
-          <b>6 · Read your scores.</b> <b>Center</b> = on your chosen feel. <b>Evenness</b> = consistency. <b>Rhythm</b> = right notes. Stars to advance: Easy 1, Medium 2, Hard and Pro 3. Pro also hides the gems — you read the notation.<br><br>
+          <b>4 · Pick a mode.</b> <b>Challenge</b>, <b>Freeplay</b>, <b>Random</b>, or <b>Styles</b> — tap one to open its setup box. The amber bar up top always shows your current mode and settings.<br><br>
+          <b>5 · Play the Challenge.</b> Tap <b>Challenge</b>, choose a difficulty (Easy → Medium → Hard → Pro) and any level you've unlocked. Read the staff up top and play each note the instant its gem crosses the amber <b>pocket</b> line. Clear a level to unlock the next; clear all 12 to move up a difficulty. (<b>Styles</b> works the same way — pick a groove instead of a level.)<br><br>
+          <b>6 · Read your scores.</b> <b>Center</b> = on the feel. <b>Evenness</b> = repeatable. <b>Rhythm</b> = right notes. Stars to advance: Easy 1, Medium 2, Hard and Pro 3. Pro also hides the gems — you read the notation.<br><br>
           <b>Controls.</b> <b>Spacebar</b> pauses and resumes a run; <b>Stop</b> ends it.
         </p>
       </details>
@@ -715,7 +714,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 215 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 219 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1230,13 +1229,13 @@ function drawStrip(){
 }
 
 // ---- Transport ----
-function startTransport(forCalib, warmup){
+function startTransport(forCalib){
   if(!running)return;
   stopTransport(true);
   try{ if(ac && ac.state==='suspended') ac.resume(); }catch(e){}
   try{ fireClickVoice(ac.currentTime+0.001, 0.0001, 1100); }catch(e){}   // inaudible primer — absorbs any hardware wake-up pop before the first real beep
   beatDur=60/bpm; barDur=beatsPerBar*beatDur;
-  mode=warmup?'warmup':(forCalib?'calibrate':'play');
+  mode=forCalib?'calibrate':'play';
   sessionCompleted=false;
   if(clickBus){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(visualBeat?0:1,ac.currentTime); }
   {
@@ -1256,9 +1255,8 @@ function startTransport(forCalib, warmup){
   nextBeatTime=ac.currentTime+0.25;
   firstBarTime=nextBeatTime+countInBeats*beatDur;
   hwBarMap.clear(); hwRestMap.clear(); hwFlashes=[]; hwHits.clear(); hwResolved.clear(); hwLastBeat=null; beatPulses=[]; clickTimes=[];
-  $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true; if($('warmupBtn'))$('warmupBtn').disabled=true;
-  $('stopBtn').textContent = forCalib ? '■ Done' : (warmup ? '■ End warm-up' : '■ Stop');
-  if(warmup && $('countin')) $('countin').textContent='warming up \u2014 just settle into the tempo, nothing scored';
+  $('playBtn').disabled=true; $('stopBtn').disabled=false; $('calibBtn').disabled=true;
+  $('stopBtn').textContent = forCalib ? '■ Done' : '■ Stop';
   const _np=document.getElementById('notePanel'); if(_np) try{ _np.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
   schedId=setInterval(scheduler,25);
   requestAnimationFrame(drawPlayhead);
@@ -1271,7 +1269,7 @@ function stopTransport(silent){
   if(schedId){clearInterval(schedId);schedId=null;}
   if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } killPending();
   $('playhead') && $('playhead').setAttribute('opacity','0');
-  $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false; if($('warmupBtn'))$('warmupBtn').disabled=false;
+  $('playBtn').disabled=false; $('stopBtn').disabled=true; $('calibBtn').disabled=false;
   $('stopBtn').textContent='■ Stop';
   if(!silent && mode==='play'){ finalizeMissed(); renderScore(); $('countin').textContent='';
     if(latencyLog.length>1){ console.log('[PocketLocker] outputLatency ms per hit (first→last): '+latencyLog.join(', ')); console.log('[PocketLocker] first='+latencyLog[0]+'ms  last='+latencyLog[latencyLog.length-1]+'ms  min='+Math.min(...latencyLog)+'ms  max='+Math.max(...latencyLog)+'ms'); }
@@ -1737,7 +1735,6 @@ function applyDetSaved(){ if(!prog.det){ if(typeof applyInstrumentPreset==='func
   if(node)node.port.postMessage({threshFactor:params.threshFactor,refractory:params.refractory,floor:params.floor,riseK:params.riseK,eSpeed:params.eSpeed});
   if(d.lowcut) setLowCut(d.lowcut); }
 $('calibBtn').onclick=()=>{calibSamples=[];calibOffset=0;$('calibPrompt').style.display='none';startTransport(true);};
-$('warmupBtn') && ($('warmupBtn').onclick=()=>{startTransport(false,true);});
 function curOffset(){ return visualBeat ? calibOffsetVis : calibOffset; }
 function fmtOff(){ const b=$('offVal'); if(!b) return; const o=curOffset(); b.textContent=(visualBeat?'muted':'click')+' offset '+(o>0?'+':'')+Math.round(o)+'ms'; }
 function addOffset(ms){ if(visualBeat) calibOffsetVis+=ms; else calibOffset+=ms; calibrated=true; prog.calib=Math.round(calibOffset); prog.calibVis=Math.round(calibOffsetVis); saveProg(); fmtOff(); }
@@ -1971,13 +1968,16 @@ function obRender(){
     }
   } else if(step==='modes'){
     const card=(t,d)=>'<div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px"><b style="color:var(--amber);font-size:13px">'+t+'</b><div class="help" style="margin-top:4px;font-size:12px">'+d+'</div></div>';
+    const verifiedStyles=STYLES.filter(s=>s.verified);
+    const sampleNames=verifiedStyles.slice(0,3).map(s=>s.name).join(', ');
+    const stylesDesc='Real bass grooves — '+(sampleNames||'genre patterns')+', and more — transcribed from real recordings and scored against the style\u2019s feel.';
     body.innerHTML=
       '<div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:10px">Almost there</div>'+
       '<h2 style="margin:0 0 12px;font-size:24px">Four ways to practice</h2>'+
       card('Challenge','A leveled ladder of rhythms — clear one to unlock the next, across four difficulties.')+
-      card('Freeplay','Build your own rhythm and play against a click, no scoring pressure.')+
+      card('Freeplay','Build your own rhythm and play against a click — still scored, just not counted toward Challenge progress.')+
       card('Random','Auto-generated syncopation at a difficulty you pick — good for sight-reading practice.')+
-      card('Styles','30 real bass grooves — Motown, Reggae, Samba, and more — scored against the style’s feel.');
+      card('Styles',stylesDesc);
   }
 }
 function obNext(){ obClearPoll(); if(obIdx<OB_STEPS.length-1){ obIdx++; obRender(); } else { obFinish(); } }
@@ -2500,11 +2500,11 @@ $('accentSwatches') && $('accentSwatches').addEventListener('click',e=>{ const b
 $('lightModeChk') && ($('lightModeChk').onchange=e=>{ const light=e.target.checked; document.documentElement.setAttribute('data-theme', light?'light':'dark'); prog.theme=light?'light':'dark'; saveProg(); });
 const FAQ=[
   {q:'What do Center, Evenness, and Rhythm actually measure?',
-   a:'<b>Center</b> is how close your average timing sits to the beat — your overall feel. <b>Evenness</b> is how consistent your timing is run to run, not just on average. <b>Rhythm</b> is whether you played the right notes at all, separate from timing.'},
+   a:'<b>Center</b> is "on the feel" \u2014 how close your average timing sits to the beat. <b>Evenness</b> is "repeatable" \u2014 how consistent your timing is run to run, not just on average. <b>Rhythm</b> is "right notes" \u2014 whether you played the correct notes at all, separate from timing.'},
   {q:'Why do I need to calibrate?',
    a:'Every device and audio interface has a small built-in delay before it hears you. Calibration measures that delay once so your notes get scored against how you actually played, not against your gear\u2019s lag.'},
   {q:'What\u2019s the difference between Challenge, Freeplay, Random, and Styles mode?',
-   a:'<b>Challenge</b> is structured levels that unlock as you improve. <b>Freeplay</b> is practice with no scoring pressure. <b>Random</b> generates rhythms for sight-reading practice. <b>Styles</b> are real genre grooves \u2014 transcribed from actual recordings, not generic patterns.'},
+   a:'<b>Challenge</b> is structured levels that unlock as you improve. <b>Freeplay</b> is practice against a click — still scored, just not counted toward Challenge progress. <b>Random</b> generates rhythms for sight-reading practice. <b>Styles</b> are real genre grooves \u2014 transcribed from actual recordings, not generic patterns.'},
   {q:'What does "Offset \u2014 center from last run" do?',
    a:'If your notes keep reading early or late overall, this learns your personal timing tendency from your last run and adjusts future scoring to read from there. Muted playing and mic\u2019d/amped playing keep separate offsets, since they can have different latency.'},
   {q:'What\u2019s the difference between Swing and Feel?',
