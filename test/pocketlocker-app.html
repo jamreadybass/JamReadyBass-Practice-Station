@@ -264,7 +264,7 @@
   <button id="fullscreenBtn" class="iconbtn" aria-label="Fullscreen" style="display:none"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 219</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 220</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -433,13 +433,6 @@
           <div class="ctrl" style="margin-top:12px"><label title="send the click to one ear — needs headphones or stereo speakers to hear any difference">Click pan</label>
             <div class="seg" id="clickPanSeg"><button data-pan="-1">Left</button><button data-pan="0" class="active">Center</button><button data-pan="1">Right</button></div>
           </div>
-          <label class="chk"><input type="checkbox" id="rampChk" style="accent-color:var(--accent)"> Tempo ramp — speed up automatically during a run</label>
-          <div class="ctrl" id="rampControls" style="margin-top:10px;display:none">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div><label>+<span class="val" id="rampStepVal">5</span> bpm</label><input type="range" id="rampStep" min="1" max="20" value="5"></div>
-              <div><label>every <span class="val" id="rampBarsVal">4</span> bars</label><input type="range" id="rampBars" min="1" max="16" value="4"></div>
-            </div>
-          </div>
           <div class="ctrl" style="margin-top:12px"><label>Accent color</label>
             <div id="accentSwatches" style="display:flex;gap:10px;margin-top:6px">
               <button type="button" data-accent="amber" class="active" title="Amber" style="width:36px;height:36px;padding:0;border-radius:50%;background:#ffb020;border:2px solid var(--line)"></button>
@@ -449,7 +442,6 @@
               <button type="button" data-accent="violet" title="Violet" style="width:36px;height:36px;padding:0;border-radius:50%;background:#b088ff;border:2px solid var(--line)"></button>
             </div>
           </div>
-          <label class="chk"><input type="checkbox" id="filterClickChk" checked style="accent-color:var(--accent)"> Speaker mode — filter the click out of the mic so you can skip headphones</label>
           <label class="chk"><input type="checkbox" id="ecChk" style="accent-color:var(--accent)"> Cancel speaker echo — for a laptop mic that hears the click through the speakers (may soften detection a touch; leave off for an interface or MIDI)</label>
           <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--accent)"> Pro view — hide the gems, lock in by click + landing lines only</label>
           <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--accent)"> Light mode — switch the app to a light theme (default is dark)</label>
@@ -566,7 +558,7 @@
       <details>
         <summary style="cursor:pointer;font-weight:600;font-size:15px;color:var(--ink)">Troubleshooting</summary>
         <p class="help" style="margin-top:10px">
-          <b>Extra / phantom notes.</b> Tap your <b class="jump" data-jump="instrSeg">instrument preset</b> first. Still over-counting? In <b class="jump" data-jump="advDet">Detection test → Advanced</b>, raise <b class="jump" data-jump="riseThresh">Trigger threshold</b> and <b class="jump" data-jump="ringRej">Ring rejection</b>. Keep <b class="jump" data-jump="filterClickChk">Speaker mode</b> on; headphones help most.<br><br>
+          <b>Extra / phantom notes.</b> Tap your <b class="jump" data-jump="instrSeg">instrument preset</b> first. Still over-counting? In <b class="jump" data-jump="advDet">Detection test → Advanced</b>, raise <b class="jump" data-jump="riseThresh">Trigger threshold</b> and <b class="jump" data-jump="ringRej">Ring rejection</b>. Headphones help most.<br><br>
           <b>Notes aren't registering.</b> In <b class="jump" data-jump="advDet">Detection test → Advanced</b>, lower <b class="jump" data-jump="riseThresh">Trigger threshold</b>, or lower <b class="jump" data-jump="lowCut">Low-cut</b> so it hears your low strings — or just dig in a little harder.<br><br>
           <b>Notes read early or late.</b> <b class="jump" data-jump="calibBtn">Calibrate</b>, or tap <b class="jump" data-jump="centerBtn">Center from last run</b> after a run to auto-correct.<br><br>
           <b>Gems don't line up (Bluetooth lag).</b> Adjust <b class="jump" data-jump="hwnudge">Highway sync</b> until a gem meets the click. Never affects your score.<br><br>
@@ -694,7 +686,6 @@ let beatDur=60/90, barDur=beatsPerBar*beatDur;
 let schedId=null, nextBeatTime=0, beatIndex=0, countInBeats=4, maxBars=8;
 let expected=[];            // {time, hit, idx} — pruned to a rolling window each scheduler tick
 let playStartBar=0, repCount=0;
-let rampEnabled=false, rampStepBpm=5, rampEveryBars=4, rampBaseBpm=90;
 
 // ---- Start audio ----
 $('startBtn').onclick=async()=>{
@@ -705,6 +696,7 @@ $('startBtn').onclick=async()=>{
     ac=new (window.AudioContext||window.webkitAudioContext)();
     await ac.resume();
     micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:echoCancel,noiseSuppression:echoCancel,autoGainControl:false}});
+    try{ autoSpeakerMode(micStream.getAudioTracks()[0].label); }catch(e){}
     src=ac.createMediaStreamSource(micStream);
     detTap=buildNotchChain(src);
     try{
@@ -714,7 +706,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 219 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 220 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -756,6 +748,15 @@ function setFilterClick(on){
   notchFilters.forEach(bq=>{ try{ bq.frequency.setTargetAtTime(on?bq._target:19000, ac?ac.currentTime:0, 0.02); }catch(e){ bq.frequency.value=on?bq._target:19000; } });
   prog.filterClick=on; saveProg();
 }
+// Speaker mode used to be a manual checkbox; now it's fully automatic. A generic-sounding
+// mic label (built-in mic, "Microphone", etc.) turns click-filtering on; anything else
+// (an audio interface, MIDI device, etc.) turns it off. Bidirectional — re-evaluated
+// every time the input device is known, so switching back to a plain mic turns it back on.
+function autoSpeakerMode(label){
+  if(visualBeat) return;   // no click audio at all in visual-only mode — filtering is moot either way
+  const isGenericMic = !label || /microphone|built.?in|internal|macbook|imac|default/i.test(label);
+  if(filterClick !== isGenericMic) setFilterClick(isGenericMic);
+}
 let currentInputId=null;
 async function refreshInputs(){
   const sel=$('inputPicker'); if(!sel || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
@@ -782,7 +783,7 @@ async function switchInput(deviceId){
     if(node) detTap.connect(node); else if(spNode) detTap.connect(spNode);
     currentInputId=deviceId; prog.inputId=deviceId; saveProg();
     try{ const _sel=$('inputPicker'); const _lbl=_sel&&_sel.selectedOptions[0]?_sel.selectedOptions[0].textContent:'';
-      if(_lbl && !/microphone|built.?in|internal|macbook|imac|default/i.test(_lbl)){ if(filterClick){ setFilterClick(false); if($('filterClickChk')) $('filterClickChk').checked=false; } } }catch(e){}
+      autoSpeakerMode(_lbl); }catch(e){}
     const rs=$('roomStatus'); if(rs){ rs.style.display='block'; rs.textContent='Switched input — measuring room…'; }
     setTimeout(()=>measureRoom(true), 300);
   }catch(err){ showErr("Couldn't switch to that input: "+err.message); refreshInputs(); }
@@ -1250,7 +1251,6 @@ function startTransport(forCalib){
     if(node) node.port.postMessage({threshFactor:params.threshFactor, refractory:params.refractory});
   }
   expected=[]; beatIndex=0; repCount=0;
-  rampBaseBpm=bpm;
   if(!forCalib){ deltas=[];deltaSum=0;deltaSumSq=0;hits=0;missed=0;extra=0; striphits=[]; hitLog=[]; latencyLog=[]; }
   nextBeatTime=ac.currentTime+0.25;
   firstBarTime=nextBeatTime+countInBeats*beatDur;
@@ -1287,7 +1287,6 @@ function stopTransport(silent){
       saveProg();
       showScorePop(_f,0,{free:true,title:'Nice run!',msg:msg,nextLabel:'Done'});
     } } }
-  if(rampEnabled && mode==='play' && bpm!==rampBaseBpm) setBpm(rampBaseBpm);
   if(!silent) mode='idle';
 }
 let paused=false;
@@ -1519,9 +1518,6 @@ function registerBar(barStart){
     }
   });
   repCount++;
-  if(rampEnabled && mode==='play' && repCount>0 && repCount%rampEveryBars===0 && bpm<240){
-    setBpm(Math.min(240, bpm+rampStepBpm));
-  }
 }
 function registerCalibBeat(t){ expected.push({time:t,hit:false,idx:-1,win:Math.min(0.18,beatDur*0.5)}); }
 
@@ -1702,8 +1698,7 @@ $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudge
 function nudgeHw(d){ hwNudgeMs=Math.max(-150,Math.min(150,hwNudgeMs+d)); if($('hwnudge'))$('hwnudge').value=hwNudgeMs; if($('hwnudgeVal'))$('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); }
 $('hwNudgeMinus') && ($('hwNudgeMinus').onclick=()=>nudgeHw(-5));
 $('hwNudgePlus') && ($('hwNudgePlus').onclick=()=>nudgeHw(5));
-$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); if(visualBeat && $('filterClickChk') && $('filterClickChk').checked){ $('filterClickChk').checked=false; setFilterClick(false); } if(visualBeat){ if(typeof killPending==='function') killPending(); if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } } else if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); } const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } if(typeof fmtOff==='function') fmtOff(); });
-$('filterClickChk') && ($('filterClickChk').onchange=e=>{ setFilterClick(e.target.checked); if(e.target.checked && $('visualBeatChk') && $('visualBeatChk').checked){ $('visualBeatChk').checked=false; visualBeat=false; prog.visualBeat=false; saveProg(); const cvs=$('vol'); if(cvs){ cvs.disabled=false; cvs.style.opacity=1; } if(typeof fmtOff==='function') fmtOff(); } });
+$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); if(visualBeat && filterClick){ setFilterClick(false); } else if(!visualBeat){ try{ autoSpeakerMode(micStream && micStream.getAudioTracks()[0].label); }catch(err){} } if(visualBeat){ if(typeof killPending==='function') killPending(); if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } } else if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); } const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } if(typeof fmtOff==='function') fmtOff(); });
 $('ecChk') && ($('ecChk').onchange=e=>{ echoCancel=e.target.checked; prog.ec=echoCancel; saveProg(); if(typeof reacquireMic==='function') reacquireMic(); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
@@ -2374,10 +2369,6 @@ if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').va
 if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
 if(prog.theme==='light'){ document.documentElement.setAttribute('data-theme','light'); if($('lightModeChk'))$('lightModeChk').checked=true; }
 if(prog.ec){ echoCancel=true; if($('ecChk'))$('ecChk').checked=true; }
-if(prog.filterClick===false){ filterClick=false; if($('filterClickChk'))$('filterClickChk').checked=false; }
-if(prog.rampEnabled){ rampEnabled=true; if($('rampChk')){$('rampChk').checked=true;} const rc=$('rampControls'); if(rc) rc.style.display='block'; }
-if(prog.rampStepBpm!=null){ rampStepBpm=prog.rampStepBpm; if($('rampStep')){$('rampStep').value=rampStepBpm;$('rampStepVal').textContent=rampStepBpm;} }
-if(prog.rampEveryBars!=null){ rampEveryBars=prog.rampEveryBars; if($('rampBars')){$('rampBars').value=rampEveryBars;$('rampBarsVal').textContent=rampEveryBars;} }
 
 ['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
 ['bpm','swing'].forEach(id=>$(id) && $(id).addEventListener('input',()=>{ if(!applyingCfg) clearPending(); }));
@@ -2488,10 +2479,6 @@ $('clickPanSeg') && $('clickPanSeg').addEventListener('click',e=>{ const b=e.tar
   [...$('clickPanSeg').children].forEach(x=>x.classList.toggle('active', x===b)); });
 $('progBadges') && $('progBadges').addEventListener('click',e=>{ const b=e.target.closest('[data-desc]'); if(!b) return;
   const el=$('badgeDesc'); if(el) el.textContent=b.dataset.name+' — '+b.dataset.desc; });
-$('rampChk') && ($('rampChk').onchange=e=>{ rampEnabled=e.target.checked; prog.rampEnabled=rampEnabled; saveProg();
-  const rc=$('rampControls'); if(rc) rc.style.display=rampEnabled?'block':'none'; });
-$('rampStep') && ($('rampStep').oninput=e=>{ rampStepBpm=+e.target.value; $('rampStepVal').textContent=rampStepBpm; prog.rampStepBpm=rampStepBpm; saveProg(); });
-$('rampBars') && ($('rampBars').oninput=e=>{ rampEveryBars=+e.target.value; $('rampBarsVal').textContent=rampEveryBars; prog.rampEveryBars=rampEveryBars; saveProg(); });
 $('accentSwatches') && $('accentSwatches').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
   const acc=b.dataset.accent;
   if(acc==='amber') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent',acc);
