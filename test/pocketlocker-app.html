@@ -242,9 +242,10 @@
 <div class="appbar">
   <a class="brand" href="https://www.jamreadybass.com" target="_blank" rel="noopener noreferrer" aria-label="JamReadyBass">JamReady<span>Bass</span></a>
   <div class="wordmark">POCKET<span>LOCKER</span></div>
+  <button id="fullscreenBtn" class="iconbtn" aria-label="Fullscreen" style="display:none"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 210</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 211</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -685,7 +686,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 210 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 211 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -2569,6 +2570,27 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
   });
   document.querySelectorAll('.bottomnav button').forEach(function(b){b.addEventListener('click',function(){showScreen(b.dataset.screen);});});
   var gs=document.getElementById('navSettings'); if(gs) gs.addEventListener('click',function(){showScreen('settings');});
+
+  // Fullscreen toggle — only shown where the browser actually supports it (notably NOT iPhone Safari,
+  // which has never implemented the Fullscreen API for anything but <video>) and only in landscape on
+  // a phone-sized screen (a plain "orientation: landscape" match would also fire on ordinary desktops).
+  (function(){
+    var btn = document.getElementById('fullscreenBtn'); if(!btn) return;
+    var docEl = document.documentElement;
+    function supported(){ return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled); }
+    function isFullscreen(){ return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement); }
+    function enter(){ var f=docEl.requestFullscreen||docEl.webkitRequestFullscreen||docEl.mozRequestFullScreen||docEl.msRequestFullscreen; if(f) f.call(docEl); }
+    function exit(){ var f=document.exitFullscreen||document.webkitExitFullscreen||document.mozCancelFullScreen||document.msExitFullscreen; if(f) f.call(document); }
+    function updateVisibility(){
+      var mobileLandscape = window.matchMedia('(orientation: landscape) and (max-height: 550px)').matches;
+      btn.style.display = (supported() && mobileLandscape) ? 'flex' : 'none';
+    }
+    btn.addEventListener('click', function(){ isFullscreen() ? exit() : enter(); });
+    ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(function(ev){ document.addEventListener(ev, updateVisibility); });
+    window.addEventListener('resize', updateVisibility);
+    window.addEventListener('orientationchange', updateVisibility);
+    updateVisibility();
+  })();
   var bk=document.getElementById('navBack'); if(bk) bk.addEventListener('click',function(){showScreen('home');});
   ['playBtn','calibBtn','calibNowBtn','playAnywayBtn'].forEach(function(id){var el=document.getElementById(id); if(el) el.addEventListener('click',function(){showScreen('play');});});
   var lad=document.getElementById('ladder'); if(lad) lad.addEventListener('click',function(e){ var t=e.target.closest('.lvl'); if(t && !t.classList.contains('locked')) showScreen('play'); });
