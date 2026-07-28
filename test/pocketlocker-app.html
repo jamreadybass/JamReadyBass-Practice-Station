@@ -244,16 +244,17 @@
   <div class="wordmark">POCKET<span>LOCKER</span></div>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 207</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 208</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
-    <div id="homeHeader" style="position:relative;overflow:hidden;border-radius:16px;padding:26px 20px 22px;margin-bottom:14px;background:var(--bg)">
+    <div id="homeHeader" style="position:relative;overflow:hidden;border-radius:16px;padding:26px 20px 22px;margin-bottom:14px;background:var(--bg);background-image:repeating-linear-gradient(115deg, rgba(127,143,201,.05) 0px, rgba(127,143,201,.05) 1px, transparent 1px, transparent 34px)">
       <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(255,176,32,.14),transparent 70%);pointer-events:none"></div>
       <div style="position:relative">
         <div style="font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)">JamReadyBass.com</div>
         <div style="font-family:var(--display);font-weight:700;font-size:38px;line-height:.95;letter-spacing:.01em;text-transform:uppercase;color:var(--ink);margin-top:8px">Pocket<span style="color:var(--amber)">Locker</span></div>
         <div style="font-size:14px;color:var(--muted);margin-top:10px;max-width:300px;line-height:1.5">Real-time feedback on your timing — hear exactly where you sit against the click, and lock your pocket in.</div>
+        <div id="homeStatTeaser" style="display:none;margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--amber)"></div>
       </div>
     </div>
     <div id="heroHero" class="panel" style="padding:16px 16px 0;cursor:pointer;overflow:hidden">
@@ -681,7 +682,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 207 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 208 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1735,6 +1736,13 @@ function logHistory(mode, ref, f){
 }
 function avgScore(f){ return f ? (f.cen+f.evn+f.rhy)/3 : 0; }
 function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderHomeStatTeaser(){
+  const el=$('homeStatTeaser'); if(!el) return;
+  const streak=computeStreak(prog.history||[]);
+  if(streak.current>=1){ el.style.display='block'; el.textContent='🔥 '+streak.current+'-day streak'; }
+  else if(prog.sessions>0){ el.style.display='block'; el.textContent=prog.sessions+' session'+(prog.sessions===1?'':'s')+' logged'; }
+  else { el.style.display='none'; }
+}
 function computeStreak(history){
   const dates=[...new Set(history.map(h=>h.date))].sort();
   if(!dates.length) return {current:0,longest:0};
@@ -1974,6 +1982,12 @@ function drawHomeHero(ts){
   const scrollBeats=elapsedBeats%loopBeats;
   const pxPerBeat=usableW/bpb;
   const X=pos=>padX+(pos-scrollBeats)*pxPerBeat;
+  // downbeat pulse: a soft glow that flashes on each beat and decays — makes the preview feel like a real clock, not a still image
+  const beatFrac=elapsedBeats%1, pulse=Math.pow(1-beatFrac,4);
+  const glow=ctx.createRadialGradient(W*0.5,staffY,0,W*0.5,staffY,W*0.55);
+  glow.addColorStop(0,'rgba(255,176,32,'+(0.10*pulse)+')');
+  glow.addColorStop(1,'rgba(255,176,32,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(236,232,222,.18)'; ctx.lineWidth=1*dpr;
   ctx.beginPath(); ctx.moveTo(padX,staffY); ctx.lineTo(W-padX,staffY); ctx.stroke();
   const nhrx=5*dpr, nhry=4*dpr, stem=16*dpr, by=staffY-stem;
@@ -2534,7 +2548,7 @@ if($('bpm')){ $('bpm').value=bpm; $('bpmVal').textContent=bpm; }
     document.querySelectorAll('.screen').forEach(function(sec){ if(sec===target) sec.classList.add('active'); else if(sec!==prevActive) sec.classList.remove('active'); });
     document.querySelectorAll('.bottomnav button').forEach(function(b){b.classList.toggle('active', b.dataset.screen===name);});
     if(name==='progress' && typeof renderProgressScreen==='function') renderProgressScreen();
-    if(name==='home'){ if(typeof startHeroLoop==='function') startHeroLoop(); } else { if(typeof stopHeroLoop==='function') stopHeroLoop(); }
+    if(name==='home'){ if(typeof startHeroLoop==='function') startHeroLoop(); if(typeof renderHomeStatTeaser==='function') renderHomeStatTeaser(); } else { if(typeof stopHeroLoop==='function') stopHeroLoop(); }
     document.body.classList.toggle('on-home', name==='home');
     var back=document.getElementById('navBack'); if(back) back.style.visibility=(name==='home')?'hidden':'visible';
     window.scrollTo(0,0);
