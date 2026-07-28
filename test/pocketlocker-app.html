@@ -264,7 +264,7 @@
   <button id="fullscreenBtn" class="iconbtn" aria-label="Fullscreen" style="display:none"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   <button id="navSettings" class="iconbtn" aria-label="Setup"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.2em"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.3 2.4a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.3-2.4a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></button>
 </div>
-<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 223</span></div>
+<div class="badgebar"><span class="badge" id="statusBadge">audio off · build 224</span></div>
 
 <main>
   <section id="screenHome" class="screen active">
@@ -441,8 +441,12 @@
               <button type="button" data-accent="violet" title="Violet" style="width:36px;height:36px;padding:0;border-radius:50%;background:#b088ff;border:2px solid var(--line)"></button>
             </div>
           </div>
-          <label class="chk" style="margin-top:12px;display:block"><input type="checkbox" id="visualBeatChk" style="accent-color:var(--accent)"> Visual-only beat — no click, play to the pulsing pocket (best on a phone with no headphones)</label>
-          <label class="chk"><input type="checkbox" id="ecChk" style="accent-color:var(--accent)"> Cancel speaker echo — for a laptop mic that hears the click through the speakers (may soften detection a touch; leave off for an interface or MIDI)</label>
+          <div class="ctrl" id="visualBeatChk" style="margin-top:12px"><label>Visual-only beat <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">— no click, play to the pulsing pocket (best on a phone with no headphones)</span></label>
+            <div class="seg" id="visualBeatSeg"><button data-vb="0" class="active">Off</button><button data-vb="1">On</button></div>
+          </div>
+          <div class="ctrl" id="ecChk" style="margin-top:12px"><label>Cancel speaker echo <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">— for a laptop mic that hears the click through the speakers (may soften detection a touch; leave off for an interface or MIDI)</span></label>
+            <div class="seg" id="ecSeg"><button data-ec="0" class="active">Off</button><button data-ec="1">On</button></div>
+          </div>
           <label class="chk"><input type="checkbox" id="proViewChk" style="accent-color:var(--accent)"> Pro view — hide the gems, lock in by click + landing lines only</label>
           <label class="chk"><input type="checkbox" id="lightModeChk" style="accent-color:var(--accent)"> Light mode — switch the app to a light theme (default is dark)</label>
         </div>
@@ -706,7 +710,7 @@ $('startBtn').onclick=async()=>{
     }catch(werr){ setupFallback(); }
     pushParams();
     running=true;
-    $('statusBadge').textContent='live · build 223 · app'; $('statusBadge').className='badge live';
+    $('statusBadge').textContent='live · build 224 · app'; $('statusBadge').className='badge live';
     $('startBtn').disabled=true; $('startBtn').textContent='Running';
     ['climbPanel','setupPanel','notePanel','scorePanel'].forEach(p=>{$(p).style.opacity=1;$(p).style.pointerEvents='auto';});
     if($('startPanel')) $('startPanel').style.display='none';
@@ -1698,8 +1702,20 @@ $('hwnudge') && ($('hwnudge').oninput=e=>{ hwNudgeMs=+e.target.value; $('hwnudge
 function nudgeHw(d){ hwNudgeMs=Math.max(-150,Math.min(150,hwNudgeMs+d)); if($('hwnudge'))$('hwnudge').value=hwNudgeMs; if($('hwnudgeVal'))$('hwnudgeVal').textContent=hwNudgeMs; prog.hwNudge=hwNudgeMs; saveProg(); }
 $('hwNudgeMinus') && ($('hwNudgeMinus').onclick=()=>nudgeHw(-5));
 $('hwNudgePlus') && ($('hwNudgePlus').onclick=()=>nudgeHw(5));
-$('visualBeatChk') && ($('visualBeatChk').onchange=e=>{ visualBeat=e.target.checked; prog.visualBeat=visualBeat; saveProg(); if(visualBeat && filterClick){ setFilterClick(false); } else if(!visualBeat){ try{ autoSpeakerMode(micStream && micStream.getAudioTracks()[0].label); }catch(err){} } if(visualBeat){ if(typeof killPending==='function') killPending(); if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } } else if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); } const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; } if(typeof fmtOff==='function') fmtOff(); });
-$('ecChk') && ($('ecChk').onchange=e=>{ echoCancel=e.target.checked; prog.ec=echoCancel; saveProg(); if(typeof reacquireMic==='function') reacquireMic(); });
+function setVisualBeat(on){
+  visualBeat=on; prog.visualBeat=visualBeat; saveProg();
+  if(visualBeat && filterClick){ setFilterClick(false); } else if(!visualBeat){ try{ autoSpeakerMode(micStream && micStream.getAudioTracks()[0].label); }catch(err){} }
+  if(visualBeat){ if(typeof killPending==='function') killPending(); if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(0,ac.currentTime); } }
+  else if(clickBus&&ac){ clickBus.gain.cancelScheduledValues(ac.currentTime); clickBus.gain.setValueAtTime(1,ac.currentTime); }
+  const cvs=$('vol'); if(cvs){ cvs.disabled=visualBeat; cvs.style.opacity=visualBeat?0.4:1; }
+  if(typeof fmtOff==='function') fmtOff();
+}
+$('visualBeatSeg') && $('visualBeatSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  $('visualBeatSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  setVisualBeat(b.dataset.vb==='1'); });
+$('ecSeg') && $('ecSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  $('ecSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  echoCancel=b.dataset.ec==='1'; prog.ec=echoCancel; saveProg(); if(typeof reacquireMic==='function') reacquireMic(); });
 $('guideChk').onchange=e=>{guide=e.target.checked;};
 function pushParams(){const s=+$('sens').value;params.threshFactor=6.0-(s-1)*0.5;params.refractory=(+$('ref').value)/1000;
   if($('riseThresh')) params.riseK=+$('riseThresh').value;
@@ -2366,9 +2382,9 @@ if(prog.calib!=null){ calibOffset=prog.calib; calibrated=true; }
 if(prog.calibVis!=null){ calibOffsetVis=prog.calibVis; }
 if(typeof fmtOff==='function') fmtOff();
 if(prog.hwNudge!=null){ hwNudgeMs=prog.hwNudge; if($('hwnudge')){$('hwnudge').value=hwNudgeMs;$('hwnudgeVal').textContent=hwNudgeMs;} }
-if(prog.visualBeat){ visualBeat=true; if($('visualBeatChk'))$('visualBeatChk').checked=true; }
+if(prog.visualBeat){ visualBeat=true; const seg=$('visualBeatSeg'); if(seg){ seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.vb==='1')); } }
 if(prog.theme==='light'){ document.documentElement.setAttribute('data-theme','light'); if($('lightModeChk'))$('lightModeChk').checked=true; }
-if(prog.ec){ echoCancel=true; if($('ecChk'))$('ecChk').checked=true; }
+if(prog.ec){ echoCancel=true; const seg=$('ecSeg'); if(seg){ seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.ec==='1')); } }
 
 ['subdivSeg','diffSeg','feelSeg','lenSeg'].forEach(id=>$(id) && $(id).addEventListener('click',()=>{ if(!applyingCfg) clearPending(); }));
 ['bpm','swing'].forEach(id=>$(id) && $(id).addEventListener('input',()=>{ if(!applyingCfg) clearPending(); }));
